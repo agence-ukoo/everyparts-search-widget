@@ -47,6 +47,7 @@
       products_no_match: 'Aucun produit ne correspond.',
       products_count:  '{n} / {total} produits',
       after_result:    'Souhaitez-vous affiner le résultat ou faire une autre recherche ?',
+      refine_dont_know:'Je ne sais pas',
       sort_label:      'Trier les produits',
       sort_relevance:  'Pertinence',
       sort_price_asc:  'Prix croissant',
@@ -79,6 +80,7 @@
       products_no_match: 'No matching product.',
       products_count:  '{n} / {total} products',
       after_result:    'Would you like to refine the results or perform another search?',
+      refine_dont_know:'I don\'t know',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
       sort_price_asc:  'Price: low to high',
@@ -111,6 +113,7 @@
       products_no_match: 'No matching product.',
       products_count:  '{n} / {total} products',
       after_result:    'Would you like to refine the results or perform another search?',
+      refine_dont_know:'I don\'t know',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
       sort_price_asc:  'Price: low to high',
@@ -751,6 +754,9 @@
   let conversationContext = { previous_clarifications: [] };
   let isLoading = false;
   let lastClarificationField = null;
+  // Affinage en cours (CDC §6.6) : questions posées en chaîne, réponses
+  // accumulées localement, un seul appel API à la fin de la chaîne.
+  let pendingRefinement = null;
 
   function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -847,11 +853,18 @@
       if (!query || isLoading) return;
       inputEl.value = '';
       appendUserMessage(query);
+      // Affinage en cours : le texte saisi vaut réponse à la question
+      // courante — rien ne part à l'API avant la fin de la chaîne.
+      if (pendingRefinement) {
+        if (pendingRefinement.freezeCurrent) pendingRefinement.freezeCurrent();
+        recordRefinementAnswer(query);
+        return;
+      }
       callSearch(query);
     }
 
     // ── Appel API ──────────────────────────────────────────────────────────
-    async function callSearch(query) {
+    async function callSearch(query, extraBody) {
       if (isLoading) return;
       isLoading = true;
       sendBtn.disabled = true;
@@ -862,6 +875,7 @@
         session_id: sessionId,
         context:    conversationContext,
       };
+      if (extraBody) Object.assign(body, extraBody);
 
       try {
         const resp = await fetch(`${CONFIG.apiBase}/search`, {
@@ -907,45 +921,118 @@
     }
 
     function renderResults(data) {
+      const products = data.results || [];
+
+      // Affinage serveur (CDC §6.6) : trop de produits → les questions sont
+      // posées en chaîne AVANT d'afficher la liste ; celle-ci reste en main
+      // pour le cas « tout je-ne-sais-pas » (aucun nouvel appel API).
+      if (products.length > 0 && data.refinement?.questions?.length) {
+        startRefinement(data);
+        return;
+      }
+
       appendAssistantMessage(data.message);
 
-      const products = data.results || [];
       if (products.length > 0) {
-        const container = document.createElement('div');
-        container.className = 'ep-products';
-
-        const cards = document.createElement('div');
-        cards.className = 'ep-cards';
-
-        // Chaque entrée garde le produit + son élément pour tri/filtre
-        const entries = products.map((product, index) => ({
-          product,
-          index,
-          el: buildProductCard(product),
-        }));
-        entries.forEach(e => cards.appendChild(e.el));
-
-        // Barre tri + filtre unifié au-delà du seuil
-        if (products.length > PRODUCTS_TOOLBAR_MIN) {
-          container.appendChild(buildProductsToolbar(entries, cards, container));
-        }
-
-        container.appendChild(cards);
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'ep-msg ep-msg-assistant ep-msg-wide';
-        wrapper.appendChild(container);
-        messagesEl.appendChild(wrapper);
-        scrollBottom();
+        renderProductList(products);
       }
 
       // Reset clarification context après résultats
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
 
-      if (products.length > 10) {
-        appendAssistantMessage(t('after_result'));
+      appendAssistantMessage(t('after_result'));
+    }
+
+    function renderProductList(products) {
+      const container = document.createElement('div');
+      container.className = 'ep-products';
+
+      const cards = document.createElement('div');
+      cards.className = 'ep-cards';
+
+      // Chaque entrée garde le produit + son élément pour tri/filtre
+      const entries = products.map((product, index) => ({
+        product,
+        index,
+        el: buildProductCard(product),
+      }));
+      entries.forEach(e => cards.appendChild(e.el));
+
+      // Barre tri + filtre unifié au-delà du seuil
+      if (products.length > PRODUCTS_TOOLBAR_MIN) {
+        container.appendChild(buildProductsToolbar(entries, cards, container));
       }
+
+      container.appendChild(cards);
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'ep-msg ep-msg-assistant ep-msg-wide';
+      wrapper.appendChild(container);
+      messagesEl.appendChild(wrapper);
+      scrollBottom();
+    }
+
+    // ── Affinage des résultats (CDC §6.6) ──────────────────────────────────
+    // Le serveur joint `refinement.questions` quand la liste est trop longue.
+    // Chaque question est posée à son tour, toujours avec l'option « Je ne
+    // sais pas » (critère facultatif). À la fin de la chaîne :
+    //   - au moins une réponse → un seul nouvel appel API avec les réponses ;
+    //   - que des « je ne sais pas » → la liste initiale, déjà reçue, est
+    //     affichée sans appel réseau.
+    function startRefinement(data) {
+      pendingRefinement = {
+        data,
+        questions: data.refinement.questions,
+        answers: [],
+        freezeCurrent: null,
+      };
+      appendAssistantMessage(data.refinement.message || data.message);
+      askRefinementQuestion();
+    }
+
+    function askRefinementQuestion() {
+      const p = pendingRefinement;
+      const question = p.questions[p.answers.length];
+      appendAssistantMessage(question.question);
+
+      const options = (question.options || []).map(o => ({ label: o, value: o }));
+      options.push({ label: t('refine_dont_know'), value: null });
+
+      const group = appendOptionsGroup(options, (value, label) => {
+        appendUserMessage(label);
+        recordRefinementAnswer(value);
+      });
+      p.freezeCurrent = group ? group.freeze : null;
+    }
+
+    function recordRefinementAnswer(value) {
+      const p = pendingRefinement;
+      p.answers.push({
+        criterion: p.questions[p.answers.length].criterion,
+        answer: value,
+      });
+      if (p.answers.length < p.questions.length) {
+        askRefinementQuestion();
+        return;
+      }
+      finishRefinement();
+    }
+
+    function finishRefinement() {
+      const p = pendingRefinement;
+      pendingRefinement = null;
+
+      const answered = p.answers.filter(a => a.answer !== null);
+      if (answered.length === 0) {
+        renderResults({ ...p.data, refinement: null });
+        return;
+      }
+
+      callSearch(
+        answered.map(a => a.answer).join(', '),
+        { refinement: { answers: p.answers } }
+      );
     }
 
     /**
@@ -1108,17 +1195,40 @@
     }
 
     /**
-     * Clarification :
-     * - ≤ CLARI_CHIPS_MAX options → puces horizontales (comportement historique)
-     * - au-delà → liste verticale scrollable ; champ de filtre à partir de CLARI_FILTER_MIN
+     * Clarification : question + options servies par l'API, re-soumises
+     * comme un message utilisateur.
      */
     function renderClarification(data) {
       appendAssistantMessage(data.message);
 
       lastClarificationField = data.clarification?.field || null;
 
-      const options = data.clarification?.options || [];
-      if (options.length === 0) return;
+      const options = (data.clarification?.options || [])
+        .map(option => ({ label: option, value: option }));
+
+      appendOptionsGroup(options, value => {
+        // Enregistrer la clarification dans le contexte
+        conversationContext.previous_clarifications.push({
+          field:  lastClarificationField,
+          answer: value,
+        });
+        // Re-soumettre comme si l'utilisateur avait tapé l'option
+        appendUserMessage(value);
+        callSearch(value);
+      });
+    }
+
+    /**
+     * Groupe d'options cliquables (clarifications, questions d'affinage) :
+     * - ≤ CLARI_CHIPS_MAX options → puces horizontales (comportement historique)
+     * - au-delà → liste verticale scrollable ; champ de filtre à partir de CLARI_FILTER_MIN
+     *
+     * options : [{ label, value }] ; au clic le groupe est gelé puis
+     * onSelect(value, label) est appelé. Retourne { freeze } pour geler le
+     * groupe de l'extérieur (réponse saisie au clavier pendant un affinage).
+     */
+    function appendOptionsGroup(options, onSelect) {
+      if (options.length === 0) return null;
 
       const isList = options.length > CLARI_CHIPS_MAX;
       const hasFilter = options.length >= CLARI_FILTER_MIN;
@@ -1147,31 +1257,32 @@
       opts.className = isList ? 'ep-clari-list' : 'ep-clari-opts';
       opts.setAttribute('role', 'group');
 
+      let frozen = false;
+
+      // Marquer la sélection éventuelle, geler le groupe
+      function freeze(selectedBtn) {
+        if (frozen) return;
+        frozen = true;
+        buttons.forEach(b => {
+          b.disabled = true;
+          if (b !== selectedBtn) b.style.display = isList ? 'none' : '';
+        });
+        if (selectedBtn) selectedBtn.classList.add('ep-selected');
+        if (filterInput) filterInput.remove();
+        if (emptyNote) emptyNote.remove();
+        const countEl = container.querySelector('.ep-clari-count');
+        if (countEl) countEl.remove();
+      }
+
       const buttons = options.map(option => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ep-clari-btn';
-        btn.textContent = option;
+        btn.textContent = option.label;
         btn.addEventListener('click', () => {
-          if (isLoading) return;
-          // Enregistrer la clarification dans le contexte
-          conversationContext.previous_clarifications.push({
-            field:  lastClarificationField,
-            answer: option,
-          });
-          // Marquer la sélection, geler le groupe
-          buttons.forEach(b => {
-            b.disabled = true;
-            if (b !== btn) b.style.display = isList ? 'none' : '';
-          });
-          btn.classList.add('ep-selected');
-          if (filterInput) filterInput.remove();
-          if (emptyNote) emptyNote.remove();
-          const countEl = container.querySelector('.ep-clari-count');
-          if (countEl) countEl.remove();
-          // Re-soumettre comme si l'utilisateur avait tapé l'option
-          appendUserMessage(option);
-          callSearch(option);
+          if (isLoading || frozen) return;
+          freeze(btn);
+          onSelect(option.value, option.label);
         });
         opts.appendChild(btn);
         return btn;
@@ -1203,6 +1314,8 @@
       wrapper.appendChild(container);
       messagesEl.appendChild(wrapper);
       scrollBottom();
+
+      return { freeze: () => freeze(null) };
     }
 
     function renderNoResults(data) {
