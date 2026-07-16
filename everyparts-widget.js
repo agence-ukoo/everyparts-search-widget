@@ -46,6 +46,7 @@
       products_filter_placeholder: 'Filtrer par nom, marque, réf…',
       products_no_match: 'Aucun produit ne correspond.',
       products_count:  '{n} / {total} produits',
+      after_result:    'Souhaitez-vous affiner le résultat ou faire une autre recherche ?',
       sort_label:      'Trier les produits',
       sort_relevance:  'Pertinence',
       sort_price_asc:  'Prix croissant',
@@ -77,6 +78,7 @@
       products_filter_placeholder: 'Filter by name, brand, ref…',
       products_no_match: 'No matching product.',
       products_count:  '{n} / {total} products',
+      after_result:    'Would you like to refine the results or perform another search?',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
       sort_price_asc:  'Price: low to high',
@@ -108,6 +110,7 @@
       products_filter_placeholder: 'Filter by name, brand, ref…',
       products_no_match: 'No matching product.',
       products_count:  '{n} / {total} products',
+      after_result:    'Would you like to refine the results or perform another search?',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
       sort_price_asc:  'Price: low to high',
@@ -939,6 +942,10 @@
       // Reset clarification context après résultats
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
+
+      if (products.length > 10) {
+        appendAssistantMessage(t('after_result'));
+      }
     }
 
     /**
