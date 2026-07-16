@@ -412,8 +412,18 @@
     .ep-products-toolbar {
       display: flex;
       gap: 6px;
-      margin-bottom: 4px;
       align-items: center;
+      /* Reste collée en haut du chat pendant le scroll de la liste */
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--ep-grey-100);
+      padding: 8px 0;
+      margin-bottom: 4px;
+      transition: box-shadow .15s ease;
+    }
+    .ep-products-toolbar.ep-stuck {
+      box-shadow: 0 6px 12px -6px rgba(6,76,76,.25);
     }
     .ep-products-filter {
       flex: 1;
@@ -940,6 +950,11 @@
     function buildProductsToolbar(entries, cardsEl, containerEl) {
       const frag = document.createDocumentFragment();
 
+      // Sentinelle : détecte quand la barre devient collée (ombre portée)
+      const sentinel = document.createElement('div');
+      sentinel.style.cssText = 'height:1px;margin-bottom:-1px;';
+      frag.appendChild(sentinel);
+
       const toolbar = document.createElement('div');
       toolbar.className = 'ep-products-toolbar';
 
@@ -990,7 +1005,26 @@
 
       const collator = new Intl.Collator(CONFIG.locale, { numeric: true, sensitivity: 'base' });
 
-      function apply() {
+      if (typeof IntersectionObserver === 'function') {
+        new IntersectionObserver(
+          ([entry]) => toolbar.classList.toggle('ep-stuck', !entry.isIntersecting),
+          { root: messagesEl, threshold: 0 }
+        ).observe(sentinel);
+      }
+
+      // Remonte en douceur en haut de la liste de produits
+      function scrollToListTop() {
+        const mRect = messagesEl.getBoundingClientRect();
+        const cRect = containerEl.getBoundingClientRect();
+        const target = Math.max(0, messagesEl.scrollTop + (cRect.top - mRect.top) - 8);
+        if (typeof messagesEl.scrollTo === 'function') {
+          messagesEl.scrollTo({ top: target, behavior: 'smooth' });
+        } else {
+          messagesEl.scrollTop = target;
+        }
+      }
+
+      function apply(fromUser) {
         // Filtre
         const q = normStr(filter.value.trim());
         let visible = 0;
@@ -1016,11 +1050,13 @@
 
         count.textContent = t('products_count', { n: visible, total: entries.length });
         empty.style.display = visible === 0 ? '' : 'none';
+
+        if (fromUser) scrollToListTop();
       }
 
-      filter.addEventListener('input', apply);
-      sort.addEventListener('change', apply);
-      apply();
+      filter.addEventListener('input', () => apply(true));
+      sort.addEventListener('change', () => apply(true));
+      apply(false);
 
       return frag;
     }
