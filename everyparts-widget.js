@@ -54,6 +54,9 @@
       sort_price_desc: 'Prix décroissant',
       sort_name_asc:   'Nom A–Z',
       sort_name_desc:  'Nom Z–A',
+      review_question: 'Êtes-vous satisfait de ces résultats ?',
+      review_yes:      'Oui, satisfait',
+      review_no:       'Non, pas satisfait',
     },
     'en-US': {
       placeholder:     'Search for a compatible part…',
@@ -87,6 +90,9 @@
       sort_price_desc: 'Price: high to low',
       sort_name_asc:   'Name A–Z',
       sort_name_desc:  'Name Z–A',
+      review_question: 'Are you satisfied with these results?',
+      review_yes:      'Yes, satisfied',
+      review_no:       'No, not satisfied',
     },
     'en-GB': {
       placeholder:     'Search for a compatible part…',
@@ -120,6 +126,9 @@
       sort_price_desc: 'Price: high to low',
       sort_name_asc:   'Name A–Z',
       sort_name_desc:  'Name Z–A',
+      review_question: 'Are you satisfied with these results?',
+      review_yes:      'Yes, satisfied',
+      review_no:       'No, not satisfied',
     },
   };
 
@@ -660,6 +669,36 @@
       padding: 8px 2px;
     }
 
+    /* ── Avis sur les résultats (pouces) ── */
+    .ep-review-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .ep-review-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid var(--ep-grey-200);
+      background: var(--ep-white);
+      color: var(--ep-grey-500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: border-color .15s, color .15s, background .15s, opacity .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ep-review-btn svg { display: block; }
+    .ep-review-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    .ep-review-up:hover:not(:disabled)   { border-color: var(--ep-primary); color: var(--ep-primary); }
+    .ep-review-down:hover:not(:disabled) { border-color: var(--ep-red); color: var(--ep-red); }
+    .ep-review-btn:disabled { cursor: default; opacity: .4; }
+    .ep-review-btn.ep-selected { opacity: 1; }
+    .ep-review-up.ep-selected   { background: var(--ep-primary); border-color: var(--ep-primary); color: var(--ep-white); }
+    .ep-review-down.ep-selected { background: var(--ep-red); border-color: var(--ep-red); color: var(--ep-white); }
+
     /* ── Suggestions (no_results) ── */
     .ep-suggestions { margin-top: 8px; }
     .ep-suggestions p { font-size: 12px; color: var(--ep-grey-500); margin-bottom: 4px; }
@@ -741,6 +780,7 @@
       .ep-products-sort { font-size: 13px; padding: 8px 6px; min-height: 36px; }
       .ep-clari-btn { min-height: 38px; padding: 8px 14px; font-size: 13px; }
       .ep-clari-list { max-height: 220px; }
+      .ep-review-btn { width: 38px; height: 38px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -941,7 +981,76 @@
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
 
-      appendAssistantMessage(t('after_result'));
+      // Avis de satisfaction AVANT le message after_result :
+      // le vote (pouce haut/bas) envoie POST /review puis affiche after_result.
+      if (products.length > 0) {
+        renderReviewPrompt();
+      } else {
+        appendAssistantMessage(t('after_result'));
+      }
+    }
+
+    /**
+     * Avis utilisateur : pouce haut / pouce bas.
+     * Au clic : POST /review { type, rating, session_id } (best-effort),
+     * puis affichage du message after_result.
+     */
+    function renderReviewPrompt() {
+      const THUMB_UP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>`;
+      const THUMB_DOWN_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>`;
+
+      const content = document.createElement('div');
+
+      const txt = document.createElement('div');
+      txt.textContent = t('review_question');
+      content.appendChild(txt);
+
+      const btns = document.createElement('div');
+      btns.className = 'ep-review-btns';
+      btns.setAttribute('role', 'group');
+      btns.setAttribute('aria-label', t('review_question'));
+
+      const makeBtn = (rating, label, svg) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `ep-review-btn ep-review-${rating}`;
+        btn.setAttribute('aria-label', label);
+        btn.title = label;
+        btn.innerHTML = svg;
+        btn.addEventListener('click', () => {
+          btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
+          btn.classList.add('ep-selected');
+          sendReview(rating);
+          appendAssistantMessage(t('after_result'));
+        });
+        return btn;
+      };
+
+      btns.appendChild(makeBtn('up', t('review_yes'), THUMB_UP_SVG));
+      btns.appendChild(makeBtn('down', t('review_no'), THUMB_DOWN_SVG));
+      content.appendChild(btns);
+
+      appendAssistantMessageEl(content);
+    }
+
+    // Envoi de l'avis — silencieux en cas d'échec (ne bloque pas l'UX)
+    async function sendReview(rating) {
+      try {
+        await fetch(`${CONFIG.apiBase}/review`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${CONFIG.token}`,
+          },
+          body: JSON.stringify({
+            type:       'review',
+            rating,
+            session_id: sessionId,
+          }),
+        });
+      } catch (err) {
+        /* no-op : l'avis est best-effort */
+      }
     }
 
     function renderProductList(products) {
