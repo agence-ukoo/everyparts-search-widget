@@ -830,9 +830,7 @@
       fab.setAttribute('aria-label', open ? t('close') : t('open'));
       fab.title = open ? t('close') : t('open');
       if (open) {
-        // Sur mobile, ne pas forcer le focus : le clavier virtuel
-        // masquerait le message d'accueil.
-        if (!isMobile()) inputEl.focus();
+        inputEl.focus();
         if (messagesEl.children.length === 0) {
           appendAssistantMessage(t('welcome'));
         }
