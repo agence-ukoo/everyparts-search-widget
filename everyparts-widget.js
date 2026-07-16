@@ -1,7 +1,15 @@
 /**
- * everyparts-widget.js — Widget de recherche EveryParts
- * Shadow DOM, Vanilla JS, fichier unique.
- * Intégration : <script src="everyparts-widget.js" data-token="SITE_TOKEN" defer></script>
+ * everyparts-widget.js — Widget de recherche EveryParts (MVP)
+ * Shadow DOM, Vanilla JS, fichier unique. Mobile-first.
+ *
+ * Intégration :
+ * <script
+ *   src="https://cdn.jsdelivr.net/gh/agence-ukoo/everyparts-search-widget@1.0.0/everyparts-widget.min.js"
+ *   data-token="[TOKEN]"
+ *   data-locale="fr-FR"
+ *   data-position="bottom-right"
+ *   data-api="https://everyparts-api-hub.jcloud.ik-server.com/api/v1"
+ *   defer></script>
  */
 (function () {
   'use strict';
@@ -12,47 +20,184 @@
     return scripts[scripts.length - 1];
   })();
 
+  // ── Traductions (i18n) — clés par locale BCP 47 ────────────────────────────
+  const I18N = {
+    'fr-FR': {
+      placeholder:     'Rechercher une pièce compatible…',
+      send:            'Envoyer',
+      welcome:         'Bonjour ! Je suis PartsMind, l\'assistant de recherche EveryParts. Décrivez-moi votre moto et la pièce que vous cherchez (ex : bougie pour Honda CBR 600 de 96).',
+      typing:          'En train de répondre…',
+      error_token:     'Configuration invalide : token absent.',
+      error_net:       'Impossible de joindre l\'API. Vérifiez votre connexion.',
+      error_unknown:   'Erreur inconnue.',
+      error_unexpected:'Réponse inattendue du serveur.',
+      compat_label:    'Compatible',
+      compat_tip:      'Confirmée par {n} sources',
+      suggestions:     'Suggestions :',
+      close:           'Fermer le chat',
+      open:            'Ouvrir l\'assistant EveryParts',
+      aria_dialog:     'EveryParts – Assistant de recherche',
+      aria_conversation: 'Conversation',
+      filter_placeholder: 'Filtrer les options…',
+      filter_no_match: 'Aucune option ne correspond.',
+      options_count:   '{n} options',
+      view_product:    'Voir le produit',
+      ref_label:       'Réf.',
+      products_filter_placeholder: 'Filtrer par nom, marque, réf…',
+      products_no_match: 'Aucun produit ne correspond.',
+      products_count:  '{n} / {total} produits',
+      sort_label:      'Trier les produits',
+      sort_relevance:  'Pertinence',
+      sort_price_asc:  'Prix croissant',
+      sort_price_desc: 'Prix décroissant',
+      sort_name_asc:   'Nom A–Z',
+      sort_name_desc:  'Nom Z–A',
+    },
+    'en-US': {
+      placeholder:     'Search for a compatible part…',
+      send:            'Send',
+      welcome:         'Hi! I\'m PartsMind, the EveryParts search assistant. Tell me about your bike and the part you\'re looking for (e.g., spark plug for a \'96 Honda CBR 600).',
+      typing:          'Typing…',
+      error_token:     'Invalid configuration: missing token.',
+      error_net:       'Unable to reach the API. Please check your connection.',
+      error_unknown:   'Unknown error.',
+      error_unexpected:'Unexpected server response.',
+      compat_label:    'Compatible',
+      compat_tip:      'Confirmed by {n} sources',
+      suggestions:     'Suggestions:',
+      close:           'Close chat',
+      open:            'Open the EveryParts assistant',
+      aria_dialog:     'EveryParts – Search assistant',
+      aria_conversation: 'Conversation',
+      filter_placeholder: 'Filter options…',
+      filter_no_match: 'No matching option.',
+      options_count:   '{n} options',
+      view_product:    'View product',
+      ref_label:       'Ref.',
+      products_filter_placeholder: 'Filter by name, brand, ref…',
+      products_no_match: 'No matching product.',
+      products_count:  '{n} / {total} products',
+      sort_label:      'Sort products',
+      sort_relevance:  'Relevance',
+      sort_price_asc:  'Price: low to high',
+      sort_price_desc: 'Price: high to low',
+      sort_name_asc:   'Name A–Z',
+      sort_name_desc:  'Name Z–A',
+    },
+    'en-GB': {
+      placeholder:     'Search for a compatible part…',
+      send:            'Send',
+      welcome:         'Hello! I\'m PartsMind, the EveryParts search assistant. Tell me about your bike and the part you\'re looking for (e.g. spark plug for a 1996 Honda CBR 600).',
+      typing:          'Typing…',
+      error_token:     'Invalid configuration: missing token.',
+      error_net:       'Unable to reach the API. Please check your connection.',
+      error_unknown:   'Unknown error.',
+      error_unexpected:'Unexpected server response.',
+      compat_label:    'Compatible',
+      compat_tip:      'Confirmed by {n} sources',
+      suggestions:     'Suggestions:',
+      close:           'Close chat',
+      open:            'Open the EveryParts assistant',
+      aria_dialog:     'EveryParts – Search assistant',
+      aria_conversation: 'Conversation',
+      filter_placeholder: 'Filter options…',
+      filter_no_match: 'No matching option.',
+      options_count:   '{n} options',
+      view_product:    'View product',
+      ref_label:       'Ref.',
+      products_filter_placeholder: 'Filter by name, brand, ref…',
+      products_no_match: 'No matching product.',
+      products_count:  '{n} / {total} products',
+      sort_label:      'Sort products',
+      sort_relevance:  'Relevance',
+      sort_price_asc:  'Price: low to high',
+      sort_price_desc: 'Price: high to low',
+      sort_name_asc:   'Name A–Z',
+      sort_name_desc:  'Name Z–A',
+    },
+  };
+
+  const DEFAULT_LOCALE = 'fr-FR';
+
+  /**
+   * Fait correspondre une locale brute à une locale supportée (ou null).
+   * "fr-FR" → "fr-FR" ; "fr" / "fr-CA" → "fr-FR" ; "en" → "en-US" ; inconnu → null.
+   */
+  function matchLocale(raw) {
+    if (!raw) return null;
+    const norm = String(raw).trim().replace('_', '-');
+    // Correspondance exacte (insensible à la casse)
+    const exact = Object.keys(I18N).find(k => k.toLowerCase() === norm.toLowerCase());
+    if (exact) return exact;
+    // Correspondance par langue
+    const lang = norm.split('-')[0].toLowerCase();
+    if (lang === 'en') return 'en-US';
+    return Object.keys(I18N).find(k => k.toLowerCase().startsWith(lang + '-')) || null;
+  }
+
+  /**
+   * Résout la locale : attribut data-locale, sinon locale(s) du navigateur,
+   * sinon fr-FR.
+   */
+  function resolveLocale(raw) {
+    const fromAttr = matchLocale(raw);
+    if (fromAttr) return fromAttr;
+    const browserLocales = (navigator.languages && navigator.languages.length
+      ? navigator.languages
+      : [navigator.language]).filter(Boolean);
+    for (const candidate of browserLocales) {
+      const m = matchLocale(candidate);
+      if (m) return m;
+    }
+    return DEFAULT_LOCALE;
+  }
+
   const CONFIG = {
     token:    SCRIPT_EL?.getAttribute('data-token') || '',
-    lang:     SCRIPT_EL?.getAttribute('data-lang') || 'fr',
+    // data-locale remplace data-lang (rétro-compatibilité conservée en repli).
+    locale:   resolveLocale(SCRIPT_EL?.getAttribute('data-locale') || SCRIPT_EL?.getAttribute('data-lang')),
     position: SCRIPT_EL?.getAttribute('data-position') || 'bottom-right',
     apiBase:  SCRIPT_EL?.getAttribute('data-api') || 'http://localhost:8000/api/v1',
   };
 
-  // ── Traductions (i18n) ─────────────────────────────────────────────────────
-  const I18N = {
-    fr: {
-      placeholder:  'Rechercher une pièce compatible…',
-      send:         'Envoyer',
-      welcome:      'Bonjour ! Je suis PartsMind, l\'assistant de recherche EveryParts. Décrivez-moi votre moto et la pièce que vous cherchez (ex : bougie pour Honda CBR 600 de 96).',
-      typing:       'En train de répondre…',
-      error_token:  'Configuration invalide : token absent.',
-      error_net:    'Impossible de joindre l\'API. Vérifiez votre connexion.',
-      compat_label: 'Compatibilité confirmée',
-      compat_tip:   'Confirmée par {n} sources',
-      no_results_title: 'Aucun résultat',
-      suggestions:  'Suggestions :',
-      close:        'Fermer le chat',
-      open:         'Ouvrir l\'assistant EveryParts',
-      price_unit:   '€',
-    },
-  };
-
   function t(key, vars = {}) {
-    const lang = I18N[CONFIG.lang] || I18N.fr;
-    let str = lang[key] || key;
+    const dict = I18N[CONFIG.locale] || I18N[DEFAULT_LOCALE];
+    let str = dict[key] || I18N[DEFAULT_LOCALE][key] || key;
     for (const [k, v] of Object.entries(vars)) {
       str = str.replace(`{${k}}`, v);
     }
     return str;
   }
 
+  // ── Formatage prix selon la locale ─────────────────────────────────────────
+  const priceFormatter = (function () {
+    try {
+      return new Intl.NumberFormat(CONFIG.locale, {
+        style: 'currency',
+        currency: 'EUR',
+      });
+    } catch (e) {
+      return null;
+    }
+  })();
+
+  function formatPrice(value) {
+    const num = typeof value === 'number' ? value : parseFloat(value);
+    if (isNaN(num)) return String(value ?? '');
+    return priceFormatter ? priceFormatter.format(num) : `${num.toFixed(2)} €`;
+  }
+
+  // Normalisation pour le filtre d'options (insensible aux accents/casse)
+  function normStr(s) {
+    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
   // ── Icotype SVG placeholder ────────────────────────────────────────────────
-  const ICOTYPE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 271 281" width="32" height="32">
+  const ICOTYPE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 271 281" width="32" height="32" aria-hidden="true">
     <path d="M 126 17.5 C 106.9 28.1, 60.8 53.1, 40 65.5 C 19.2 77.9, 34.5 69.5, 31.5 74 C 28.5 78.5, 27.6 61.6, 26.5 86 C 25.4 110.4, 25.4 160.6, 26.5 185 C 27.6 209.4, 27.4 191.8, 31.5 197 C 35.6 202.2, 24.2 196.1, 45 208.5 C 65.8 220.9, 104.2 243.8, 126 253.5 C 147.8 263.2, 122.7 262.6, 144 252.5 C 165.3 242.4, 202.9 219.9, 223 207.5 C 243.1 195.1, 231.7 202.1, 235.5 196 C 239.3 189.9, 239.4 187.9, 240.5 180 L 240.5 160 L 223 157.5 C 215.4 157.4, 215.7 154.4, 206 159.5 C 196.3 164.6, 188.7 174.3, 179 180.5 C 169.3 186.7, 174.1 186.2, 162 187.5 C 149.9 188.8, 135.7 188.0, 124 186.5 C 112.3 185.0, 114.0 183.5, 109 180.5 C 104.0 177.5, 103.3 175.6, 101.5 173 L 101 168.5 L 146 159.5 C 157.8 155.2, 152.8 156.8, 154.5 149 C 156.2 141.2, 154.8 132.1, 153.5 124 C 152.2 115.9, 150.8 115.8, 148.5 112 C 146.2 108.2, 146.4 107.9, 143 106.5 C 139.6 105.1, 144.2 104.0, 133 105.5 C 121.8 107.0, 101.7 111.7, 92 113.5 L 89 113.5 L 87.5 110 C 87.6 107.5, 87.2 105.6, 89.5 102 C 91.8 98.4, 89.1 99.5, 98 93.5 C 106.9 87.5, 119.9 79.6, 130 74.5 C 140.1 69.4, 137.6 71.2, 144 70.5 C 150.4 69.8, 153.1 70.0, 159 71.5 C 164.9 73.0, 164.2 72.2, 171 77.5 C 177.8 82.8, 182.1 89.1, 190 95.5 C 197.9 101.9, 197.8 103.4, 207 106.5 C 216.2 109.6, 224.6 109.2, 232 109.5 L 240.5 108 L 238.5 81 C 236.0 72.1, 249.8 81.3, 229 67.5 C 208.2 53.8, 166.4 29.5, 144 18.5 C 121.6 7.5, 131.0 17.7, 127 17.5 C 123.0 17.3, 145.1 6.9, 126 17.5 Z" fill="white"/>
   </svg>`;
 
-  const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1080 208" width="140" height="27" style="enable-background:new 0 0 1080 208;" xml:space="preserve">
+  const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1080 208" width="140" height="27" style="enable-background:new 0 0 1080 208;" xml:space="preserve" aria-hidden="true">
     <style type="text/css">.st0{fill:#FFFFFF;}</style>
     <g>
       <path class="st0" d="M752.18,79.73c-3.5-7.08-8.42-12.67-14.76-16.75c-6.34-4.08-13.78-6.12-22.33-6.12c-8.49,0-15.63,2.07-21.42,6.2c-0.54,0.39-1.06,0.8-1.57,1.21v-4.93h-19.85v129.02h22.66v-42.82c5.8,3.73,12.91,5.6,21.34,5.6c8.22,0,15.41-2.07,21.59-6.2c6.17-4.14,10.99-9.76,14.43-16.87c3.45-7.11,5.17-15.13,5.17-24.07C757.43,94.9,755.68,86.81,752.18,79.73z M731.38,117.69c-1.49,4.11-3.78,7.37-6.86,9.8c-3.09,2.43-7.06,3.64-11.91,3.64c-5.02,0-9.03-1.13-12.03-3.39c-3.01-2.26-5.17-5.43-6.49-9.51c-1.32-4.08-1.98-8.82-1.98-14.23c0-5.4,0.66-10.14,1.98-14.23c1.32-4.08,3.43-7.25,6.33-9.51c2.89-2.26,6.69-3.39,11.37-3.39c5.02,0,9.14,1.23,12.36,3.68c3.23,2.45,5.61,5.74,7.15,9.84c1.54,4.11,2.32,8.64,2.32,13.6C733.61,109.02,732.86,113.58,731.38,117.69z"/>
@@ -69,9 +214,9 @@
     </g>
   </svg>`;
 
-  // ── CSS du Shadow DOM ──────────────────────────────────────────────────────
+  // ── CSS du Shadow DOM (mobile-first : plein écran < 641px) ─────────────────
   const STYLES = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Manrope:wght@800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@800&display=swap');
 
     :host { all: initial; display: block; }
 
@@ -105,9 +250,9 @@
     /* ── Bouton flottant ── */
     #ep-fab {
       position: fixed;
-      z-index: 2147483647;
-      width: 56px;
-      height: 56px;
+      z-index: 2147483646;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
       background: var(--ep-dark);
       border: none;
@@ -118,76 +263,67 @@
       box-shadow: 0 4px 16px rgba(6,76,76,.35);
       transition: transform .2s ease, box-shadow .2s ease;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
     #ep-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(6,76,76,.45); }
     #ep-fab:focus-visible { outline: 3px solid var(--ep-primary); outline-offset: 3px; }
     #ep-fab svg { display: block; }
 
-    .ep-pos-bottom-right { bottom: 24px; right: 24px; }
-    .ep-pos-bottom-left  { bottom: 24px; left: 24px; }
-    .ep-pos-top-right    { top: 24px; right: 24px; }
-    .ep-pos-top-left     { top: 24px; left: 24px; }
+    .ep-pos-bottom-right { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); }
+    .ep-pos-bottom-left  { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
+    .ep-pos-top-right    { top: calc(20px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); }
+    .ep-pos-top-left     { top: calc(20px + env(safe-area-inset-top, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
 
-    /* ── Fenêtre de chat ── */
+    /* ── Fenêtre de chat — mobile-first : plein écran ──
+       Étirée par les 4 ancres (top/right/bottom/left), sans hauteur
+       explicite : garantit que la fenêtre colle au bas réel du viewport
+       (100dvh/100% sont peu fiables selon les barres d'outils mobiles). */
     #ep-window {
       position: fixed;
-      z-index: 2147483646;
-      width: 380px;
-      max-width: calc(100vw - 32px);
-      height: 560px;
-      max-height: calc(100vh - 100px);
+      z-index: 2147483647;
+      top: 0; right: 0; bottom: 0; left: 0;
+      width: auto;
+      height: auto;
       background: var(--ep-grey-100);
-      border-radius: var(--ep-radius);
-      box-shadow: var(--ep-shadow);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       font-family: var(--ep-font-body);
-      font-size: 14px;
+      font-size: 15px;
       color: var(--ep-body);
-      transition: opacity .2s ease, transform .2s ease;
+      transition: opacity .25s ease, transform .25s ease;
     }
     #ep-window.ep-hidden {
       opacity: 0;
       pointer-events: none;
-      transform: translateY(12px);
+      transform: translateY(24px);
     }
-    .ep-pos-bottom-right #ep-window,
-    #ep-window.ep-pos-bottom-right { bottom: 92px; right: 24px; }
-    .ep-pos-bottom-left #ep-window,
-    #ep-window.ep-pos-bottom-left  { bottom: 92px; left: 24px; }
-    .ep-pos-top-right #ep-window,
-    #ep-window.ep-pos-top-right    { top: 92px; right: 24px; }
-    .ep-pos-top-left #ep-window,
-    #ep-window.ep-pos-top-left     { top: 92px; left: 24px; }
 
     /* ── Header ── */
     #ep-header {
       background: var(--ep-dark);
-      padding: 14px 16px;
+      padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
     }
     #ep-header-logo { display: flex; align-items: center; gap: 8px; }
-    #ep-header h1 {
-      font-family: var(--ep-font-title);
-      font-weight: 800;
-      font-size: 16px;
-      color: var(--ep-white);
-      letter-spacing: -.3px;
-    }
     #ep-close-btn {
       background: none;
       border: none;
       cursor: pointer;
       color: var(--ep-white);
-      opacity: .7;
-      padding: 4px;
-      border-radius: 6px;
+      opacity: .8;
+      padding: 10px;
+      margin: -6px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
     }
     #ep-close-btn:hover { opacity: 1; background: rgba(255,255,255,.1); }
     #ep-close-btn:focus-visible { outline: 2px solid var(--ep-primary); }
@@ -196,6 +332,8 @@
     #ep-messages {
       flex: 1;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -210,14 +348,21 @@
     .ep-msg {
       display: flex;
       max-width: 88%;
+      animation: ep-appear .18s ease-out;
+    }
+    @keyframes ep-appear {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     .ep-msg-user { align-self: flex-end; }
     .ep-msg-assistant { align-self: flex-start; }
+    .ep-msg-wide { max-width: 100%; width: 100%; }
 
     .ep-bubble {
       padding: 10px 14px;
       border-radius: 16px;
       line-height: 1.5;
+      word-break: break-word;
     }
     .ep-msg-user .ep-bubble {
       background: var(--ep-primary);
@@ -241,6 +386,7 @@
       display: none;
       align-items: center;
       gap: 6px;
+      margin: 0 16px 8px;
       padding: 8px 14px;
       background: var(--ep-white);
       border-radius: 16px;
@@ -250,6 +396,7 @@
       font-size: 13px;
       font-style: italic;
       align-self: flex-start;
+      flex-shrink: 0;
     }
     #ep-typing.ep-visible { display: flex; }
     .ep-dot { width: 6px; height: 6px; background: var(--ep-grey-400); border-radius: 50%; animation: ep-bounce .9s infinite; }
@@ -261,72 +408,241 @@
     }
 
     /* ── Cartes produit ── */
+    .ep-products { width: 100%; }
+    .ep-products-toolbar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 4px;
+      align-items: center;
+    }
+    .ep-products-filter {
+      flex: 1;
+      min-width: 0;
+      border: 1.5px solid var(--ep-grey-200);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: var(--ep-font-body);
+      font-size: 16px;
+      color: var(--ep-grey-800);
+      background: var(--ep-white);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .ep-products-filter:focus { border-color: var(--ep-primary); }
+    .ep-products-filter::placeholder { color: var(--ep-grey-400); }
+    .ep-products-sort {
+      flex-shrink: 0;
+      max-width: 46%;
+      border: 1.5px solid var(--ep-grey-200);
+      border-radius: 10px;
+      padding: 10px 8px;
+      min-height: 44px;
+      font-family: var(--ep-font-body);
+      font-size: 14px;
+      color: var(--ep-grey-700);
+      background: var(--ep-white);
+      outline: none;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .ep-products-sort:focus { border-color: var(--ep-primary); }
+    .ep-products-count {
+      font-size: 11px;
+      color: var(--ep-grey-400);
+      margin-bottom: 6px;
+    }
+    .ep-products-empty {
+      font-size: 13px;
+      color: var(--ep-grey-500);
+      font-style: italic;
+      padding: 8px 2px;
+    }
     .ep-cards { display: flex; flex-direction: column; gap: 8px; width: 100%; }
     .ep-card {
       background: var(--ep-white);
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      border: 1px solid var(--ep-grey-200);
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
       display: flex;
-      gap: 10px;
-      padding: 10px;
-      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      align-items: center;
       width: 100%;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
+      -webkit-tap-highlight-color: transparent;
     }
+    .ep-card:hover, .ep-card:focus-visible {
+      border-color: var(--ep-primary);
+      box-shadow: 0 4px 14px rgba(0,190,130,.18);
+      transform: translateY(-1px);
+    }
+    .ep-card:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
     .ep-card-img {
-      width: 60px;
-      height: 60px;
-      border-radius: 6px;
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
       object-fit: cover;
       flex-shrink: 0;
       background: var(--ep-grey-100);
     }
     .ep-card-body { flex: 1; min-width: 0; }
-    .ep-card-name {
+    .ep-card-topline {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .ep-card-brand {
+      font-size: 11px;
       font-weight: 700;
-      color: var(--ep-grey-800);
-      font-size: 13px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      color: var(--ep-grey-500);
+    }
+    .ep-card-ref {
+      font-size: 11px;
+      color: var(--ep-grey-400);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .ep-card-brand { font-size: 11px; color: var(--ep-grey-500); margin-bottom: 4px; }
+    .ep-card-name {
+      font-weight: 600;
+      color: var(--ep-grey-800);
+      font-size: 14px;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .ep-card-bottomline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .ep-card-price {
       font-family: var(--ep-font-title);
       font-weight: 800;
       color: var(--ep-dark);
-      font-size: 15px;
+      font-size: 16px;
+      white-space: nowrap;
     }
+    .ep-card-arrow {
+      flex-shrink: 0;
+      color: var(--ep-grey-300);
+      transition: color .15s ease, transform .15s ease;
+    }
+    .ep-card:hover .ep-card-arrow { color: var(--ep-primary); transform: translateX(2px); }
     .ep-badge {
       display: inline-flex;
       align-items: center;
       gap: 4px;
       background: var(--ep-green);
       color: var(--ep-dark);
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 20px;
-      margin-top: 4px;
       cursor: default;
+      white-space: nowrap;
     }
-    .ep-badge::before { content: '✓'; font-size: 9px; }
+    .ep-badge::before { content: '✓'; font-size: 10px; }
 
-    /* ── Boutons de clarification ── */
-    .ep-clari-opts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    /* ── Options de clarification ── */
+    .ep-clari { width: 100%; }
+    .ep-clari-opts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
     .ep-clari-btn {
       background: var(--ep-white);
       border: 1.5px solid var(--ep-primary);
       color: var(--ep-dark);
-      border-radius: 20px;
-      padding: 6px 14px;
-      font-size: 13px;
+      border-radius: 22px;
+      padding: 10px 16px;
+      min-height: 44px;
+      font-size: 14px;
       font-family: var(--ep-font-body);
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
-      transition: background .15s, color .15s;
+      transition: background .15s, color .15s, border-color .15s, opacity .15s;
+      -webkit-tap-highlight-color: transparent;
+      text-align: center;
     }
-    .ep-clari-btn:hover { background: var(--ep-grey-100); }
+    .ep-clari-btn:hover:not(:disabled) { background: var(--ep-primary); color: var(--ep-white); }
     .ep-clari-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    .ep-clari-btn:disabled { cursor: default; opacity: .45; }
+    .ep-clari-btn.ep-selected {
+      background: var(--ep-primary);
+      border-color: var(--ep-primary);
+      color: var(--ep-white);
+      opacity: 1;
+    }
+
+    /* Liste verticale + filtre (nombreuses options) */
+    .ep-clari-filter {
+      width: 100%;
+      border: 1.5px solid var(--ep-grey-200);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: var(--ep-font-body);
+      font-size: 16px;
+      color: var(--ep-grey-800);
+      background: var(--ep-white);
+      outline: none;
+      margin-bottom: 8px;
+      transition: border-color .15s;
+    }
+    .ep-clari-filter:focus { border-color: var(--ep-primary); }
+    .ep-clari-filter::placeholder { color: var(--ep-grey-400); }
+    .ep-clari-count {
+      font-size: 11px;
+      color: var(--ep-grey-400);
+      margin-bottom: 6px;
+    }
+    .ep-clari-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 246px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding-right: 2px;
+    }
+    .ep-clari-list::-webkit-scrollbar { width: 4px; }
+    .ep-clari-list::-webkit-scrollbar-thumb { background: var(--ep-grey-300); border-radius: 4px; }
+    .ep-clari-list .ep-clari-btn {
+      width: 100%;
+      text-align: left;
+      border-radius: 10px;
+      border-color: var(--ep-grey-200);
+      flex-shrink: 0;
+    }
+    .ep-clari-list .ep-clari-btn:hover:not(:disabled) {
+      border-color: var(--ep-primary);
+      background: var(--ep-white);
+      color: var(--ep-dark);
+    }
+    .ep-clari-list .ep-clari-btn.ep-selected {
+      background: var(--ep-primary);
+      border-color: var(--ep-primary);
+      color: var(--ep-white);
+    }
+    .ep-clari-empty {
+      font-size: 13px;
+      color: var(--ep-grey-500);
+      font-style: italic;
+      padding: 8px 2px;
+    }
 
     /* ── Suggestions (no_results) ── */
     .ep-suggestions { margin-top: 8px; }
@@ -336,20 +652,22 @@
 
     /* ── Zone de saisie ── */
     #ep-input-area {
-      padding: 12px;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
       background: var(--ep-white);
       border-top: 1px solid var(--ep-grey-200);
       display: flex;
       gap: 8px;
       flex-shrink: 0;
+      align-items: center;
     }
     #ep-input {
       flex: 1;
+      min-width: 0;
       border: 1.5px solid var(--ep-grey-200);
       border-radius: 24px;
-      padding: 9px 16px;
+      padding: 11px 16px;
       font-family: var(--ep-font-body);
-      font-size: 14px;
+      font-size: 16px; /* ≥16px : empêche le zoom auto iOS */
       color: var(--ep-grey-800);
       background: var(--ep-grey-100);
       outline: none;
@@ -360,8 +678,8 @@
     #ep-input::placeholder { color: var(--ep-grey-400); }
 
     #ep-send-btn {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: var(--ep-primary);
       border: none;
@@ -371,12 +689,48 @@
       justify-content: center;
       flex-shrink: 0;
       transition: background .15s;
-      align-self: flex-end;
+      -webkit-tap-highlight-color: transparent;
     }
     #ep-send-btn:hover { background: var(--ep-dark); }
     #ep-send-btn:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
     #ep-send-btn:disabled { background: var(--ep-grey-300); cursor: not-allowed; }
     #ep-send-btn svg { display: block; }
+
+    /* Masquer le FAB quand la fenêtre est ouverte (mobile plein écran) */
+    #ep-fab.ep-window-open { display: none; }
+
+    /* ── Desktop / tablette : fenêtre flottante ── */
+    @media (min-width: 641px) {
+      #ep-window {
+        top: auto; right: auto; bottom: auto; left: auto;
+        width: 400px;
+        max-width: calc(100vw - 32px);
+        height: 600px;
+        max-height: calc(100vh - 110px);
+        max-height: calc(100dvh - 110px);
+        border-radius: var(--ep-radius);
+        box-shadow: var(--ep-shadow);
+        font-size: 14px;
+      }
+      #ep-window.ep-hidden { transform: translateY(12px); }
+      #ep-window.ep-pos-bottom-right { bottom: 96px; right: 24px; top: auto; left: auto; }
+      #ep-window.ep-pos-bottom-left  { bottom: 96px; left: 24px; top: auto; right: auto; }
+      #ep-window.ep-pos-top-right    { top: 96px; right: 24px; bottom: auto; left: auto; }
+      #ep-window.ep-pos-top-left     { top: 96px; left: 24px; bottom: auto; right: auto; }
+      #ep-header { padding: 14px 16px; }
+      #ep-fab.ep-window-open { display: flex; }
+      #ep-input { font-size: 14px; }
+      .ep-clari-filter { font-size: 13px; }
+      .ep-products-filter { font-size: 13px; padding: 8px 12px; }
+      .ep-products-sort { font-size: 13px; padding: 8px 6px; min-height: 36px; }
+      .ep-clari-btn { min-height: 38px; padding: 8px 14px; font-size: 13px; }
+      .ep-clari-list { max-height: 220px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #ep-window, .ep-msg, .ep-card, .ep-card-arrow { transition: none; animation: none; }
+      .ep-dot { animation: none; }
+    }
   `;
 
   // ── Etat de la conversation ────────────────────────────────────────────────
@@ -391,6 +745,13 @@
       return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     });
   }
+
+  // Seuil au-delà duquel les options passent en liste verticale filtrable
+  const CLARI_CHIPS_MAX = 6;
+  // Seuil au-delà duquel le champ de filtre est affiché
+  const CLARI_FILTER_MIN = 8;
+  // Seuil au-delà duquel la barre tri + filtre produits est affichée
+  const PRODUCTS_TOOLBAR_MIN = 5;
 
   // ── Montage du widget ──────────────────────────────────────────────────────
   function mount() {
@@ -420,7 +781,8 @@
     win.id = 'ep-window';
     win.className = `ep-pos-${CONFIG.position} ep-hidden`;
     win.setAttribute('role', 'dialog');
-    win.setAttribute('aria-label', 'EveryParts – Assistant de recherche');
+    win.setAttribute('aria-modal', 'false');
+    win.setAttribute('aria-label', t('aria_dialog'));
     win.innerHTML = buildWindowHTML();
     shadow.appendChild(win);
 
@@ -434,7 +796,7 @@
     // ── Événements ────────────────────────────────────────────────────────
     let isOpen = false;
 
-    fab.addEventListener('click', () => toggleWindow(true));
+    fab.addEventListener('click', () => toggleWindow(!isOpen));
     closeBtn.addEventListener('click', () => toggleWindow(false));
 
     // Fermeture à Échap
@@ -447,15 +809,25 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
 
+    function isMobile() {
+      return window.matchMedia('(max-width: 640px)').matches;
+    }
+
     function toggleWindow(open) {
       isOpen = open;
       win.classList.toggle('ep-hidden', !open);
+      fab.classList.toggle('ep-window-open', open);
       fab.setAttribute('aria-label', open ? t('close') : t('open'));
+      fab.title = open ? t('close') : t('open');
       if (open) {
-        inputEl.focus();
+        // Sur mobile, ne pas forcer le focus : le clavier virtuel
+        // masquerait le message d'accueil.
+        if (!isMobile()) inputEl.focus();
         if (messagesEl.children.length === 0) {
           appendAssistantMessage(t('welcome'));
         }
+      } else {
+        fab.focus();
       }
     }
 
@@ -499,7 +871,7 @@
       } finally {
         isLoading = false;
         sendBtn.disabled = false;
-        inputEl.focus();
+        if (!isMobile()) inputEl.focus();
       }
     }
 
@@ -516,45 +888,42 @@
           renderNoResults(data);
           break;
         case 'error':
-          appendErrorMessage(data.error?.message || 'Erreur inconnue.');
+          appendErrorMessage(data.error?.message || t('error_unknown'));
           break;
         default:
-          appendErrorMessage('Réponse inattendue du serveur.');
+          appendErrorMessage(t('error_unexpected'));
       }
     }
 
     function renderResults(data) {
       appendAssistantMessage(data.message);
 
-      if (data.results && data.results.length > 0) {
+      const products = data.results || [];
+      if (products.length > 0) {
+        const container = document.createElement('div');
+        container.className = 'ep-products';
+
         const cards = document.createElement('div');
         cards.className = 'ep-cards';
 
-        data.results.forEach(product => {
-          const card = document.createElement('div');
-          card.className = 'ep-card';
-          const n = product.compatibility?.n_sources || 0;
-          const tip = n >= 5 ? t('compat_tip', { n }) : t('compat_label');
-          card.innerHTML = `
-            <img class="ep-card-img"
-              src="${escHtml(product.image_url)}"
-              alt="${escHtml(product.name)}"
-              loading="lazy"
-              onerror="this.style.display='none'">
-            <div class="ep-card-body">
-              <div class="ep-card-brand">${escHtml(product.brand)}</div>
-              <div class="ep-card-name"><a href="${escHtml(product.url)}">${escHtml(product.name)}</a></div>
-              <sub class="ep-card-ref">${escHtml(product.product_ref)}</sub>
-              <div class="ep-card-price">${escHtml(String(product.price))} ${t('price_unit')}</div>
-              <span class="ep-badge" title="${escHtml(tip)}">${escHtml(product.compatibility?.label || t('compat_label'))}</span>
-            </div>
-          `;
-          cards.appendChild(card);
-        });
+        // Chaque entrée garde le produit + son élément pour tri/filtre
+        const entries = products.map((product, index) => ({
+          product,
+          index,
+          el: buildProductCard(product),
+        }));
+        entries.forEach(e => cards.appendChild(e.el));
+
+        // Barre tri + filtre unifié au-delà du seuil
+        if (products.length > PRODUCTS_TOOLBAR_MIN) {
+          container.appendChild(buildProductsToolbar(entries, cards, container));
+        }
+
+        container.appendChild(cards);
 
         const wrapper = document.createElement('div');
-        wrapper.className = 'ep-msg ep-msg-assistant';
-        wrapper.appendChild(cards);
+        wrapper.className = 'ep-msg ep-msg-assistant ep-msg-wide';
+        wrapper.appendChild(container);
         messagesEl.appendChild(wrapper);
         scrollBottom();
       }
@@ -564,40 +933,235 @@
       lastClarificationField = null;
     }
 
+    /**
+     * Barre d'outils produits : filtre texte unifié (nom + marque + réf)
+     * et tri (pertinence, prix, nom) via <select> natif (ergonomique mobile).
+     */
+    function buildProductsToolbar(entries, cardsEl, containerEl) {
+      const frag = document.createDocumentFragment();
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'ep-products-toolbar';
+
+      const filter = document.createElement('input');
+      filter.type = 'text';
+      filter.className = 'ep-products-filter';
+      filter.placeholder = t('products_filter_placeholder');
+      filter.setAttribute('aria-label', t('products_filter_placeholder'));
+
+      const sort = document.createElement('select');
+      sort.className = 'ep-products-sort';
+      sort.setAttribute('aria-label', t('sort_label'));
+      [
+        ['relevance',  t('sort_relevance')],
+        ['price_asc',  t('sort_price_asc')],
+        ['price_desc', t('sort_price_desc')],
+        ['name_asc',   t('sort_name_asc')],
+        ['name_desc',  t('sort_name_desc')],
+      ].forEach(([value, label]) => {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = label;
+        sort.appendChild(opt);
+      });
+
+      toolbar.appendChild(filter);
+      toolbar.appendChild(sort);
+      frag.appendChild(toolbar);
+
+      const count = document.createElement('div');
+      count.className = 'ep-products-count';
+      frag.appendChild(count);
+
+      const empty = document.createElement('div');
+      empty.className = 'ep-products-empty';
+      empty.textContent = t('products_no_match');
+      empty.style.display = 'none';
+      containerEl.appendChild(empty);
+
+      // Index de recherche unifié : nom + marque + réf (sans accents)
+      entries.forEach(e => {
+        e.haystack = normStr([e.product.name, e.product.brand, e.product.product_ref]
+          .filter(Boolean).join(' '));
+        e.priceNum = typeof e.product.price === 'number'
+          ? e.product.price
+          : parseFloat(e.product.price) || 0;
+      });
+
+      const collator = new Intl.Collator(CONFIG.locale, { numeric: true, sensitivity: 'base' });
+
+      function apply() {
+        // Filtre
+        const q = normStr(filter.value.trim());
+        let visible = 0;
+        entries.forEach(e => {
+          e.match = !q || e.haystack.includes(q);
+          if (e.match) visible++;
+        });
+
+        // Tri
+        const sorted = [...entries];
+        switch (sort.value) {
+          case 'price_asc':  sorted.sort((a, b) => a.priceNum - b.priceNum); break;
+          case 'price_desc': sorted.sort((a, b) => b.priceNum - a.priceNum); break;
+          case 'name_asc':   sorted.sort((a, b) => collator.compare(a.product.name || '', b.product.name || '')); break;
+          case 'name_desc':  sorted.sort((a, b) => collator.compare(b.product.name || '', a.product.name || '')); break;
+          default:           sorted.sort((a, b) => a.index - b.index);
+        }
+
+        sorted.forEach(e => {
+          e.el.style.display = e.match ? '' : 'none';
+          cardsEl.appendChild(e.el); // ré-ordonne
+        });
+
+        count.textContent = t('products_count', { n: visible, total: entries.length });
+        empty.style.display = visible === 0 ? '' : 'none';
+      }
+
+      filter.addEventListener('input', apply);
+      sort.addEventListener('change', apply);
+      apply();
+
+      return frag;
+    }
+
+    /**
+     * Carte produit — s'appuie sur le payload API réel :
+     * { product_ref, name, brand, price, url, compatibility: { compatible, n_sources, label } }
+     * `image_url` est optionnel (absent du payload actuel).
+     */
+    function buildProductCard(product) {
+      const card = document.createElement('a');
+      card.className = 'ep-card';
+      card.href = product.url || '#';
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+      card.setAttribute('aria-label', `${product.name || ''} – ${t('view_product')}`);
+
+      const n = product.compatibility?.n_sources || 0;
+      const tip = n > 1 ? t('compat_tip', { n }) : (product.compatibility?.label || t('compat_label'));
+      const badgeLabel = product.compatibility?.label || t('compat_label');
+
+      const imgHtml = product.image_url
+        ? `<img class="ep-card-img" src="${escHtml(product.image_url)}" alt="" loading="lazy" onerror="this.remove()">`
+        : '';
+
+      card.innerHTML = `
+        ${imgHtml}
+        <div class="ep-card-body">
+          <div class="ep-card-topline">
+            <span class="ep-card-brand">${escHtml(product.brand || '')}</span>
+            <span class="ep-card-ref">${t('ref_label')} ${escHtml(product.product_ref || '')}</span>
+          </div>
+          <div class="ep-card-name">${escHtml(product.name || '')}</div>
+          <div class="ep-card-bottomline">
+            <span class="ep-card-price">${escHtml(formatPrice(product.price))}</span>
+            <span class="ep-badge" title="${escHtml(tip)}">${escHtml(badgeLabel)}</span>
+          </div>
+        </div>
+        <svg class="ep-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+      return card;
+    }
+
+    /**
+     * Clarification :
+     * - ≤ CLARI_CHIPS_MAX options → puces horizontales (comportement historique)
+     * - au-delà → liste verticale scrollable ; champ de filtre à partir de CLARI_FILTER_MIN
+     */
     function renderClarification(data) {
       appendAssistantMessage(data.message);
 
       lastClarificationField = data.clarification?.field || null;
 
-      if (data.clarification?.options?.length > 0) {
-        const opts = document.createElement('div');
-        opts.className = 'ep-clari-opts';
+      const options = data.clarification?.options || [];
+      if (options.length === 0) return;
 
-        data.clarification.options.forEach(option => {
-          const btn = document.createElement('button');
-          btn.className = 'ep-clari-btn';
-          btn.textContent = option;
-          btn.addEventListener('click', () => {
-            // Enregistrer la clarification dans le contexte
-            conversationContext.previous_clarifications.push({
-              field:  lastClarificationField,
-              answer: option,
-            });
-            // Re-soumettre comme si l'utilisateur avait tapé l'option
-            appendUserMessage(option);
-            callSearch(option);
-            // Désactiver tous les boutons de ce groupe
-            opts.querySelectorAll('.ep-clari-btn').forEach(b => b.disabled = true);
-          });
-          opts.appendChild(btn);
-        });
+      const isList = options.length > CLARI_CHIPS_MAX;
+      const hasFilter = options.length >= CLARI_FILTER_MIN;
 
-        const wrapper = document.createElement('div');
-        wrapper.className = 'ep-msg ep-msg-assistant';
-        wrapper.appendChild(opts);
-        messagesEl.appendChild(wrapper);
-        scrollBottom();
+      const container = document.createElement('div');
+      container.className = 'ep-clari';
+
+      let filterInput = null;
+      let emptyNote = null;
+
+      if (isList && hasFilter) {
+        filterInput = document.createElement('input');
+        filterInput.type = 'text';
+        filterInput.className = 'ep-clari-filter';
+        filterInput.placeholder = t('filter_placeholder');
+        filterInput.setAttribute('aria-label', t('filter_placeholder'));
+        container.appendChild(filterInput);
+
+        const count = document.createElement('div');
+        count.className = 'ep-clari-count';
+        count.textContent = t('options_count', { n: options.length });
+        container.appendChild(count);
       }
+
+      const opts = document.createElement('div');
+      opts.className = isList ? 'ep-clari-list' : 'ep-clari-opts';
+      opts.setAttribute('role', 'group');
+
+      const buttons = options.map(option => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ep-clari-btn';
+        btn.textContent = option;
+        btn.addEventListener('click', () => {
+          if (isLoading) return;
+          // Enregistrer la clarification dans le contexte
+          conversationContext.previous_clarifications.push({
+            field:  lastClarificationField,
+            answer: option,
+          });
+          // Marquer la sélection, geler le groupe
+          buttons.forEach(b => {
+            b.disabled = true;
+            if (b !== btn) b.style.display = isList ? 'none' : '';
+          });
+          btn.classList.add('ep-selected');
+          if (filterInput) filterInput.remove();
+          if (emptyNote) emptyNote.remove();
+          const countEl = container.querySelector('.ep-clari-count');
+          if (countEl) countEl.remove();
+          // Re-soumettre comme si l'utilisateur avait tapé l'option
+          appendUserMessage(option);
+          callSearch(option);
+        });
+        opts.appendChild(btn);
+        return btn;
+      });
+
+      container.appendChild(opts);
+
+      if (filterInput) {
+        emptyNote = document.createElement('div');
+        emptyNote.className = 'ep-clari-empty';
+        emptyNote.textContent = t('filter_no_match');
+        emptyNote.style.display = 'none';
+        container.appendChild(emptyNote);
+
+        filterInput.addEventListener('input', () => {
+          const q = normStr(filterInput.value.trim());
+          let visible = 0;
+          buttons.forEach(b => {
+            const match = !q || normStr(b.textContent).includes(q);
+            b.style.display = match ? '' : 'none';
+            if (match) visible++;
+          });
+          emptyNote.style.display = visible === 0 ? '' : 'none';
+        });
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'ep-msg ep-msg-assistant ep-msg-wide';
+      wrapper.appendChild(container);
+      messagesEl.appendChild(wrapper);
+      scrollBottom();
     }
 
     function renderNoResults(data) {
@@ -609,7 +1173,7 @@
       if (data.suggestions?.length > 0) {
         const sugg = document.createElement('div');
         sugg.className = 'ep-suggestions';
-        sugg.innerHTML = `<p>${t('suggestions')}</p><ul>${
+        sugg.innerHTML = `<p>${escHtml(t('suggestions'))}</p><ul>${
           data.suggestions.map(s => `<li>${escHtml(s)}</li>`).join('')
         }</ul>`;
         container.appendChild(msgDiv);
@@ -687,12 +1251,12 @@
           ${LOGO_SVG}
         </div>
         <button id="ep-close-btn" aria-label="${t('close')}" title="${t('close')}">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M1 1L17 17M1 17L17 1" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
-      <div id="ep-messages" role="log" aria-live="polite" aria-label="Conversation"></div>
+      <div id="ep-messages" role="log" aria-live="polite" aria-label="${t('aria_conversation')}"></div>
       <div id="ep-typing" aria-live="polite" aria-label="${t('typing')}">
         <span class="ep-dot"></span>
         <span class="ep-dot"></span>
@@ -705,11 +1269,14 @@
           type="text"
           placeholder="${t('placeholder')}"
           autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          enterkeyhint="send"
           aria-label="${t('placeholder')}"
           maxlength="300"
         />
-        <button id="ep-send-btn" aria-label="${t('send')}">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <button id="ep-send-btn" aria-label="${t('send')}" title="${t('send')}">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M16 2L1 9L7 11M16 2L9 17L11 11M16 2L7 11M7 11L11 11" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
