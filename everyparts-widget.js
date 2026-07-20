@@ -46,6 +46,8 @@
       products_filter_placeholder: 'Filtrer par nom, marque, réf…',
       products_no_match: 'Aucun produit ne correspond.',
       products_count:  '{n} / {total} produits',
+      products_load_more: 'Voir plus de produits',
+      products_expired: 'Cette liste a expiré — relancez votre recherche pour voir la suite.',
       after_result:    'Souhaitez-vous affiner le résultat ou faire une autre recherche ?',
       refine_dont_know:'Je ne sais pas',
       sort_label:      'Trier les produits',
@@ -82,6 +84,8 @@
       products_filter_placeholder: 'Filter by name, brand, ref…',
       products_no_match: 'No matching product.',
       products_count:  '{n} / {total} products',
+      products_load_more: 'Show more products',
+      products_expired: 'This list has expired — run the search again to see more.',
       after_result:    'Would you like to refine the results or perform another search?',
       refine_dont_know:'I don\'t know',
       sort_label:      'Sort products',
@@ -118,6 +122,8 @@
       products_filter_placeholder: 'Filter by name, brand, ref…',
       products_no_match: 'No matching product.',
       products_count:  '{n} / {total} products',
+      products_load_more: 'Show more products',
+      products_expired: 'This list has expired — run the search again to see more.',
       after_result:    'Would you like to refine the results or perform another search?',
       refine_dont_know:'I don\'t know',
       sort_label:      'Sort products',
@@ -482,6 +488,34 @@
       font-style: italic;
       padding: 8px 2px;
     }
+    .ep-load-more {
+      width: 100%;
+      margin-top: 10px;
+      border: 1.5px solid var(--ep-grey-200);
+      border-radius: 12px;
+      padding: 12px 14px;
+      min-height: 44px;
+      font-family: var(--ep-font-body);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ep-primary);
+      background: var(--ep-white);
+      cursor: pointer;
+      transition: border-color .15s ease, box-shadow .15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ep-load-more:hover:not(:disabled) {
+      border-color: var(--ep-primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .ep-load-more:disabled { opacity: .6; cursor: wait; }
+    .ep-products-expired {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--ep-grey-500);
+      font-style: italic;
+      text-align: center;
+    }
     .ep-cards { display: flex; flex-direction: column; gap: 8px; width: 100%; }
     .ep-card {
       background: var(--ep-white);
@@ -797,6 +831,10 @@
   // Affinage en cours (CDC §6.6) : questions posées en chaîne, réponses
   // accumulées localement, un seul appel API à la fin de la chaîne.
   let pendingRefinement = null;
+  // Liste de produits paginée courante (« Voir plus ») : entrées affichées,
+  // bloc pagination reçu, bouton et barre d'outils. Une seule liste
+  // paginable à la fois — le bouton d'une liste précédente est retiré.
+  let activeList = null;
 
   function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -974,7 +1012,7 @@
       appendAssistantMessage(data.message);
 
       if (products.length > 0) {
-        renderProductList(products);
+        renderProductList(products, data.pagination || null);
       }
 
       // Reset clarification context après résultats
@@ -1053,7 +1091,14 @@
       }
     }
 
-    function renderProductList(products) {
+    function renderProductList(products, pagination) {
+      // Une seule liste paginable à la fois : le bouton « Voir plus » d'une
+      // liste précédente ajouterait les produits de la NOUVELLE recherche à
+      // l'ancienne liste — on le retire.
+      if (activeList && activeList.loadMoreBtn) {
+        activeList.loadMoreBtn.remove();
+      }
+
       const container = document.createElement('div');
       container.className = 'ep-products';
 
@@ -1068,18 +1113,111 @@
       }));
       entries.forEach(e => cards.appendChild(e.el));
 
-      // Barre tri + filtre unifié au-delà du seuil
-      if (products.length > PRODUCTS_TOOLBAR_MIN) {
-        container.appendChild(buildProductsToolbar(entries, cards, container));
+      activeList = { entries, cardsEl: cards, containerEl: container, pagination, toolbar: null, loadMoreBtn: null };
+
+      // Barre tri + filtre unifié au-delà du seuil — décidé sur le TOTAL de
+      // la recherche : la première page seule ne dépasse jamais le seuil.
+      if ((pagination ? pagination.total : products.length) > PRODUCTS_TOOLBAR_MIN) {
+        const toolbar = buildProductsToolbar(entries, cards, container,
+          () => activeList && activeList.containerEl === container && activeList.pagination
+            ? activeList.pagination.total
+            : entries.length);
+        activeList.toolbar = toolbar;
+        container.appendChild(toolbar.frag);
       }
 
       container.appendChild(cards);
+
+      // Pagination serveur : bouton « Voir plus » sous les cartes.
+      if (pagination && pagination.has_more) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ep-load-more';
+        btn.textContent = t('products_load_more');
+        btn.addEventListener('click', fetchNextPage);
+        container.appendChild(btn);
+        activeList.loadMoreBtn = btn;
+      }
 
       const wrapper = document.createElement('div');
       wrapper.className = 'ep-msg ep-msg-assistant ep-msg-wide';
       wrapper.appendChild(container);
       messagesEl.appendChild(wrapper);
       scrollBottom();
+    }
+
+    // ── Pagination « Voir plus » ───────────────────────────────────────────
+    // La page suivante est demandée à l'API ({session_id, pagination.page}) :
+    // le serveur la sert de l'état mémorisé de la recherche, sans nouvel
+    // appel LLM. La réponse est traitée ici même (pas via renderResponse) :
+    // les cartes s'ajoutent à la liste courante, pas dans une nouvelle bulle.
+    async function fetchNextPage() {
+      const list = activeList;
+      if (!list || !list.loadMoreBtn || list.loadMoreBtn.disabled) return;
+
+      const btn = list.loadMoreBtn;
+      btn.disabled = true;
+
+      try {
+        const resp = await fetch(`${CONFIG.apiBase}/search`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${CONFIG.token}`,
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            pagination: { page: list.pagination.page + 1 },
+          }),
+        });
+
+        const data = await resp.json();
+
+        // État serveur expiré (TTL) : plus de suite possible — le bouton
+        // cède la place à une note, le client relance une recherche.
+        if (data.type === 'error' && data.error?.code === 'pagination_expired') {
+          const note = document.createElement('div');
+          note.className = 'ep-products-expired';
+          note.textContent = t('products_expired');
+          btn.replaceWith(note);
+          list.loadMoreBtn = null;
+          return;
+        }
+
+        if (data.type !== 'results') {
+          btn.disabled = false;
+          appendErrorMessage(data.error?.message || t('error_unexpected'));
+          return;
+        }
+
+        const startIndex = list.entries.length;
+        const added = (data.results || []).map((product, i) => ({
+          product,
+          index: startIndex + i,
+          el: buildProductCard(product),
+        }));
+        added.forEach(e => list.cardsEl.appendChild(e.el));
+        list.entries.push(...added);
+
+        list.pagination = data.pagination
+          || { ...list.pagination, page: list.pagination.page + 1, has_more: false };
+
+        // Les nouvelles cartes rejoignent le filtre, le tri et le compteur.
+        if (list.toolbar) {
+          list.toolbar.enrich(added);
+          list.toolbar.apply(false);
+        }
+
+        if (list.pagination.has_more) {
+          btn.disabled = false;
+        } else {
+          btn.remove();
+          list.loadMoreBtn = null;
+        }
+      } catch (err) {
+        btn.disabled = false;
+        appendErrorMessage(t('error_net'));
+      }
     }
 
     // ── Affinage des résultats (CDC §6.6) ──────────────────────────────────
@@ -1147,8 +1285,14 @@
     /**
      * Barre d'outils produits : filtre texte unifié (nom + marque + réf)
      * et tri (pertinence, prix, nom) via <select> natif (ergonomique mobile).
+     *
+     * Renvoie { frag, apply, enrich } : `enrich` indexe de nouvelles entrées
+     * (pages « Voir plus ») et `apply` rejoue filtre + tri + compteur —
+     * `entries` est le tableau PARTAGÉ avec renderProductList, il s'allonge
+     * au fil des pages. `getTotal` fournit le total affiché ({n} / {total}),
+     * celui de la recherche complète quand la liste est paginée.
      */
-    function buildProductsToolbar(entries, cardsEl, containerEl) {
+    function buildProductsToolbar(entries, cardsEl, containerEl, getTotal) {
       const frag = document.createDocumentFragment();
 
       // Sentinelle : détecte quand la barre devient collée (ombre portée)
@@ -1196,13 +1340,16 @@
       containerEl.appendChild(empty);
 
       // Index de recherche unifié : nom + marque + réf (sans accents)
-      entries.forEach(e => {
-        e.haystack = normStr([e.product.name, e.product.brand, e.product.product_ref]
-          .filter(Boolean).join(' '));
-        e.priceNum = typeof e.product.price === 'number'
-          ? e.product.price
-          : parseFloat(e.product.price) || 0;
-      });
+      function enrich(list) {
+        list.forEach(e => {
+          e.haystack = normStr([e.product.name, e.product.brand, e.product.product_ref]
+            .filter(Boolean).join(' '));
+          e.priceNum = typeof e.product.price === 'number'
+            ? e.product.price
+            : parseFloat(e.product.price) || 0;
+        });
+      }
+      enrich(entries);
 
       const collator = new Intl.Collator(CONFIG.locale, { numeric: true, sensitivity: 'base' });
 
@@ -1249,7 +1396,10 @@
           cardsEl.appendChild(e.el); // ré-ordonne
         });
 
-        count.textContent = t('products_count', { n: visible, total: entries.length });
+        count.textContent = t('products_count', {
+          n: visible,
+          total: getTotal ? getTotal() : entries.length,
+        });
         empty.style.display = visible === 0 ? '' : 'none';
 
         if (fromUser) scrollToListTop();
@@ -1259,7 +1409,7 @@
       sort.addEventListener('change', () => apply(true));
       apply(false);
 
-      return frag;
+      return { frag, apply, enrich };
     }
 
     /**
