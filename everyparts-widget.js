@@ -36,6 +36,7 @@
       suggestions:     'Suggestions :',
       close:           'Fermer le chat',
       open:            'Ouvrir l\'assistant EveryParts',
+      new_conversation:'Nouvelle conversation',
       aria_dialog:     'EveryParts – Assistant de recherche',
       aria_conversation: 'Conversation',
       filter_placeholder: 'Filtrer les options…',
@@ -74,6 +75,7 @@
       suggestions:     'Suggestions:',
       close:           'Close chat',
       open:            'Open the EveryParts assistant',
+      new_conversation:'New conversation',
       aria_dialog:     'EveryParts – Search assistant',
       aria_conversation: 'Conversation',
       filter_placeholder: 'Filter options…',
@@ -112,6 +114,7 @@
       suggestions:     'Suggestions:',
       close:           'Close chat',
       open:            'Open the EveryParts assistant',
+      new_conversation:'New conversation',
       aria_dialog:     'EveryParts – Search assistant',
       aria_conversation: 'Conversation',
       filter_placeholder: 'Filter options…',
@@ -330,14 +333,14 @@
       flex-shrink: 0;
     }
     #ep-header-logo { display: flex; align-items: center; gap: 8px; }
-    #ep-close-btn {
+    #ep-header-actions { display: flex; align-items: center; gap: 2px; margin-right: -6px; }
+    .ep-header-btn {
       background: none;
       border: none;
       cursor: pointer;
       color: var(--ep-white);
       opacity: .8;
       padding: 10px;
-      margin: -6px;
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -346,8 +349,8 @@
       min-height: 44px;
       -webkit-tap-highlight-color: transparent;
     }
-    #ep-close-btn:hover { opacity: 1; background: rgba(255,255,255,.1); }
-    #ep-close-btn:focus-visible { outline: 2px solid var(--ep-primary); }
+    .ep-header-btn:hover { opacity: 1; background: rgba(255,255,255,.1); }
+    .ep-header-btn:focus-visible { outline: 2px solid var(--ep-primary); }
 
     /* ── Zone messages ── */
     #ep-messages {
@@ -836,11 +839,77 @@
   // paginable à la fois — le bouton d'une liste précédente est retiré.
   let activeList = null;
 
+  // ── Persistance de session (survit à la navigation) ─────────────────────────
+  // Historique ordonné de la conversation, maintenue à jour au fil
+  // des échanges, et "rejouée" au reload.
+  let transcript = [];
+  // État passé à true pendant le reload de la conversation pour empêcher la journalisation + interactivité
+  // La partie restaurée de la conversation doit rester inerte.
+  let isRestoring = false;
+
   function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
       const r = Math.random() * 16 | 0;
       return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     });
+  }
+
+  // Conversation conservée 30 min après la dernière activité : survit à la
+  // navigation (y compris nouvel onglet, cf. cartes produit en target=_blank),
+  // mais une conversation périmée ne « ressuscite » pas silencieusement.
+  const SESSION_TTL_MS = 30 * 60 * 1000;
+  const STORAGE_KEY = `everyparts-chat:${CONFIG.token}`;
+
+  function storageGet() {
+    try {
+      return window.localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function loadState() {
+    const raw = storageGet();
+    if (!raw) return null;
+    let saved;
+    try {
+      saved = JSON.parse(raw);
+    } catch (e) {
+      clearState();
+      return null;
+    }
+    // Payload d'une autre version, d'un autre token, ou périmé → on repart à neuf.
+    if (!saved || saved.v !== STORAGE_SCHEMA_VERSION || saved.token !== CONFIG.token
+        || !Array.isArray(saved.transcript)
+        || (Date.now() - (saved.lastActive || 0)) > SESSION_TTL_MS) {
+      clearState();
+      return null;
+    }
+    return saved;
+  }
+
+  function saveState() {
+    if (isRestoring) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        v: 1,
+        token: CONFIG.token,
+        sessionId,
+        conversationContext,
+        transcript,
+        lastActive: Date.now(),
+      }));
+    } catch (e) {
+      /* no-op : dégradation en mémoire de page */
+    }
+  }
+
+  function clearState() {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      /* no-op */
+    }
   }
 
   // Seuil au-delà duquel les options passent en liste verticale filtrable
@@ -849,6 +918,10 @@
   const CLARI_FILTER_MIN = 8;
   // Seuil au-delà duquel la barre tri + filtre produits est affichée
   const PRODUCTS_TOOLBAR_MIN = 5;
+  // Version du schema JSON de stockage de l'historique de conversation
+  // Tout changement au sein de ce schéma doit induire une incrémentation de ce numéro de version afin d'invalider
+  // les caches utilisateurs lors du déploiement
+  const STORAGE_SCHEMA_VERSION = 1;
 
   // ── Montage du widget ──────────────────────────────────────────────────────
   function mount() {
@@ -889,12 +962,14 @@
     const inputEl    = win.querySelector('#ep-input');
     const sendBtn    = win.querySelector('#ep-send-btn');
     const closeBtn   = win.querySelector('#ep-close-btn');
+    const resetBtn   = win.querySelector('#ep-reset-btn');
 
     // ── Événements ────────────────────────────────────────────────────────
     let isOpen = false;
 
     fab.addEventListener('click', () => toggleWindow(!isOpen));
     closeBtn.addEventListener('click', () => toggleWindow(false));
+    resetBtn.addEventListener('click', newConversation);
 
     // Fermeture à Échap
     shadow.addEventListener('keydown', e => {
@@ -905,6 +980,11 @@
     inputEl.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
+
+    // Restaure la conversation persistée (navigation, nouvel onglet, retour) :
+    // l'historique est rejoué dans la fenêtre (fermée) ; la conversation restaurée apparaît à
+    // la réouverture. Aucun effet si rien n'est sauvegardé ou si le TTL a expiré.
+    restoreConversation();
 
     function isMobile() {
       return window.matchMedia('(max-width: 640px)').matches;
@@ -923,6 +1003,72 @@
         }
       } else {
         fab.focus();
+      }
+    }
+
+    // Repart de zéro : vide l'affichage et l'état, purge le stockage, ré-affiche
+    // l'accueil. Permet à l'utilisateur de contourner la persistance de sa conversation
+    // s'il souhaite recommencer
+    function newConversation() {
+      transcript = [];
+      conversationContext = { previous_clarifications: [] };
+      lastClarificationField = null;
+      pendingRefinement = null;
+      activeList = null;
+      sessionId = generateUUID();
+      clearState();
+      messagesEl.innerHTML = '';
+      appendAssistantMessage(t('welcome')); // sauvegarde la nouvelle session et démarre la nouvelle journalisation
+      inputEl.focus();
+    }
+
+    // Reload la conversation persistée. Sans effet si aucune sauvegarde,
+    // si token différent, ou si le TTL a expiré (cf. loadState).
+    function restoreConversation() {
+      const saved = loadState();
+      if (!saved || !saved.transcript.length) return;
+
+      sessionId = saved.sessionId || sessionId;
+      conversationContext = saved.conversationContext || { previous_clarifications: [] };
+      transcript = saved.transcript;
+
+      isRestoring = true;
+      try {
+        transcript.forEach(replayEntry);
+      } finally {
+        isRestoring = false;
+      }
+      scrollBottom();
+    }
+
+    // Ré-affiche une entrée de l'historique de conversation dans son état final figé.
+    function replayEntry(entry) {
+      switch (entry.t) {
+        case 'user':
+          appendUserMessage(entry.text);
+          break;
+        case 'assistant':
+          appendAssistantMessage(entry.text);
+          break;
+        case 'products':
+          renderProductList(entry.products || [], entry.pagination || null);
+          // Re-connecte la liste de produits dynamique à son entrée restaurée depuis l'historique
+          // pour que « Voir plus » continue de fonctionner.
+          if (activeList) activeList.logEntry = entry;
+          break;
+        case 'options':
+          appendOptionsGroup(
+            entry.options || [],
+            () => {},
+            typeof entry.selectedIndex === 'number' ? entry.selectedIndex : -1
+          );
+          break;
+        case 'review':
+          renderReviewPrompt(entry.rating != null ? entry.rating : null);
+          break;
+        case 'no_results':
+          appendAssistantMessageEl(buildNoResults(entry.message, entry.suggestions));
+          break;
       }
     }
 
@@ -1033,9 +1179,18 @@
      * Au clic : POST /review { type, rating, session_id } (best-effort),
      * puis affichage du message after_result.
      */
-    function renderReviewPrompt() {
+    function renderReviewPrompt(restoreRating) {
       const THUMB_UP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>`;
       const THUMB_DOWN_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>`;
+
+      const isReplay = restoreRating !== undefined;
+
+      let logEntry = null;
+      if (!isRestoring) {
+        logEntry = { t: 'review', rating: null };
+        transcript.push(logEntry);
+        saveState();
+      }
 
       const content = document.createElement('div');
 
@@ -1058,15 +1213,28 @@
         btn.addEventListener('click', () => {
           btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
           btn.classList.add('ep-selected');
+          if (logEntry) { logEntry.rating = rating; saveState(); }
           sendReview(rating);
           appendAssistantMessage(t('after_result'));
         });
         return btn;
       };
 
-      btns.appendChild(makeBtn('up', t('review_yes'), THUMB_UP_SVG));
-      btns.appendChild(makeBtn('down', t('review_no'), THUMB_DOWN_SVG));
+      const upBtn = makeBtn('up', t('review_yes'), THUMB_UP_SVG);
+      const downBtn = makeBtn('down', t('review_no'), THUMB_DOWN_SVG);
+      btns.appendChild(upBtn);
+      btns.appendChild(downBtn);
       content.appendChild(btns);
+
+      // Reload : historique inerte — notation désactivée / rétablit (si note précédemment donnée).
+      if (isReplay) {
+        upBtn.disabled = true;
+        downBtn.disabled = true;
+        if (restoreRating === 'up') upBtn.classList.add('ep-selected');
+        else if (restoreRating === 'down') downBtn.classList.add('ep-selected');
+        // if user didn't select a rating, we do not disable the buttons so he can still give one.
+        else upBtn.disabled = downBtn.disabled = false;
+      }
 
       appendAssistantMessageEl(content);
     }
@@ -1113,7 +1281,17 @@
       }));
       entries.forEach(e => cards.appendChild(e.el));
 
-      activeList = { entries, cardsEl: cards, containerEl: container, pagination, toolbar: null, loadMoreBtn: null };
+      activeList = { entries, cardsEl: cards, containerEl: container, pagination, toolbar: null, loadMoreBtn: null, logEntry: null };
+
+      // Historique : la liste de produits accumulés + pointeur courant sont persistés
+      // pour être rechargés à la restauration. La même référence est conservée sur
+      // activeList afin que « Voir plus » l'enrichisse (cf. fetchNextPage).
+      if (!isRestoring) {
+        const logEntry = { t: 'products', products: products.slice(), pagination };
+        transcript.push(logEntry);
+        activeList.logEntry = logEntry;
+        saveState();
+      }
 
       // Barre tri + filtre unifié au-delà du seuil — décidé sur le TOTAL de
       // la recherche : la première page seule ne dépasse jamais le seuil.
@@ -1201,6 +1379,14 @@
 
         list.pagination = data.pagination
           || { ...list.pagination, page: list.pagination.page + 1, has_more: false };
+
+        // Historique : on garde à jour l'entrée persistée dans l'historique pour que la
+        // restauration reparte du même contexte de pagination.
+        if (list.logEntry) {
+          list.logEntry.products.push(...added.map(e => e.product));
+          list.logEntry.pagination = list.pagination;
+          saveState();
+        }
 
         // Les nouvelles cartes rejoignent le filtre, le tri et le compteur.
         if (list.toolbar) {
@@ -1485,9 +1671,25 @@
      * options : [{ label, value }] ; au clic le groupe est gelé puis
      * onSelect(value, label) est appelé. Retourne { freeze } pour geler le
      * groupe de l'extérieur (réponse saisie au clavier pendant un affinage).
+     *
+     * restoreSelectedIndex : lors du reload, fige le groupe sur l'option choisie
+     * (index dans `options`, ou -1 si la question n'avait pas reçu de réponse).
      */
-    function appendOptionsGroup(options, onSelect) {
+    function appendOptionsGroup(options, onSelect, restoreSelectedIndex) {
       if (options.length === 0) return null;
+
+      // Historique : le groupe d'options est persisté ; `selectedIndex` est renseigné
+      // au clic pour rejouer la sélection figée à la restauration.
+      let logEntry = null;
+      if (!isRestoring) {
+        logEntry = {
+          t: 'options',
+          options: options.map(o => ({ label: o.label, value: o.value })),
+          selectedIndex: -1,
+        };
+        transcript.push(logEntry);
+        saveState();
+      }
 
       const isList = options.length > CLARI_CHIPS_MAX;
       const hasFilter = options.length >= CLARI_FILTER_MIN;
@@ -1533,7 +1735,7 @@
         if (countEl) countEl.remove();
       }
 
-      const buttons = options.map(option => {
+      const buttons = options.map((option, i) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ep-clari-btn';
@@ -1541,6 +1743,7 @@
         btn.addEventListener('click', () => {
           if (isLoading || frozen) return;
           freeze(btn);
+          if (logEntry) { logEntry.selectedIndex = i; saveState(); }
           onSelect(option.value, option.label);
         });
         opts.appendChild(btn);
@@ -1574,29 +1777,44 @@
       messagesEl.appendChild(wrapper);
       scrollBottom();
 
+      if (typeof restoreSelectedIndex === 'number') {
+        freeze(restoreSelectedIndex >= 0 ? buttons[restoreSelectedIndex] : null);
+      }
+
       return { freeze: () => freeze(null) };
     }
 
-    function renderNoResults(data) {
+    // Construit la bulle « aucun résultat » (message + suggestions éventuelles).
+    function buildNoResults(message, suggestions) {
       const container = document.createElement('div');
 
       const msgDiv = document.createElement('div');
-      msgDiv.textContent = data.message;
+      msgDiv.textContent = message;
+      container.appendChild(msgDiv);
 
-      if (data.suggestions?.length > 0) {
+      if (suggestions && suggestions.length > 0) {
         const sugg = document.createElement('div');
         sugg.className = 'ep-suggestions';
         sugg.innerHTML = `<p>${escHtml(t('suggestions'))}</p><ul>${
-          data.suggestions.map(s => `<li>${escHtml(s)}</li>`).join('')
+          suggestions.map(s => `<li>${escHtml(s)}</li>`).join('')
         }</ul>`;
-        container.appendChild(msgDiv);
         container.appendChild(sugg);
-        appendAssistantMessageEl(container);
-      } else {
-        appendAssistantMessage(data.message);
       }
+      return container;
+    }
 
-      conversationContext = { previous_clarifications: [] };
+    function renderNoResults(data) {
+      appendAssistantMessageEl(buildNoResults(data.message, data.suggestions));
+
+      if (!isRestoring) {
+        transcript.push({
+          t: 'no_results',
+          message: data.message,
+          suggestions: data.suggestions || [],
+        });
+        conversationContext = { previous_clarifications: [] };
+        saveState();
+      }
     }
 
     // ── Helpers DOM ────────────────────────────────────────────────────────
@@ -1609,6 +1827,7 @@
       div.appendChild(bubble);
       messagesEl.appendChild(div);
       scrollBottom();
+      if (!isRestoring) { transcript.push({ t: 'user', text }); saveState(); }
     }
 
     function appendAssistantMessage(text) {
@@ -1620,6 +1839,7 @@
       div.appendChild(bubble);
       messagesEl.appendChild(div);
       scrollBottom();
+      if (!isRestoring) { transcript.push({ t: 'assistant', text }); saveState(); }
     }
 
     function appendAssistantMessageEl(el) {
@@ -1663,11 +1883,20 @@
         <div id="ep-header-logo">
           ${LOGO_SVG}
         </div>
-        <button id="ep-close-btn" aria-label="${t('close')}" title="${t('close')}">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M1 1L17 17M1 17L17 1" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
-          </svg>
-        </button>
+        <div id="ep-header-actions">
+          <button id="ep-reset-btn" class="ep-header-btn" aria-label="${t('new_conversation')}" title="${t('new_conversation')}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              <circle cx="18" cy="18" r="6.5" fill="var(--ep-primary)"></circle>
+              <path d="M18 15.5v5M15.5 18h5" stroke="var(--ep-dark)" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+          </button>
+          <button id="ep-close-btn" class="ep-header-btn" aria-label="${t('close')}" title="${t('close')}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M1 1L17 17M1 17L17 1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div id="ep-messages" role="log" aria-live="polite" aria-label="${t('aria_conversation')}"></div>
       <div id="ep-typing" aria-live="polite" aria-label="${t('typing')}">
