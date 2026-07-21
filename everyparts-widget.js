@@ -1034,15 +1034,21 @@
 
       isRestoring = true;
       try {
-        transcript.forEach(replayEntry);
+        const lastIndex = transcript.length - 1;
+        transcript.forEach((entry, i) => replayEntry(entry, i === lastIndex));
       } finally {
         isRestoring = false;
       }
       scrollBottom();
     }
 
-    // Ré-affiche une entrée de l'historique de conversation dans son état final figé.
-    function replayEntry(entry) {
+    // Ré-affiche une entrée de l'historique de conversation. Figée dans son état
+    // final (boutons désactivés), SAUF si c'est le tout DERNIER message ET qu'il
+    // est resté sans réponse (aucune option choisie / aucun avis donné) : dans ce
+    // cas seulement, l'interactivité est restaurée pour que l'utilisateur puisse
+    // répondre — geler une question à laquelle il n'a jamais répondu n'aurait pas
+    // de sens et le bloquerait sans raison.
+    function replayEntry(entry, isLast) {
       switch (entry.t) {
         case 'user':
           appendUserMessage(entry.text);
@@ -1056,19 +1062,60 @@
           // pour que « Voir plus » continue de fonctionner.
           if (activeList) activeList.logEntry = entry;
           break;
-        case 'options':
-          appendOptionsGroup(
-            entry.options || [],
-            () => {},
-            typeof entry.selectedIndex === 'number' ? entry.selectedIndex : -1
-          );
+        case 'options': {
+          const answered = typeof entry.selectedIndex === 'number' && entry.selectedIndex >= 0;
+          if (isLast && !answered) {
+            resumeOptionsLive(entry);
+          } else {
+            appendOptionsGroup(entry.options || [], () => {}, {
+              restoreSelectedIndex: answered ? entry.selectedIndex : -1,
+            });
+          }
           break;
-        case 'review':
-          renderReviewPrompt(entry.rating != null ? entry.rating : null);
+        }
+        case 'review': {
+          const answered = entry.rating != null;
+          if (isLast && !answered) {
+            renderReviewPrompt(undefined, entry);
+          } else {
+            renderReviewPrompt(answered ? entry.rating : null);
+          }
           break;
+        }
         case 'no_results':
           appendAssistantMessageEl(buildNoResults(entry.message, entry.suggestions));
           break;
+      }
+    }
+
+    // Reconnecte un groupe d'options resté sans réponse à son comportement réel
+    // (clarification ou question d'affinage), en réutilisant l'entrée déjà
+    // persistée plutôt que d'en journaliser une nouvelle.
+    function resumeOptionsLive(entry) {
+      if (entry.kind === 'refinement' && entry.refinementSnapshot) {
+        const snap = entry.refinementSnapshot;
+        pendingRefinement = {
+          data: snap.data,
+          questions: snap.data.refinement.questions,
+          answers: snap.answers.slice(),
+          freezeCurrent: null,
+        };
+        const p = pendingRefinement;
+        const group = appendOptionsGroup(entry.options || [], (value, label) => {
+          appendUserMessage(label);
+          recordRefinementAnswer(value);
+        }, { reuseEntry: entry });
+        p.freezeCurrent = group ? group.freeze : null;
+      } else {
+        lastClarificationField = entry.field != null ? entry.field : lastClarificationField;
+        appendOptionsGroup(entry.options || [], value => {
+          conversationContext.previous_clarifications.push({
+            field:  lastClarificationField,
+            answer: value,
+          });
+          appendUserMessage(value);
+          callSearch(value);
+        }, { reuseEntry: entry });
       }
     }
 
@@ -1179,14 +1226,17 @@
      * Au clic : POST /review { type, rating, session_id } (best-effort),
      * puis affichage du message after_result.
      */
-    function renderReviewPrompt(restoreRating) {
+    // restoreRating : passé (non-undefined) lors d'un rejeu figé — 'up'/'down'/null.
+    // reuseEntry : entrée déjà persistée à réutiliser (rejeu live du DERNIER
+    // message resté sans avis) plutôt que d'en journaliser une nouvelle.
+    function renderReviewPrompt(restoreRating, reuseEntry) {
       const THUMB_UP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>`;
       const THUMB_DOWN_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>`;
 
       const isReplay = restoreRating !== undefined;
 
-      let logEntry = null;
-      if (!isRestoring) {
+      let logEntry = reuseEntry || null;
+      if (!logEntry && !isRestoring) {
         logEntry = { t: 'review', rating: null };
         transcript.push(logEntry);
         saveState();
@@ -1226,14 +1276,15 @@
       btns.appendChild(downBtn);
       content.appendChild(btns);
 
-      // Reload : historique inerte — notation désactivée / rétablit (si note précédemment donnée).
+      // Rejeu figé (toujours avec une note déjà donnée — un rejeu resté sans avis
+      // n'arrive ici que s'il n'est PAS le dernier message ; cf. replayEntry) :
+      // désactivé, avis passé marqué. Le cas "dernier message sans avis" passe
+      // par reuseEntry ci-dessus et reste pleinement interactif.
       if (isReplay) {
         upBtn.disabled = true;
         downBtn.disabled = true;
         if (restoreRating === 'up') upBtn.classList.add('ep-selected');
         else if (restoreRating === 'down') downBtn.classList.add('ep-selected');
-        // if user didn't select a rating, we do not disable the buttons so he can still give one.
-        else upBtn.disabled = downBtn.disabled = false;
       }
 
       appendAssistantMessageEl(content);
@@ -1432,10 +1483,17 @@
       const options = (question.options || []).map(o => ({ label: o, value: o }));
       options.push({ label: t('refine_dont_know'), value: null });
 
+      // Snapshot persisté : permet de reconstruire pendingRefinement si cette
+      // question reste sans réponse et doit être restaurée live (cf. resumeOptionsLive).
+      const logExtra = {
+        kind: 'refinement',
+        refinementSnapshot: { data: p.data, answers: p.answers.slice() },
+      };
+
       const group = appendOptionsGroup(options, (value, label) => {
         appendUserMessage(label);
         recordRefinementAnswer(value);
-      });
+      }, { logExtra });
       p.freezeCurrent = group ? group.freeze : null;
     }
 
@@ -1660,7 +1718,7 @@
         // Re-soumettre comme si l'utilisateur avait tapé l'option
         appendUserMessage(value);
         callSearch(value);
-      });
+      }, { logExtra: { kind: 'clarification', field: lastClarificationField } });
     }
 
     /**
@@ -1672,20 +1730,28 @@
      * onSelect(value, label) est appelé. Retourne { freeze } pour geler le
      * groupe de l'extérieur (réponse saisie au clavier pendant un affinage).
      *
-     * restoreSelectedIndex : lors du reload, fige le groupe sur l'option choisie
-     * (index dans `options`, ou -1 si la question n'avait pas reçu de réponse).
+     * config.restoreSelectedIndex : lors du reload, fige le groupe sur l'option
+     * choisie (index dans `options`, ou -1 si la question n'avait pas reçu de
+     * réponse). Omis (undefined) → le groupe reste pleinement interactif.
+     * config.reuseEntry : entrée déjà persistée à réutiliser (rejeu live du
+     * DERNIER message resté sans réponse) plutôt que d'en journaliser une nouvelle.
+     * config.logExtra : champs additionnels fusionnés dans l'entrée créée (kind,
+     * field, refinementSnapshot…) pour permettre sa reconnexion lors d'un reload.
      */
-    function appendOptionsGroup(options, onSelect, restoreSelectedIndex) {
+    function appendOptionsGroup(options, onSelect, config) {
       if (options.length === 0) return null;
+      config = config || {};
+      const restoreSelectedIndex = config.restoreSelectedIndex;
 
       // Historique : le groupe d'options est persisté ; `selectedIndex` est renseigné
       // au clic pour rejouer la sélection figée à la restauration.
-      let logEntry = null;
-      if (!isRestoring) {
+      let logEntry = config.reuseEntry || null;
+      if (!logEntry && !isRestoring) {
         logEntry = {
           t: 'options',
           options: options.map(o => ({ label: o.label, value: o.value })),
           selectedIndex: -1,
+          ...(config.logExtra || {}),
         };
         transcript.push(logEntry);
         saveState();
