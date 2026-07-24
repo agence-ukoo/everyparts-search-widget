@@ -990,23 +990,57 @@
       return window.matchMedia('(max-width: 640px)').matches;
     }
 
-    // ── Ancrage clavier mobile (visualViewport) ──────────────────────────────
+    // ── Plein écran mobile : gel de la page + ancrage clavier (visualViewport) ──
     const vv = window.visualViewport;
+    let scrollLocked = false;
+    let savedScrollY = 0;
+
+    function lockPageScroll() {
+      if (scrollLocked) return;
+      scrollLocked = true;
+      savedScrollY = window.scrollY || window.pageYOffset || 0;
+      const b = document.body.style;
+      b.position = 'fixed';
+      b.top = `-${savedScrollY}px`;
+      b.left = '0';
+      b.right = '0';
+      b.width = '100%';
+    }
+
+    function unlockPageScroll() {
+      if (!scrollLocked) return;
+      scrollLocked = false;
+      const b = document.body.style;
+      b.position = '';
+      b.top = '';
+      b.left = '';
+      b.right = '';
+      b.width = '';
+      window.scrollTo(0, savedScrollY);
+    }
+
     function syncViewport() {
-      if (isMobile() && isOpen) {
-        win.style.height = vv.height + 'px';
-        win.style.top = vv.offsetTop + 'px';
-        win.style.bottom = 'auto';
+      if (isOpen && isMobile()) {
+        lockPageScroll();
+        if (vv) {
+          win.style.height = vv.height + 'px';
+          win.style.top = vv.offsetTop + 'px';
+          win.style.bottom = 'auto';
+        }
       } else {
+        unlockPageScroll();
         win.style.height = '';
         win.style.top = '';
         win.style.bottom = '';
       }
     }
+
     if (vv) {
       vv.addEventListener('resize', syncViewport);
       vv.addEventListener('scroll', syncViewport);
     }
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
 
     function toggleWindow(open) {
       isOpen = open;
@@ -1015,14 +1049,15 @@
       fab.setAttribute('aria-label', open ? t('close') : t('open'));
       fab.title = open ? t('close') : t('open');
       if (open) {
+        syncViewport();       // gèle la page avant le focus (évite un saut au clavier)
         inputEl.focus();
         if (messagesEl.children.length === 0) {
           appendAssistantMessage(t('welcome'));
         }
       } else {
+        syncViewport();       // dégèle et restaure la position de défilement
         fab.focus();
       }
-      if (vv) syncViewport();
     }
 
     // Repart de zéro : vide l'affichage et l'état, purge le stockage, ré-affiche
