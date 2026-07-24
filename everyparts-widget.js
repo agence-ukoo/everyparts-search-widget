@@ -990,6 +990,24 @@
       return window.matchMedia('(max-width: 640px)').matches;
     }
 
+    // ── Ancrage clavier mobile (visualViewport) ──────────────────────────────
+    const vv = window.visualViewport;
+    function syncViewport() {
+      if (isMobile() && isOpen) {
+        win.style.height = vv.height + 'px';
+        win.style.top = vv.offsetTop + 'px';
+        win.style.bottom = 'auto';
+      } else {
+        win.style.height = '';
+        win.style.top = '';
+        win.style.bottom = '';
+      }
+    }
+    if (vv) {
+      vv.addEventListener('resize', syncViewport);
+      vv.addEventListener('scroll', syncViewport);
+    }
+
     function toggleWindow(open) {
       isOpen = open;
       win.classList.toggle('ep-hidden', !open);
@@ -1004,6 +1022,7 @@
       } else {
         fab.focus();
       }
+      if (vv) syncViewport();
     }
 
     // Repart de zéro : vide l'affichage et l'état, purge le stockage, ré-affiche
