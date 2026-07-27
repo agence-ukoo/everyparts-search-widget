@@ -892,7 +892,7 @@
     if (isRestoring) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        v: 1,
+        v: STORAGE_SCHEMA_VERSION,
         token: CONFIG.token,
         sessionId,
         conversationContext,
@@ -921,7 +921,7 @@
   // Version du schema JSON de stockage de l'historique de conversation
   // Tout changement au sein de ce schéma doit induire une incrémentation de ce numéro de version afin d'invalider
   // les caches utilisateurs lors du déploiement
-  const STORAGE_SCHEMA_VERSION = 1;
+  const STORAGE_SCHEMA_VERSION = 2;
 
   // ── Montage du widget ──────────────────────────────────────────────────────
   function mount() {
@@ -1076,6 +1076,22 @@
       inputEl.focus();
     }
 
+    // Démarre une nouvelle session logique SANS effacer la conversation visible ni
+    // l'historique. Appelé après l'after_result (cf. renderResults).
+    // conversationContext (previous_clarifications) est CONSERVÉ : la nouvelle session
+    // hérite de l'identification moto établie, l'utilisateur peut demander un autre
+    // type de pièce sans repréciser le modèle. Pour tout effacer, il y a le bouton
+    // « Nouvelle conversation » (newConversation). Les avis et listes paginées déjà
+    // affichés gardent l'ancien session_id qu'ils ont capturé, donc restent rattachés
+    // à la recherche qui les a produits. activeList n'est PAS remis à zéro pour que
+    // « Voir plus » de la liste courante reste fonctionnel jusqu'à la prochaine recherche.
+    function startNewSession() {
+      sessionId = generateUUID();
+      lastClarificationField = null;
+      pendingRefinement = null;
+      saveState();
+    }
+
     // Reload la conversation persistée. Sans effet si aucune sauvegarde,
     // si token différent, ou si le TTL a expiré (cf. loadState).
     function restoreConversation() {
@@ -1113,8 +1129,11 @@
         case 'products':
           renderProductList(entry.products || [], entry.pagination || null);
           // Re-connecte la liste de produits dynamique à son entrée restaurée depuis l'historique
-          // pour que « Voir plus » continue de fonctionner.
-          if (activeList) activeList.logEntry = entry;
+          // pour que « Voir plus » continue de fonctionner, avec le session_id d'origine.
+          if (activeList) {
+            activeList.logEntry = entry;
+            if (entry.sessionId) activeList.sessionId = entry.sessionId;
+          }
           break;
         case 'options': {
           const answered = typeof entry.selectedIndex === 'number' && entry.selectedIndex >= 0;
@@ -1128,11 +1147,16 @@
           break;
         }
         case 'review': {
+          // Les avis NON donnés restent live quelle que soit leur position (pas
+          // seulement le dernier message) : l'utilisateur peut remonter le fil et
+          // noter une recherche précédente à tout moment. Chaque entrée a capturé
+          // son propre session_id, donc l'avis reste rattaché à la bonne recherche.
+          // Un avis déjà donné est restauré figé (désactivé, choix marqué).
           const answered = entry.rating != null;
-          if (isLast && !answered) {
+          if (!answered) {
             renderReviewPrompt(undefined, entry);
           } else {
-            renderReviewPrompt(answered ? entry.rating : null);
+            renderReviewPrompt(entry.rating);
           }
           break;
         }
@@ -1262,17 +1286,25 @@
         renderProductList(products, data.pagination || null);
       }
 
-      // Reset clarification context après résultats
-      conversationContext = { previous_clarifications: [] };
-      lastClarificationField = null;
+      // Le contexte de clarification (previous_clarifications) N'EST PAS réinitialisé
+      // ici : il est transmis à la session suivante (cf. startNewSession) afin que
+      // l'utilisateur puisse enchaîner sur un autre type de pièce sans repréciser sa
+      // moto. Seul le bouton « Nouvelle conversation » (newConversation) l'efface.
 
       // Avis de satisfaction AVANT le message after_result :
-      // le vote (pouce haut/bas) envoie POST /review puis affiche after_result.
+      // le vote (pouce haut/bas) envoie POST /review.
       if (products.length > 0) {
         renderReviewPrompt();
-      } else {
-        appendAssistantMessage(t('after_result'));
       }
+
+      appendAssistantMessage(t('after_result'));
+
+      // Nouvelle session logique dès l'after_result : la recherche suivante démarre
+      // sur un nouvel identifiant MAIS hérite du contexte (moto identifiée). L'avis
+      // (renderReviewPrompt ci-dessus) et la liste paginée ont capturé l'ANCIENNE
+      // session, donc restent rattachés à la recherche qui vient d'aboutir. La
+      // conversation visible et l'historique, eux, persistent.
+      if (!isRestoring) startNewSession();
     }
 
     /**
@@ -1281,8 +1313,8 @@
      * puis affichage du message after_result.
      */
     // restoreRating : passé (non-undefined) lors d'un rejeu figé — 'up'/'down'/null.
-    // reuseEntry : entrée déjà persistée à réutiliser (rejeu live du DERNIER
-    // message resté sans avis) plutôt que d'en journaliser une nouvelle.
+    // reuseEntry : entrée déjà persistée à réutiliser (rejeu live d'un avis resté
+    // sans réponse, où qu'il soit dans le fil) plutôt que d'en journaliser une neuve.
     function renderReviewPrompt(restoreRating, reuseEntry) {
       const THUMB_UP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>`;
       const THUMB_DOWN_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>`;
@@ -1291,10 +1323,15 @@
 
       let logEntry = reuseEntry || null;
       if (!logEntry && !isRestoring) {
-        logEntry = { t: 'review', rating: null };
+        logEntry = { t: 'review', rating: null, sessionId };
         transcript.push(logEntry);
         saveState();
       }
+      // Session à laquelle rattacher l'avis : celle qui a produit les résultats,
+      // capturée à la création de l'entrée — PAS la session courante (une nouvelle
+      // a pu démarrer entre-temps, cf. startNewSession). Fallback sur la session
+      // courante pour les historiques persistés avant l'ajout du champ.
+      const reviewSessionId = (logEntry && logEntry.sessionId) || sessionId;
 
       const content = document.createElement('div');
 
@@ -1318,8 +1355,7 @@
           btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
           btn.classList.add('ep-selected');
           if (logEntry) { logEntry.rating = rating; saveState(); }
-          sendReview(rating);
-          appendAssistantMessage(t('after_result'));
+          sendReview(rating, reviewSessionId);
         });
         return btn;
       };
@@ -1344,8 +1380,10 @@
       appendAssistantMessageEl(content);
     }
 
-    // Envoi de l'avis — silencieux en cas d'échec (ne bloque pas l'UX)
-    async function sendReview(rating) {
+    // Envoi de l'avis — silencieux en cas d'échec (ne bloque pas l'UX).
+    // reviewSessionId : session de la recherche notée (cf. renderReviewPrompt),
+    // pas forcément la session courante.
+    async function sendReview(rating, reviewSessionId) {
       try {
         await fetch(`${CONFIG.apiBase}/review`, {
           method:  'POST',
@@ -1356,7 +1394,7 @@
           body: JSON.stringify({
             type:       'review',
             rating,
-            session_id: sessionId,
+            session_id: reviewSessionId || sessionId,
           }),
         });
       } catch (err) {
@@ -1386,13 +1424,17 @@
       }));
       entries.forEach(e => cards.appendChild(e.el));
 
-      activeList = { entries, cardsEl: cards, containerEl: container, pagination, toolbar: null, loadMoreBtn: null, logEntry: null };
+      // sessionId capturé ICI : la pagination (« Voir plus ») est mémorisée
+      // côté serveur par session_id. Comme une nouvelle session démarre après
+      // chaque résultat (cf. startNewSession), fetchNextPage doit réutiliser la
+      // session qui a produit la liste, pas la session courante.
+      activeList = { entries, cardsEl: cards, containerEl: container, pagination, sessionId, toolbar: null, loadMoreBtn: null, logEntry: null };
 
       // Historique : la liste de produits accumulés + pointeur courant sont persistés
       // pour être rechargés à la restauration. La même référence est conservée sur
       // activeList afin que « Voir plus » l'enrichisse (cf. fetchNextPage).
       if (!isRestoring) {
-        const logEntry = { t: 'products', products: products.slice(), pagination };
+        const logEntry = { t: 'products', products: products.slice(), pagination, sessionId };
         transcript.push(logEntry);
         activeList.logEntry = logEntry;
         saveState();
@@ -1449,7 +1491,7 @@
             'Authorization': `Bearer ${CONFIG.token}`,
           },
           body: JSON.stringify({
-            session_id: sessionId,
+            session_id: list.sessionId || sessionId,
             pagination: { page: list.pagination.page + 1 },
           }),
         });
