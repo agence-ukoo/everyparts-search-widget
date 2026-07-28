@@ -9,6 +9,9 @@
  *   data-locale="fr-FR"
  *   data-position="bottom-right"
  *   data-api="https://everyparts-api-hub.jcloud.ik-server.com/api/v1"
+ *   data-logo="https://boutique.example/logo.svg"   (optionnel — remplace le logo EveryParts dans l'en-tête)
+ *   data-title="Ma Boutique"                          (optionnel — titre affiché dans l'en-tête)
+ *   data-subtitle="Pièces & accessoires"              (optionnel — sous-titre sous le titre, plus petit)
  *   defer></script>
  */
 (function () {
@@ -185,6 +188,10 @@
     locale:   resolveLocale(SCRIPT_EL?.getAttribute('data-locale') || SCRIPT_EL?.getAttribute('data-lang')),
     position: SCRIPT_EL?.getAttribute('data-position') || 'bottom-right',
     apiBase:  SCRIPT_EL?.getAttribute('data-api') || 'http://localhost:8000/api/v1',
+    // Personnalisation de l'en-tête (branding boutique). Vides = logo EveryParts par défaut.
+    logo:     SCRIPT_EL?.getAttribute('data-logo')  || '',
+    title:    SCRIPT_EL?.getAttribute('data-title') || '',
+    subtitle: SCRIPT_EL?.getAttribute('data-subtitle') || '',
   };
 
   function t(key, vars = {}) {
@@ -244,7 +251,8 @@
   const BETA_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 24" width="34" height="24" role="img" aria-label="Beta"
     style="
       position: relative;
-      top: -5px;
+      top: 1px;
+      margin-left: 7px;
     ">
     <defs>
       <linearGradient data-dc-tpl="38" id="gg" x1="0" y1="0" x2="44" y2="0" gradientUnits="userSpaceOnUse">
@@ -257,6 +265,42 @@
     <text data-dc-tpl="90" x="0" y="14" font-family="'Space Grotesk', system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="1.7" fill="#E7E7F5">BETA</text>
     <rect data-dc-tpl="91" x="0" y="18.5" width="42" height="2.4" rx="1.2" fill="url(#gg)"></rect>
   </svg>`;
+
+  /**
+   * Contenu brandé de l'en-tête. Dès que `data-logo` (URL d'image),
+   * `data-title` ou `data-subtitle` (textes) est fourni, le branding boutique
+   * REMPLACE le logo EveryParts par défaut (l'attribution EveryParts reste dans
+   * le footer « Propulsé par »). Sans aucun des trois, on affiche le logo EveryParts.
+   * `data-logo` → image ; `data-title`/`data-subtitle` → bloc texte empilé
+   * (sous-titre sous le titre, plus petit et plus léger).
+   * Le badge BETA est toujours ajouté ensuite.
+   */
+  function headerBrandHtml() {
+    const parts = [];
+    if (!CONFIG.logo && !CONFIG.title && !CONFIG.subtitle) {
+      parts.push(LOGO_SVG);
+      parts.push(BETA_SVG);
+    } else {
+      if (CONFIG.logo) {
+        const alt = escHtml(CONFIG.title || 'EveryParts');
+        parts.push(`<img id="ep-header-logo-img" src="${escHtml(CONFIG.logo)}" alt="${alt}">`);
+      }
+      if (CONFIG.title || CONFIG.subtitle) {
+        const text = [];
+        if (CONFIG.title) {
+          text.push(`<span id="ep-header-title">${escHtml(CONFIG.title)}${BETA_SVG}</span>`);
+        }
+        if (CONFIG.subtitle) {
+          text.push(`<span id="ep-header-subtitle">${escHtml(CONFIG.subtitle)}</span>`);
+        }
+        parts.push(`<div id="ep-header-text">${text.join('')}</div>`);
+      }
+      if (!CONFIG.title) {
+        parts.push(BETA_SVG);
+      }
+    }
+    return parts.join('\n');
+  }
 
   // ── CSS du Shadow DOM (mobile-first : plein écran < 641px) ─────────────────
   const STYLES = `
@@ -351,6 +395,29 @@
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+    }
+    #ep-header-logo { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    #ep-header-logo-img { height: 28px; width: auto; max-width: 150px; display: block; object-fit: contain; }
+    #ep-header-text { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+    #ep-header-title {
+      font-family: var(--ep-font-title);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ep-white);
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #ep-header-subtitle {
+      font-family: var(--ep-font-body);
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, .72);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     #ep-header-actions { display: flex; align-items: center; gap: 2px; margin-right: -6px; }
     .ep-header-btn {
@@ -2084,8 +2151,7 @@
     return `
       <div id="ep-header">
         <div id="ep-header-logo">
-          ${LOGO_SVG}
-          ${BETA_SVG}
+          ${headerBrandHtml()}
         </div>
         <div id="ep-header-actions">
           <button id="ep-reset-btn" class="ep-header-btn" aria-label="${t('new_conversation')}" title="${t('new_conversation')}">
