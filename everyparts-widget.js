@@ -37,6 +37,7 @@
       close:           'Fermer le chat',
       open:            'Ouvrir l\'assistant EveryParts',
       new_conversation:'Nouvelle conversation',
+      powered_by:      'Propulsé par',
       aria_dialog:     'EveryParts – Assistant de recherche',
       aria_conversation: 'Conversation',
       filter_placeholder: 'Filtrer les options…',
@@ -76,6 +77,7 @@
       close:           'Close chat',
       open:            'Open the EveryParts assistant',
       new_conversation:'New conversation',
+      powered_by:      'Powered by',
       aria_dialog:     'EveryParts – Search assistant',
       aria_conversation: 'Conversation',
       filter_placeholder: 'Filter options…',
@@ -115,6 +117,7 @@
       close:           'Close chat',
       open:            'Open the EveryParts assistant',
       new_conversation:'New conversation',
+      powered_by:      'Powered by',
       aria_dialog:     'EveryParts – Search assistant',
       aria_conversation: 'Conversation',
       filter_placeholder: 'Filter options…',
@@ -760,13 +763,35 @@
 
     /* ── Zone de saisie ── */
     #ep-input-area {
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+      padding: 10px 12px;
       background: var(--ep-white);
       border-top: 1px solid var(--ep-grey-200);
       display: flex;
       gap: 8px;
       flex-shrink: 0;
       align-items: center;
+    }
+    #ep-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 5px 12px calc(5px + env(safe-area-inset-bottom, 0px));
+      background: var(--ep-primary);
+      flex-shrink: 0;
+    }
+    #ep-footer-text {
+      font-family: var(--ep-font-title);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .3px;
+      color: var(--ep-white);
+      line-height: 1;
+    }
+    #ep-footer svg {
+      display: block;
+      width: 78px;
+      height: auto;
     }
     #ep-input {
       flex: 1;
@@ -2101,6 +2126,10 @@
             <path d="M16 2L1 9L7 11M16 2L9 17L11 11M16 2L7 11M7 11L11 11" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
+      </div>
+      <div id="ep-footer">
+        <span id="ep-footer-text">${t('powered_by')}</span>
+        ${LOGO_SVG}
       </div>
     `;
   }
