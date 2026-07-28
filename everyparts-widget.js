@@ -238,6 +238,23 @@
     </g>
   </svg>`;
 
+  const BETA_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 24" width="34" height="24" role="img" aria-label="Beta"
+    style="
+      position: relative;
+      top: -5px;
+    ">
+    <defs>
+      <linearGradient data-dc-tpl="38" id="gg" x1="0" y1="0" x2="44" y2="0" gradientUnits="userSpaceOnUse">
+        <stop data-dc-tpl="39" offset="0" stop-color="#6366F1"></stop>
+        <stop data-dc-tpl="40" offset="0.5" stop-color="#E879F9"></stop>
+        <stop data-dc-tpl="41" offset="1" stop-color="#22D3EE"></stop>
+        <animateTransform data-dc-tpl="42" attributeName="gradientTransform" type="translate" values="-44 0;44 0;-44 0" dur="6s" repeatCount="indefinite"></animateTransform>
+      </linearGradient>
+    </defs>
+    <text data-dc-tpl="90" x="0" y="14" font-family="'Space Grotesk', system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="1.7" fill="#E7E7F5">BETA</text>
+    <rect data-dc-tpl="91" x="0" y="18.5" width="42" height="2.4" rx="1.2" fill="url(#gg)"></rect>
+  </svg>`;
+
   // ── CSS du Shadow DOM (mobile-first : plein écran < 641px) ─────────────────
   const STYLES = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@800&display=swap');
@@ -332,7 +349,6 @@
       justify-content: space-between;
       flex-shrink: 0;
     }
-    #ep-header-logo { display: flex; align-items: center; gap: 8px; }
     #ep-header-actions { display: flex; align-items: center; gap: 2px; margin-right: -6px; }
     .ep-header-btn {
       background: none;
@@ -2044,6 +2060,7 @@
       <div id="ep-header">
         <div id="ep-header-logo">
           ${LOGO_SVG}
+          ${BETA_SVG}
         </div>
         <div id="ep-header-actions">
           <button id="ep-reset-btn" class="ep-header-btn" aria-label="${t('new_conversation')}" title="${t('new_conversation')}">
