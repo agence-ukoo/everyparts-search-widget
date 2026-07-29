@@ -1774,19 +1774,36 @@
       inputEl.focus();
     }
 
+    // Encode le véhicule identifié en liste de clarifications {field, answer} que le
+    // serveur peut rejouer pour reconstruire le contexte moto (marque / modèle / année).
+    function buildVehicleClarifications(v) {
+      const c = [];
+      if (!v) return c;
+      if (v.manufacturer) c.push({ field: 'manufacturer', answer: v.manufacturer });
+      if (v.model)        c.push({ field: 'model',        answer: v.model });
+      if (v.year)         c.push({ field: 'year',         answer: v.year });
+      return c;
+    }
+
     // Démarre une nouvelle session logique SANS effacer la conversation visible ni
     // l'historique. Appelé après l'after_result (cf. renderResults).
-    // conversationContext (previous_clarifications) est CONSERVÉ : la nouvelle session
-    // hérite de l'identification moto établie, l'utilisateur peut demander un autre
-    // type de pièce sans repréciser le modèle. Pour tout effacer, il y a le bouton
-    // « Nouvelle conversation » (newConversation). Les avis et listes paginées déjà
-    // affichés gardent l'ancien session_id qu'ils ont capturé, donc restent rattachés
-    // à la recherche qui les a produits. activeList n'est PAS remis à zéro pour que
-    // « Voir plus » de la liste courante reste fonctionnel jusqu'à la prochaine recherche.
+    // Le serveur tient l'état conversationnel par session_id (CDC §8) : le nouveau
+    // session_id ne connaît donc PAS encore le véhicule. On (re)construit
+    // `previous_clarifications` depuis le véhicule identifié pour que la nouvelle
+    // session en hérite au prochain /search — y compris quand l'identification venait
+    // du texte libre (aucune question de clarification n'avait été posée, donc la liste
+    // serait restée vide). L'utilisateur peut ainsi demander un autre type de pièce sans
+    // repréciser le modèle. Le type de pièce (part_type) n'est PAS transmis : c'est une
+    // nouvelle recherche. Pour tout effacer, il y a « Nouvelle conversation ».
+    // Les avis et listes paginées déjà affichés gardent l'ancien session_id capturé ;
+    // activeList n'est pas remis à zéro pour que « Voir plus » reste fonctionnel.
     function startNewSession() {
       sessionId = generateUUID();
       lastClarificationField = null;
       pendingRefinement = null;
+      if (identifiedVehicle) {
+        conversationContext = { previous_clarifications: buildVehicleClarifications(identifiedVehicle) };
+      }
       saveState();
     }
 
