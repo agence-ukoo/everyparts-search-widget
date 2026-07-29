@@ -498,12 +498,23 @@
       font-size: 15px;
       color: var(--ep-body);
       transition: opacity .25s ease, transform .25s ease;
+      /* Aucun geste ne doit se propager à la page hôte sous la fenêtre plein écran. */
+      overscroll-behavior: none;
     }
     #ep-window.ep-hidden {
       opacity: 0;
       pointer-events: none;
       transform: translateY(24px);
     }
+    /* Châssis non défilant : touch-action none empêche le navigateur d'*amorcer* un
+       panoramique (de la page ou du viewport visuel) depuis le header, la barre moto,
+       la zone de saisie ou le footer. Nécessaire en plus du garde-fou JS sur
+       touchmove : une fois le panoramique lancé, iOS rend l'événement non-annulable.
+       Les conteneurs défilants du widget ne sont pas concernés — la règle ne
+       s'applique qu'aux gestes traités par un ancêtre de la fenêtre. */
+    #ep-header, #ep-moto-bar, #ep-input-area, #ep-footer { touch-action: none; }
+    /* Exception : le champ garde ses interactions natives (curseur, sélection). */
+    #ep-input { touch-action: auto; }
 
     /* ── Header ── */
     #ep-header {
@@ -515,6 +526,9 @@
       gap: 10px;
       flex-shrink: 0;
     }
+    /* Fenêtre recalée sous le haut du viewport de mise en page (panoramique iOS) :
+       l'encoche est déjà hors cadre, l'inset haut n'est plus que du vide. */
+    #ep-window.ep-vv-offset #ep-header { padding-top: 13px; }
     #ep-header-brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
     #ep-avatar {
       position: relative;
@@ -1145,6 +1159,10 @@
       gap: 9px;
       flex-shrink: 0;
     }
+    /* Clavier ouvert : il recouvre l'indicateur d'accueil, mais
+       env(safe-area-inset-bottom) continue de rapporter ~34px sur iPhone. On récupère
+       cet espace mort, précieux quand la fenêtre est déjà réduite de moitié. */
+    #ep-window.ep-kb-open #ep-input-area { padding-bottom: 10px; }
     .ep-input-row { display: flex; align-items: center; gap: 9px; }
     #ep-input {
       flex: 1;
@@ -1534,56 +1552,212 @@
     }
 
     // ── Plein écran mobile : gel de la page + ancrage clavier (visualViewport) ──
+    // Sur un mobile réel — contrairement au mode responsive de Chrome, qui
+    // redimensionne le viewport de mise en page — l'ouverture du clavier logiciel ne
+    // rétrécit QUE le « visual viewport ». Les éléments `position: fixed` restent
+    // ancrés à l'ancien viewport, et le navigateur *panoramique* la zone visible pour
+    // révéler le champ focalisé. D'où trois mesures, toutes nécessaires :
+    //   1. dimensionner #ep-window sur `visualViewport` (hauteur + décalage) ;
+    //   2. ré-appliquer cette géométrie pendant toute l'animation du clavier — iOS
+    //      n'émet aucun événement à la fin de celle-ci, un unique `resize` livre des
+    //      valeurs à mi-course (fenêtre figée trop courte / décalée) ;
+    //   3. geler la page hôte ET refuser tout geste de défilement qui ne vise pas un
+    //      conteneur défilant du widget : `body{position:fixed}` bloque le scroll du
+    //      document mais pas le panoramique du viewport visuel, seul responsable du
+    //      « tout l'écran bouge au lieu de la seule conversation ».
     const vv = window.visualViewport;
+    // Écart minimal entre viewport de mise en page et viewport visuel au-delà duquel
+    // on considère le clavier ouvert (les barres d'outils mobiles font < 100px). Signal
+    // secondaire seulement : sur iOS 26, Safari rétrécit AUSSI window.innerHeight à
+    // l'ouverture du clavier (mesuré : innerHeight === visualViewport.height === 377),
+    // l'écart reste donc nul. Le signal primaire est le focus du champ — sur mobile, un
+    // champ focalisé signifie un clavier affiché.
+    const KEYBOARD_MIN_INSET = 120;
+    // Durée de re-calage après un changement de viewport : couvre l'animation du
+    // clavier iOS (~350ms) et son amortissement.
+    const VIEWPORT_SETTLE_STEP_MS = 50;
+    const VIEWPORT_SETTLE_STEPS = 14;
+    // Durée pendant laquelle le bas de la conversation est maintenu après un
+    // changement de hauteur, pour survivre à la restauration d'offset de WebKit iOS.
+    const PIN_HOLD_MS = 400;
+    // Panoramique minimal du viewport visuel avant de considérer que la fenêtre est
+    // sortie de la zone d'encoche (et donc que l'inset haut n'est plus que du vide).
+    // Safari émet des offsets de quelques pixels : sans seuil, un panoramique de 2px
+    // supprimerait d'un coup ~59px de padding d'encoche — saut visible en mode PWA,
+    // où env(safe-area-inset-top) est non nul.
+    const VV_OFFSET_MIN = 24;
+
     let scrollLocked = false;
     let savedScrollY = 0;
+    let savedBodyStyle = null;
+    let savedHtmlStyle = null;
+    let appliedTop = null;
+    let appliedHeight = null;
+    let syncRaf = 0;
+    let settleTimer = 0;
+    let pinDeadline = 0;
+    let inputFocused = false;
 
     function lockPageScroll() {
       if (scrollLocked) return;
       scrollLocked = true;
-      savedScrollY = window.scrollY || window.pageYOffset || 0;
+      savedScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
       const b = document.body.style;
+      const h = document.documentElement.style;
+      // Les styles inline de la page hôte sont mémorisés pour être restaurés à
+      // l'identique : les écraser par '' détruirait ceux qu'elle avait déjà posés.
+      savedBodyStyle = { position: b.position, top: b.top, left: b.left, right: b.right, width: b.width, overflow: b.overflow };
+      savedHtmlStyle = { overflow: h.overflow, overscrollBehavior: h.overscrollBehavior };
       b.position = 'fixed';
       b.top = `-${savedScrollY}px`;
       b.left = '0';
       b.right = '0';
       b.width = '100%';
+      b.overflow = 'hidden';
+      h.overflow = 'hidden';
+      h.overscrollBehavior = 'none';
     }
 
     function unlockPageScroll() {
       if (!scrollLocked) return;
       scrollLocked = false;
       const b = document.body.style;
-      b.position = '';
-      b.top = '';
-      b.left = '';
-      b.right = '';
-      b.width = '';
+      const h = document.documentElement.style;
+      b.position = savedBodyStyle.position;
+      b.top = savedBodyStyle.top;
+      b.left = savedBodyStyle.left;
+      b.right = savedBodyStyle.right;
+      b.width = savedBodyStyle.width;
+      b.overflow = savedBodyStyle.overflow;
+      h.overflow = savedHtmlStyle.overflow;
+      h.overscrollBehavior = savedHtmlStyle.overscrollBehavior;
+      savedBodyStyle = savedHtmlStyle = null;
       window.scrollTo(0, savedScrollY);
     }
 
-    function syncViewport() {
-      if (isOpen && isMobile()) {
-        lockPageScroll();
-        if (vv) {
-          win.style.height = vv.height + 'px';
-          win.style.top = vv.offsetTop + 'px';
-          win.style.bottom = 'auto';
+    // Remonte la chaîne des ancêtres du point touché jusqu'à #ep-window et renvoie le
+    // premier conteneur réellement défilant. `composedPath()` traverse le Shadow DOM,
+    // indispensable ici. Renvoie null si le geste ne peut défiler que la page hôte ou
+    // le viewport visuel.
+    function scrollableUnderTouch(e) {
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [e.target];
+      for (let i = 0; i < path.length; i++) {
+        const n = path[i];
+        if (!n || n.nodeType !== 1) continue;
+        if (n === win) return null;
+        if (n.scrollHeight - n.clientHeight > 1) {
+          const oy = getComputedStyle(n).overflowY;
+          if (oy === 'auto' || oy === 'scroll') return n;
         }
-      } else {
+      }
+      return null;
+    }
+
+    function onDocTouchMove(e) {
+      if (!scrollLocked || !e.cancelable) return;
+      if (e.touches && e.touches.length > 1) return;   // pincement : laissé au navigateur
+      if (!scrollableUnderTouch(e)) e.preventDefault();
+    }
+
+    // Applique la géométrie du viewport visuel à la fenêtre. Ne réécrit la géométrie
+    // que si elle a changé, si bien que la boucle de re-calage peut tourner à vide sans
+    // coût de mise en page.
+    function applyViewport() {
+      if (!(isOpen && isMobile())) {
         unlockPageScroll();
-        win.style.height = '';
-        win.style.top = '';
-        win.style.bottom = '';
+        resetWindowGeometry();
+        return;
+      }
+      lockPageScroll();
+      // Zoom pincé : les coordonnées du viewport visuel ne sont plus comparables à
+      // celles du viewport de mise en page — on rend la main aux 4 ancres CSS.
+      if (!vv || (vv.scale && Math.abs(vv.scale - 1) > 0.01)) {
+        resetWindowGeometry();
+        return;
+      }
+      const height = Math.round(vv.height);
+      const top = Math.round(vv.offsetTop);
+      const kbOpen = inputFocused || window.innerHeight - vv.height > KEYBOARD_MIN_INSET;
+      const offset = top >= VV_OFFSET_MIN;
+      const changed = height !== appliedHeight
+        || top !== appliedTop
+        || kbOpen !== win.classList.contains('ep-kb-open')
+        || offset !== win.classList.contains('ep-vv-offset');
+
+      if (changed) {
+        // Mesuré avant TOUTE écriture affectant la hauteur de la conversation — les
+        // bascules de classe ci-dessous en font partie (elles restaurent les paddings
+        // de safe-area du header et de la saisie).
+        const wasPinned = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 48;
+        win.classList.toggle('ep-kb-open', kbOpen);
+        win.classList.toggle('ep-vv-offset', offset);
+        appliedHeight = height;
+        appliedTop = top;
+        win.style.top = top + 'px';
+        win.style.bottom = 'auto';
+        win.style.height = height + 'px';
+        // La conversation doit rester collée en bas quand la fenêtre change de
+        // hauteur, sinon le dernier message se retrouve coupé sous le clavier.
+        if (wasPinned) pinDeadline = Date.now() + PIN_HOLD_MS;
+      }
+
+      // Un re-collage unique ne tient pas : WebKit iOS restaure l'offset de
+      // défilement du conteneur ~1 frame APRÈS son redimensionnement, écrasant toute
+      // écriture synchrone (mesuré : correct à 20ms, revenu à l'ancien offset à
+      // 60ms). On maintient donc le bas pendant PIN_HOLD_MS, ce que les pas de
+      // settleViewport couvrent largement.
+      if (pinDeadline) {
+        if (Date.now() <= pinDeadline) pinToBottom();
+        else pinDeadline = 0;
       }
     }
 
+    // Défilement instantané : `scroll-behavior: smooth` serait interrompu à chaque pas
+    // de l'animation du clavier et n'atteindrait jamais le bas.
+    function pinToBottom() {
+      if (messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 1) return;
+      messagesEl.style.scrollBehavior = 'auto';
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      messagesEl.style.scrollBehavior = '';
+    }
+
+    function resetWindowGeometry() {
+      win.classList.remove('ep-kb-open', 'ep-vv-offset');
+      win.style.height = '';
+      win.style.top = '';
+      win.style.bottom = '';
+      appliedTop = appliedHeight = null;
+      pinDeadline = 0;
+    }
+
+    // Coalesce les rafales d'événements `visualViewport` sur une seule frame.
+    function syncViewport() {
+      if (syncRaf) return;
+      syncRaf = requestAnimationFrame(function () { syncRaf = 0; applyViewport(); });
+    }
+
+    // Re-calage échelonné : suit l'animation du clavier jusqu'à son terme, faute
+    // d'événement « animation finie » sur iOS.
+    function settleViewport() {
+      clearTimeout(settleTimer);
+      let step = 0;
+      (function tick() {
+        applyViewport();
+        if (++step < VIEWPORT_SETTLE_STEPS) settleTimer = setTimeout(tick, VIEWPORT_SETTLE_STEP_MS);
+      })();
+    }
+
     if (vv) {
-      vv.addEventListener('resize', syncViewport);
+      vv.addEventListener('resize', settleViewport);
       vv.addEventListener('scroll', syncViewport);
     }
     window.addEventListener('resize', syncViewport);
-    window.addEventListener('orientationchange', syncViewport);
+    window.addEventListener('orientationchange', settleViewport);
+    document.addEventListener('touchmove', onDocTouchMove, { passive: false });
+    // Le clavier s'ouvre/se ferme sur focus/blur : on suit son animation dans les deux
+    // sens, et on retient l'état de focus (signal primaire de clavier ouvert).
+    inputEl.addEventListener('focus', function () { inputFocused = true; settleViewport(); });
+    inputEl.addEventListener('blur', function () { inputFocused = false; settleViewport(); });
 
     function toggleWindow(open) {
       isOpen = open;
@@ -1595,13 +1769,18 @@
         // L'ouverture « consomme » l'amorce/aperçu et le badge de non-lus.
         hideTeaser();
         hideBadge();
-        syncViewport();       // gèle la page avant le focus (évite un saut au clavier)
-        inputEl.focus();
+        applyViewport();      // gèle la page et cale la fenêtre avant tout focus
+        // Mobile : pas de focus automatique. Ouvrir le clavier d'emblée raccourcit la
+        // fenêtre de moitié et masque l'accueil avant que l'utilisateur l'ait lu ;
+        // il apparaîtra à la première frappe voulue.
+        if (!isMobile()) inputEl.focus();
         if (messagesEl.children.length === 0) {
           showWelcome();
         }
       } else {
-        syncViewport();       // dégèle et restaure la position de défilement
+        clearTimeout(settleTimer);
+        inputEl.blur();       // referme le clavier avant de rendre la main à la page
+        applyViewport();      // dégèle et restaure la position de défilement
         fab.focus();
       }
     }
@@ -1621,7 +1800,7 @@
       renderMotoBar();       // masque la barre « Ma moto »
       messagesEl.innerHTML = '';
       showWelcome(); // sauvegarde la nouvelle session et démarre la nouvelle journalisation
-      inputEl.focus();
+      if (!isMobile()) inputEl.focus();   // cf. toggleWindow : pas de clavier imposé sur mobile
     }
 
     // Accueil : bulle d'accueil (deux paragraphes façon 1a) + suggestions
