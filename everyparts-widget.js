@@ -70,6 +70,8 @@
       my_moto:         'Ma moto',
       edit_moto:       'Modifier',
       try_chips:       ['Bougie CBR 600 • 96', 'Plaquettes de frein', 'Filtre à huile', 'Kit chaîne'],
+      teaser:          'Une pièce à trouver ? Décrivez-la, je cherche.',
+      teaser_dismiss:  'Masquer',
     },
     'en-US': {
       placeholder:     'Search for a compatible part…',
@@ -116,6 +118,8 @@
       my_moto:         'My bike',
       edit_moto:       'Edit',
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
+      teaser:          'Looking for a part? Describe it and I\'ll find it.',
+      teaser_dismiss:  'Dismiss',
     },
     'en-GB': {
       placeholder:     'Search for a compatible part…',
@@ -162,6 +166,8 @@
       my_moto:         'My bike',
       edit_moto:       'Edit',
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
+      teaser:          'Looking for a part? Describe it and I\'ll find it.',
+      teaser_dismiss:  'Dismiss',
     },
   };
 
@@ -255,6 +261,12 @@
   const ICOTYPE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 271 281" width="32" height="32" aria-hidden="true">
     <path d="M 126 17.5 C 106.9 28.1, 60.8 53.1, 40 65.5 C 19.2 77.9, 34.5 69.5, 31.5 74 C 28.5 78.5, 27.6 61.6, 26.5 86 C 25.4 110.4, 25.4 160.6, 26.5 185 C 27.6 209.4, 27.4 191.8, 31.5 197 C 35.6 202.2, 24.2 196.1, 45 208.5 C 65.8 220.9, 104.2 243.8, 126 253.5 C 147.8 263.2, 122.7 262.6, 144 252.5 C 165.3 242.4, 202.9 219.9, 223 207.5 C 243.1 195.1, 231.7 202.1, 235.5 196 C 239.3 189.9, 239.4 187.9, 240.5 180 L 240.5 160 L 223 157.5 C 215.4 157.4, 215.7 154.4, 206 159.5 C 196.3 164.6, 188.7 174.3, 179 180.5 C 169.3 186.7, 174.1 186.2, 162 187.5 C 149.9 188.8, 135.7 188.0, 124 186.5 C 112.3 185.0, 114.0 183.5, 109 180.5 C 104.0 177.5, 103.3 175.6, 101.5 173 L 101 168.5 L 146 159.5 C 157.8 155.2, 152.8 156.8, 154.5 149 C 156.2 141.2, 154.8 132.1, 153.5 124 C 152.2 115.9, 150.8 115.8, 148.5 112 C 146.2 108.2, 146.4 107.9, 143 106.5 C 139.6 105.1, 144.2 104.0, 133 105.5 C 121.8 107.0, 101.7 111.7, 92 113.5 L 89 113.5 L 87.5 110 C 87.6 107.5, 87.2 105.6, 89.5 102 C 91.8 98.4, 89.1 99.5, 98 93.5 C 106.9 87.5, 119.9 79.6, 130 74.5 C 140.1 69.4, 137.6 71.2, 144 70.5 C 150.4 69.8, 153.1 70.0, 159 71.5 C 164.9 73.0, 164.2 72.2, 171 77.5 C 177.8 82.8, 182.1 89.1, 190 95.5 C 197.9 101.9, 197.8 103.4, 207 106.5 C 216.2 109.6, 224.6 109.2, 232 109.5 L 240.5 108 L 238.5 81 C 236.0 72.1, 249.8 81.3, 229 67.5 C 208.2 53.8, 166.4 29.5, 144 18.5 C 121.6 7.5, 131.0 17.7, 127 17.5 C 123.0 17.3, 145.1 6.9, 126 17.5 Z" fill="white"/>
   </svg>`;
+
+  // Icône affichée sur le lanceur quand le chat est OUVERT (chevron bas = réduire).
+  const FAB_CLOSE_ICON = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>`;
+
+  // Petite croix du bandeau d'amorce (fermer/masquer).
+  const TEASER_CLOSE_ICON = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>`;
 
   const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1080 208" width="140" height="27" style="enable-background:new 0 0 1080 208;" xml:space="preserve" aria-hidden="true">
     <style type="text/css">.st0{fill:#FFFFFF;}</style>
@@ -383,10 +395,93 @@
     #ep-fab:focus-visible { outline: 3px solid var(--ep-primary); outline-offset: 3px; }
     #ep-fab svg { display: block; }
 
+    /* Bascule d'icône du lanceur : monogramme (fermé) ⇄ chevron (ouvert). */
+    .ep-fab-ico { display: flex; align-items: center; justify-content: center; }
+    #ep-fab .ep-fab-ico-close { display: none; }
+    #ep-fab.ep-window-open .ep-fab-ico-open { display: none; }
+    #ep-fab.ep-window-open .ep-fab-ico-close { display: flex; }
+
+    /* Badge de notification (messages non lus) sur le lanceur. */
+    #ep-fab-badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      min-width: 27px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: var(--ep-primary);
+      border: 2px solid var(--ep-white);
+      color: #04332F;
+      font-family: var(--ep-font-title);
+      font-size: 10.5px;
+      font-weight: 800;
+      line-height: 1;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #ep-fab-badge.ep-visible { display: flex; }
+
     .ep-pos-bottom-right { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); }
     .ep-pos-bottom-left  { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
     .ep-pos-top-right    { top: calc(20px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); }
     .ep-pos-top-left     { top: calc(20px + env(safe-area-inset-top, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
+
+    /* ── Bandeau d'amorce / aperçu (lanceur fermé) : bulle au-dessus du lanceur ── */
+    #ep-teaser {
+      position: fixed;
+      z-index: 2147483646;
+      max-width: min(266px, calc(100vw - 32px));
+      background: var(--ep-white);
+      border: 1px solid #EAE5D9;
+      padding: 11px 13px;
+      box-shadow: 0 10px 24px -16px rgba(6,76,76,.5), 0 2px 8px rgba(6,76,76,.08);
+      cursor: pointer;
+      display: none;
+      -webkit-tap-highlight-color: transparent;
+      animation: ep-teaser-in .22s ease-out;
+    }
+    #ep-teaser.ep-visible { display: block; }
+    @keyframes ep-teaser-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    #ep-teaser-text {
+      font-family: var(--ep-font-body);
+      font-size: 13px;
+      font-weight: 600;
+      color: #12312D;
+      line-height: 1.4;
+      display: block;
+    }
+    #ep-teaser-close {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--ep-white);
+      border: 1px solid #E4DFD2;
+      color: var(--ep-grey-600);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      box-shadow: 0 2px 6px rgba(6,76,76,.16);
+      -webkit-tap-highlight-color: transparent;
+    }
+    #ep-teaser-close:hover { color: var(--ep-dark); border-color: var(--ep-grey-400); }
+    #ep-teaser-close:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
+    #ep-teaser:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    /* Position au-dessus (lanceurs bas) ou au-dessous (lanceurs haut) du lanceur,
+       aligné sur le même bord ; coin pointu orienté vers le lanceur. */
+    #ep-teaser.ep-pos-bottom-right { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); border-radius: 14px 14px 4px 14px; }
+    #ep-teaser.ep-pos-bottom-left  { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); border-radius: 14px 14px 14px 4px; }
+    #ep-teaser.ep-pos-top-right    { top: calc(92px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); border-radius: 4px 14px 14px 14px; }
+    #ep-teaser.ep-pos-top-left     { top: calc(92px + env(safe-area-inset-top, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); border-radius: 14px 4px 14px 14px; }
 
     /* ── Fenêtre de chat — mobile-first : plein écran ──
        Étirée par les 4 ancres (top/right/bottom/left), sans hauteur
@@ -1122,7 +1217,7 @@
       text-decoration: none;
       cursor: pointer;
     }
-    #ep-footer-brand svg { height: 13px; width: auto; display: block; }
+    #ep-footer-brand svg { height: 15px; width: auto; display: block; }
     #ep-footer-brand:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
 
     /* Masquer le FAB quand la fenêtre est ouverte (mobile plein écran) */
@@ -1280,14 +1375,27 @@
     styleEl.textContent = STYLES;
     shadow.appendChild(styleEl);
 
-    // Bouton flottant
+    // Bouton flottant : monogramme (fermé) + chevron (ouvert) + badge non-lus.
     const fab = document.createElement('button');
     fab.id = 'ep-fab';
     fab.className = `ep-pos-${CONFIG.position}`;
     fab.setAttribute('aria-label', t('open'));
     fab.title = t('open');
-    fab.innerHTML = ICOTYPE_SVG;
+    fab.innerHTML = `<span class="ep-fab-ico ep-fab-ico-open">${ICOTYPE_SVG}</span><span class="ep-fab-ico ep-fab-ico-close">${FAB_CLOSE_ICON}</span><span id="ep-fab-badge" aria-hidden="true"></span>`;
     shadow.appendChild(fab);
+    const fabBadge = fab.querySelector('#ep-fab-badge');
+
+    // Bandeau d'amorce / aperçu (affiché quand le chat est fermé).
+    const teaser = document.createElement('div');
+    teaser.id = 'ep-teaser';
+    teaser.className = `ep-pos-${CONFIG.position}`;
+    teaser.setAttribute('role', 'button');
+    teaser.setAttribute('tabindex', '0');
+    teaser.setAttribute('aria-label', t('open'));
+    teaser.innerHTML = `<button id="ep-teaser-close" type="button" aria-label="${t('teaser_dismiss')}" title="${t('teaser_dismiss')}">${TEASER_CLOSE_ICON}</button><span id="ep-teaser-text"></span>`;
+    shadow.appendChild(teaser);
+    const teaserText = teaser.querySelector('#ep-teaser-text');
+    const teaserClose = teaser.querySelector('#ep-teaser-close');
 
     // Fenêtre de chat
     const win = document.createElement('div');
@@ -1318,6 +1426,16 @@
     resetBtn.addEventListener('click', newConversation);
     motoEdit.addEventListener('click', editMoto);
 
+    // Amorce / aperçu : cliquer la bulle ouvre le chat ; la croix la masque seulement.
+    let teaserTimer = null;
+    const TEASER_DELAY_MS = 4000;
+    const TEASER_DISMISS_KEY = `everyparts-teaser-dismissed:${CONFIG.token}`;
+    teaser.addEventListener('click', () => toggleWindow(true));
+    teaser.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleWindow(true); }
+    });
+    teaserClose.addEventListener('click', e => { e.stopPropagation(); dismissTeaser(); });
+
     // Fermeture à Échap
     shadow.addEventListener('keydown', e => {
       if (e.key === 'Escape' && isOpen) toggleWindow(false);
@@ -1334,6 +1452,80 @@
     restoreConversation();
     // Réaffiche la barre « Ma moto » si un véhicule était identifié dans la session restaurée.
     renderMotoBar();
+    // Lanceur fermé : badge + aperçu du dernier message assistant, ou amorce générique.
+    initClosedLauncher();
+
+    // ── Lanceur fermé : amorce, aperçu, badge ────────────────────────────────
+    function showTeaser(text) {
+      if (isOpen || !text) return;
+      teaserText.textContent = text;
+      teaser.classList.add('ep-visible');
+    }
+    function hideTeaser() {
+      teaser.classList.remove('ep-visible');
+      if (teaserTimer) { clearTimeout(teaserTimer); teaserTimer = null; }
+    }
+    function dismissTeaser() {
+      hideTeaser();
+      try { sessionStorage.setItem(TEASER_DISMISS_KEY, '1'); } catch (e) { /* ignore */ }
+    }
+    function teaserDismissed() {
+      try { return sessionStorage.getItem(TEASER_DISMISS_KEY) === '1'; } catch (e) { return false; }
+    }
+    function showBadge(n) {
+      fabBadge.textContent = n > 9 ? '9+' : String(n);
+      fabBadge.classList.add('ep-visible');
+    }
+    function hideBadge() { fabBadge.classList.remove('ep-visible'); }
+
+    function hasUserInteraction() {
+      return transcript.some(e => e.t === 'user');
+    }
+    function truncateText(s, max) {
+      s = String(s || '').replace(/\s+/g, ' ').trim();
+      return s.length > max ? s.slice(0, max - 1).trimEnd() + '…' : s;
+    }
+    // Analyse du dernier tour (messages postérieurs au dernier message utilisateur).
+    // - `text` (aperçu) : dernier message « réel » de l'assistant, en ignorant options,
+    //   produits, avis et le message générique after_result (« Souhaitez-vous affiner… »),
+    //   qui ne sont que des invites d'action / du contenu.
+    // - `count` (badge) : nombre de « prises de parole » de l'assistant du tour, soit les
+    //   entrées assistant (y compris after_result), avis (review) et no_results. Les listes
+    //   de produits et d'options ne comptent PAS (contenu/boutons, pas des messages).
+    function lastAssistantPreview() {
+      let lastUser = -1;
+      for (let i = transcript.length - 1; i >= 0; i--) {
+        if (transcript[i].t === 'user') { lastUser = i; break; }
+      }
+      if (lastUser === -1) return null;
+      const afterResult = t('after_result');
+      let text = null, count = 0;
+      for (let i = lastUser + 1; i < transcript.length; i++) {
+        const e = transcript[i];
+        if (e.t === 'assistant' || e.t === 'no_results' || e.t === 'review' || e.t === 'welcome') count++;
+        if (e.t === 'assistant' && e.text && e.text !== afterResult) text = e.text;
+        else if (e.t === 'no_results' && e.message) text = e.message;
+      }
+      return text ? { text: text, count: count } : null;
+    }
+    // Au chargement, chat fermé : si une conversation est en cours et que l'assistant
+    // a répondu en dernier → badge + aperçu tronqué ; sinon (visiteur neuf) → amorce
+    // générique après un court délai. Rien si l'utilisateur a écrit sans réponse.
+    function initClosedLauncher() {
+      if (isOpen) return;
+      const preview = lastAssistantPreview();
+      if (preview) {
+        showBadge(preview.count);
+        if (!teaserDismissed()) showTeaser(truncateText(preview.text, 100));
+      } else if (!hasUserInteraction() && !teaserDismissed()) {
+        teaserTimer = setTimeout(function () {
+          if (!isOpen && !teaserDismissed()) {
+            showTeaser(t('teaser'));
+            showBadge(1);   // le message d'accueil compte comme 1 message assistant
+          }
+        }, TEASER_DELAY_MS);
+      }
+    }
 
     function isMobile() {
       return window.matchMedia('(max-width: 640px)').matches;
@@ -1398,6 +1590,9 @@
       fab.setAttribute('aria-label', open ? t('close') : t('open'));
       fab.title = open ? t('close') : t('open');
       if (open) {
+        // L'ouverture « consomme » l'amorce/aperçu et le badge de non-lus.
+        hideTeaser();
+        hideBadge();
         syncViewport();       // gèle la page avant le focus (évite un saut au clavier)
         inputEl.focus();
         if (messagesEl.children.length === 0) {
