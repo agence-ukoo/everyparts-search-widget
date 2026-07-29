@@ -288,23 +288,9 @@
   // Marque « everyparts » (hexagone monogramme, viewBox 184×204). fill=white
   const MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184.07 204.03" fill="none" role="img" aria-label="everyparts"><path fill="white" fill-rule="evenodd" clip-rule="evenodd" d="M87.48 0.3C89.05 0.07 90.65 0.01 92.25 0C93.72 -0.01 95.21 -0.03 96.65 0.26C98.86 0.7 101.15 1.1 103.13 2.2C126.51 15.12 149.62 28.55 172.56 42.24C174.28 43.26 175.59 44.87 177.02 46.27C177.7 46.94 178.31 47.68 178.87 48.46C179.57 49.43 180.23 50.44 180.78 51.51C181.54 52.95 182.24 54.44 182.8 55.98C183.25 57.24 183.57 58.55 183.82 59.87C184 60.83 184.05 61.82 184.06 62.8C184.13 67.97 184.23 73.14 184.06 78.3C184.04 78.83 183.68 79.29 183.49 79.78C176.33 79.45 169.14 79.52 162.01 78.79C159.72 78.56 157.51 77.74 155.36 76.91C153.28 76.11 151.35 74.98 149.4 73.9C148.36 73.31 147.35 72.64 146.41 71.9C143.41 69.55 140.43 67.17 137.58 64.64C133.81 61.28 130.34 57.59 126.55 54.24C124.96 52.83 123.27 51.49 121.46 50.37C120.06 49.51 118.53 48.88 116.99 48.33C115.69 47.86 114.34 47.51 112.97 47.32C110.08 46.93 107.17 46.6 104.25 46.58C102.27 46.57 100.3 46.92 98.35 47.25C97.02 47.48 95.7 47.84 94.41 48.26C92.57 48.86 90.75 49.53 88.96 50.28C86.75 51.21 84.54 52.13 82.45 53.27C78.39 55.48 74.41 57.86 70.5 60.33C68.08 61.87 65.76 63.56 63.47 65.29C61.76 66.57 60.08 67.9 58.53 69.37C57.34 70.5 56.28 71.77 55.28 73.07C54.84 73.65 54.44 74.3 54.22 75C53.79 76.4 53.44 77.84 53.35 79.3C53.3 80.19 53.61 81.07 53.81 81.93C53.87 82.19 53.94 82.46 54.12 82.65C54.28 82.81 54.53 82.93 54.75 82.9C67.43 80.78 80.07 78.36 92.75 76.19C93.74 76.02 94.74 75.88 95.75 75.89C96.71 75.9 97.71 75.9 98.61 76.23C99.86 76.69 100.99 77.44 102.07 78.22C102.74 78.71 103.31 79.34 103.81 80.01C104.89 81.44 105.95 82.91 106.78 84.5C107.61 86.09 108.27 87.77 108.78 89.49C109.61 92.22 110.31 95.01 110.82 97.82C111.21 99.96 111.35 102.14 111.47 104.3C111.54 105.47 111.48 106.64 111.39 107.8C111.26 109.29 111.13 110.78 110.82 112.23C110.61 113.25 110.27 114.24 109.83 115.17C109.26 116.38 108.59 117.54 107.81 118.62C107.27 119.38 106.63 120.07 105.91 120.65C104.86 121.49 103.73 122.21 102.55 122.84C101.74 123.27 100.87 123.6 99.98 123.79C88.98 126.08 77.88 127.92 66.89 130.25C65.91 130.46 65.05 131.03 64.14 131.42C64.16 131.65 64.1 131.9 64.2 132.11C64.8 133.31 65.42 134.51 66.23 135.58C67.07 136.7 68.04 137.74 69.13 138.62C70.63 139.84 72.27 140.89 73.96 141.83C75.4 142.63 76.92 143.29 78.49 143.8C81.06 144.64 83.69 145.37 86.36 145.86C89.62 146.45 92.93 146.89 96.25 147.03C101.58 147.26 106.92 147.22 112.25 146.95C114.42 146.84 116.59 146.47 118.69 145.89C121.55 145.1 124.34 144.06 127.05 142.84C128.82 142.04 130.44 140.94 132.06 139.87C133.95 138.62 135.83 137.34 137.57 135.89C141.3 132.8 144.75 129.38 148.46 126.28C149.38 125.51 150.4 124.85 151.47 124.29C152.92 123.52 154.43 122.85 155.98 122.3C157.25 121.85 158.57 121.48 159.91 121.27C161.34 121.04 162.8 120.95 164.25 120.99C170.38 121.12 176.52 121.33 182.64 121.77C183.12 121.8 183.5 122.18 183.93 122.39C183.97 128.53 184.12 134.67 184.07 140.8C184.06 142.06 183.96 143.33 183.75 144.57C183.54 145.79 183.22 146.99 182.8 148.16C182.25 149.7 181.6 151.2 180.84 152.65C180.28 153.71 179.62 154.72 178.87 155.65C177.68 157.13 176.42 158.56 175.03 159.84C173.8 160.96 172.42 161.91 171.02 162.81C168.25 164.58 165.37 166.18 162.53 167.82C144.04 178.51 125.61 189.3 107.02 199.81C104.95 200.98 102.84 202.11 100.58 202.85C98.54 203.53 96.39 203.87 94.25 204.03C91.99 204.19 89.72 204.06 87.47 203.81C86.11 203.65 84.77 203.26 83.48 202.81C81.92 202.27 80.39 201.64 78.96 200.83C56.89 188.29 34.95 175.52 13.02 162.76C12.1 162.22 11.22 161.6 10.4 160.93C9.56 160.25 8.75 159.51 8.03 158.71C6.7 157.22 5.29 155.77 4.24 154.08C3 152.06 2.02 149.87 1.2 147.64C0.67 146.2 0.46 144.66 0.21 143.15C0.06 142.21 0 141.26 0 140.3C-0.06 114.64 -0.06 88.97 0.02 63.3C0.02 62.38 0.08 61.44 0.24 60.53C0.48 59.16 0.82 57.82 1.21 56.48C1.46 55.61 1.75 54.74 2.14 53.92C2.77 52.59 3.49 51.31 4.26 50.05C4.81 49.14 5.42 48.27 6.1 47.45C6.79 46.61 7.57 45.85 8.34 45.09C9.01 44.43 9.67 43.76 10.4 43.18C11.34 42.44 12.32 41.75 13.35 41.15C35.17 28.45 57 15.76 78.95 3.27C80.38 2.46 81.89 1.81 83.44 1.27C84.75 0.82 86.11 0.5 87.48 0.3Z"></path></svg>`;
 
-  const BETA_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 24" width="34" height="24" role="img" aria-label="Beta"
-    style="
-      position: relative;
-      top: 1px;
-      margin-left: 7px;
-    ">
-    <defs>
-      <linearGradient data-dc-tpl="38" id="gg" x1="0" y1="0" x2="44" y2="0" gradientUnits="userSpaceOnUse">
-        <stop data-dc-tpl="39" offset="0" stop-color="#6366F1"></stop>
-        <stop data-dc-tpl="40" offset="0.5" stop-color="#E879F9"></stop>
-        <stop data-dc-tpl="41" offset="1" stop-color="#22D3EE"></stop>
-        <animateTransform data-dc-tpl="42" attributeName="gradientTransform" type="translate" values="-44 0;44 0;-44 0" dur="6s" repeatCount="indefinite"></animateTransform>
-      </linearGradient>
-    </defs>
-    <text data-dc-tpl="90" x="0" y="14" font-family="'Space Grotesk', system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="1.7" fill="#E7E7F5">BETA</text>
-    <rect data-dc-tpl="91" x="0" y="18.5" width="42" height="2.4" rx="1.2" fill="url(#gg)"></rect>
-  </svg>`;
+  // Badge BETA de la refonte PartsMind : petite pastille contournée, texte menthe,
+  // placée en ligne à droite du nom, centrée verticalement.
+  const BETA_BADGE = `<span class="ep-beta">BETA</span>`;
 
   /**
    * Contenu brandé de l'en-tête. Dès que `data-logo` (URL d'image),
@@ -319,7 +305,7 @@
     const parts = [];
     if (!CONFIG.logo && !CONFIG.title && !CONFIG.subtitle) {
       parts.push(LOGO_SVG);
-      parts.push(BETA_SVG);
+      parts.push(BETA_BADGE);
     } else {
       if (CONFIG.logo) {
         const alt = escHtml(CONFIG.title || 'EveryParts');
@@ -328,7 +314,7 @@
       if (CONFIG.title || CONFIG.subtitle) {
         const text = [];
         if (CONFIG.title) {
-          text.push(`<span id="ep-header-title">${escHtml(CONFIG.title)}${BETA_SVG}</span>`);
+          text.push(`<span id="ep-header-title">${escHtml(CONFIG.title)}${BETA_BADGE}</span>`);
         }
         if (CONFIG.subtitle) {
           text.push(`<span id="ep-header-subtitle">${escHtml(CONFIG.subtitle)}</span>`);
@@ -336,7 +322,7 @@
         parts.push(`<div id="ep-header-text">${text.join('')}</div>`);
       }
       if (!CONFIG.title) {
-        parts.push(BETA_SVG);
+        parts.push(BETA_BADGE);
       }
     }
     return parts.join('\n');
@@ -489,6 +475,22 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    /* Badge BETA (refonte PartsMind) : pastille contournée menthe, à droite du nom. */
+    .ep-beta {
+      flex: none;
+      font-family: var(--ep-font-title);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      color: #9FF0D2;
+      border: 1px solid rgba(159, 240, 210, .45);
+      border-radius: 5px;
+      padding: 1.5px 5px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    /* Cas titre boutique : le badge est en ligne dans le titre → petit décalage + centrage. */
+    #ep-header-title .ep-beta { margin-left: 6px; vertical-align: middle; }
     #ep-header-actions { display: flex; align-items: center; gap: 6px; flex: none; }
     .ep-header-btn {
       background: rgba(255,255,255,.10);
