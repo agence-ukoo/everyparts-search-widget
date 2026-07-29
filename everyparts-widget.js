@@ -71,6 +71,7 @@
       try_chips:       ['Bougie CBR 600 • 96', 'Plaquettes de frein', 'Filtre à huile', 'Kit chaîne'],
       teaser:          'Une pièce à trouver ? Décrivez-la, je cherche.',
       teaser_dismiss:  'Masquer',
+      brand_url:       'https://www.every-parts.com/fr/',
     },
     'en-US': {
       placeholder:     'Search for a compatible part…',
@@ -118,6 +119,7 @@
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
       teaser:          'Looking for a part? Describe it and I\'ll find it.',
       teaser_dismiss:  'Dismiss',
+      brand_url:       'https://www.every-parts.com/en/',
     },
     'en-GB': {
       placeholder:     'Search for a compatible part…',
@@ -165,6 +167,7 @@
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
       teaser:          'Looking for a part? Describe it and I\'ll find it.',
       teaser_dismiss:  'Dismiss',
+      brand_url:       'https://www.every-parts.com/en/',
     },
   };
 
@@ -2842,7 +2845,7 @@
         </div>
         <div id="ep-footer">
           <span id="ep-footer-text">${t('powered_by')}</span>
-          <a id="ep-footer-brand" href="https://www.every-parts.com/" target="_blank" rel="noopener noreferrer" aria-label="EveryParts">${LOGO_GREEN_SVG}</a>
+          <a id="ep-footer-brand" href="${escHtml(t('brand_url'))}" target="_blank" rel="noopener noreferrer" aria-label="EveryParts">${LOGO_GREEN_SVG}</a>
         </div>
       </div>
     `;
