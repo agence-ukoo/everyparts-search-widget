@@ -32,9 +32,8 @@
       welcome_p2:      'Dites-moi votre moto et la pièce recherchée et je vous aiderai du mieux possible.',
       typing:          'En train de répondre',
       error_token:     'Configuration invalide : token absent.',
-      error_net:       'Impossible de joindre l\'API. Vérifiez votre connexion.',
       error_unknown:   'Erreur inconnue.',
-      error_unexpected:'Recherche momentanément indisponible, veuillez réessayer plus tard.',
+      error_unexpected:'La recherche est momentanément indisponible. Merci de réessayer dans quelques instants.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmée par {n} sources',
       suggestions:     'Suggestions :',
@@ -80,9 +79,8 @@
       welcome_p2:      'Tell me your bike and the part you need and I\'ll help you the best I can.',
       typing:          'Typing',
       error_token:     'Invalid configuration: missing token.',
-      error_net:       'Unable to reach the API. Please check your connection.',
       error_unknown:   'Unknown error.',
-      error_unexpected:'Search is temporarily unavailable. Please try again later.',
+      error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmed by {n} sources',
       suggestions:     'Suggestions:',
@@ -128,9 +126,8 @@
       welcome_p2:      'Tell me your bike and the part you need and I\'ll help you the best I can.',
       typing:          'Typing',
       error_token:     'Invalid configuration: missing token.',
-      error_net:       'Unable to reach the API. Please check your connection.',
       error_unknown:   'Unknown error.',
-      error_unexpected:'Search is temporarily unavailable. Please try again later.',
+      error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmed by {n} sources',
       suggestions:     'Suggestions:',
@@ -1969,7 +1966,8 @@
         renderResponse(data);
       } catch (err) {
         showTyping(false);
-        appendErrorMessage(t('error_net'));
+        appendErrorMessage(t('error_unexpected'));
+        console.error(err);
       } finally {
         isLoading = false;
         sendBtn.disabled = false;
@@ -2279,7 +2277,8 @@
         }
       } catch (err) {
         btn.disabled = false;
-        appendErrorMessage(t('error_net'));
+        appendErrorMessage(t('error_unexpected'));
+        console.error(err);
       }
     }
 
