@@ -291,7 +291,7 @@
   const AVATAR_HTML = `<div id="ep-avatar" aria-hidden="true"><span id="ep-avatar-mark">e</span><span id="ep-avatar-status"></span></div>`;
 
   // Icône moto pour la barre de contexte « Ma moto ».
-  const MOTO_ICON = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17.5V8.2l3.8-2.7h6.4L19 8.2v9.3"></path><circle cx="8.6" cy="17.6" r="2.1"></circle><circle cx="15.4" cy="17.6" r="2.1"></circle><path d="M10.7 17.6h2.6"></path></svg>`;
+  const MOTO_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M11.8 3.9C16.3 3.9 20 7.5 20 12c0 1.2-.3 2-.9 2.9-.4.6-.5 1-.5 1.7 1.6.3 2.4 1 2.4 2 0 .9-.7 1.5-1.6 1.5H10.6C6.9 20.1 4 17.2 4 13.5V12C4 7.5 7.4 3.9 11.8 3.9zM13.4 9.2c-1.5 0-2.7 1-2.7 2.3s1.2 2.3 2.7 2.3h8V9.2z"></path></svg>`;
 
   // Logo « everyparts » officiel, version verte #064C4C (lockup, viewBox 1080×208) —
   // vectorisé, inline pour rester autonome (aucune requête réseau). Footer « Propulsé par ».
@@ -1107,7 +1107,11 @@
       letter-spacing: .09em;
       text-transform: uppercase;
       color: #93A19E;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
+    #ep-moto-label .ep-moto-year { color: var(--ep-dark); font-weight: 800; }
     #ep-moto-value {
       font-size: 13.5px;
       font-weight: 700;
@@ -1415,6 +1419,7 @@
     const closeBtn   = win.querySelector('#ep-close-btn');
     const resetBtn   = win.querySelector('#ep-reset-btn');
     const motoBar    = win.querySelector('#ep-moto-bar');
+    const motoLabel  = win.querySelector('#ep-moto-label');
     const motoValue  = win.querySelector('#ep-moto-value');
     const motoEdit   = win.querySelector('#ep-moto-edit');
 
@@ -1722,33 +1727,48 @@
       if (!isRestoring) saveState();
     }
 
-    // Formate « Honda CBR 600 · 1996 » (marque en casse titre, année optionnelle).
+    // Casse titre (l'API renvoie la marque en capitales, ex. « HONDA »).
+    function titleCase(s) {
+      return String(s || '').replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    }
+    // Chaîne complète (accessibilité) : « Honda CBR 600 F · 1996 ».
     function formatVehicle(v) {
       if (!v) return '';
-      const mfr = String(v.manufacturer).replace(/\S+/g, w =>
-        w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-      let s = `${mfr} ${v.model}`.trim();
+      let s = `${titleCase(v.manufacturer)} ${v.model}`.trim();
       if (v.year) s += ` · ${v.year}`;
       return s;
     }
 
-    // Affiche/masque la barre selon l'état d'identification.
+    // Affiche/masque la barre selon l'état d'identification (refonte design) :
+    // ligne du haut « MARQUE • ANNÉE » (année en vert foncé), ligne du bas = modèle seul.
     function renderMotoBar() {
       if (identifiedVehicle) {
-        motoValue.textContent = formatVehicle(identifiedVehicle);
+        const v = identifiedVehicle;
+        let label = escHtml(titleCase(v.manufacturer));
+        if (v.year) label += ' • <span class="ep-moto-year">' + escHtml(String(v.year)) + '</span>';
+        motoLabel.innerHTML = label;
+        motoValue.textContent = v.model || '';
+        motoBar.setAttribute('aria-label', t('my_moto') + ' : ' + formatVehicle(v));
         motoBar.classList.add('ep-visible');
       } else {
         motoBar.classList.remove('ep-visible');
+        motoLabel.textContent = '';
         motoValue.textContent = '';
       }
     }
 
-    // « Modifier » : réinitialise le véhicule et le contexte moto (previous_clarifications)
-    // pour que l'utilisateur redécrive sa moto, puis focalise la saisie.
+    // « Modifier » : réinitialise le véhicule et le contexte moto pour que l'utilisateur
+    // redécrive sa moto. Un NOUVEL identifiant de session est généré : le serveur tient
+    // l'état conversationnel par session_id (CDC §8), donc vider `previous_clarifications`
+    // côté widget ne suffit pas — sans nouvelle session, le serveur réutiliserait le
+    // véhicule mémorisé au prochain /search. On repart donc d'une session vierge.
     function editMoto() {
       identifiedVehicle = null;
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
+      pendingRefinement = null;
+      activeList = null;
+      sessionId = generateUUID();
       renderMotoBar();
       saveState();
       inputEl.focus();
@@ -2778,10 +2798,10 @@
           <span class="ep-typing-text">${t('typing')}</span>
         </div>
       </div>
-      <div id="ep-moto-bar">
+      <div id="ep-moto-bar" role="group">
         <div id="ep-moto-icon">${MOTO_ICON}</div>
         <div id="ep-moto-text">
-          <span id="ep-moto-label">${t('my_moto')}</span>
+          <span id="ep-moto-label"></span>
           <span id="ep-moto-value"></span>
         </div>
         <button id="ep-moto-edit" type="button">${t('edit_moto')}</button>
