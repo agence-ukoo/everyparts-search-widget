@@ -2,9 +2,15 @@
  * everyparts-widget.js — Widget de recherche EveryParts (MVP)
  * Shadow DOM, Vanilla JS, fichier unique. Mobile-first.
  *
- * Intégration :
+ * Intégration : les boutiques pointent sur le LOADER, pas sur ce fichier — voir
+ * everyparts-widget-loader.js. Le loader est servi en `no-cache` et injecte ce
+ * fichier depuis une URL épinglée `immutable`, ce qui rend une nouvelle version
+ * active au prochain chargement de page. Pointer une boutique directement sur une
+ * URL jsDelivr `@latest` la figerait 7 jours (max-age=604800 imposé par jsDelivr) ;
+ * l'épingler (`@1.1.0`) fonctionne mais impose d'éditer le snippet à chaque release.
+ *
  * <script
- *   src="https://cdn.jsdelivr.net/gh/agence-ukoo/everyparts-search-widget@1.0.0/everyparts-widget.min.js"
+ *   src="https://cdn.everyparts.io/widget/v1/loader.js"
  *   data-token="[TOKEN]"
  *   data-locale="fr-FR"
  *   data-position="bottom-right"
