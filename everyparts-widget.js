@@ -75,12 +75,13 @@
       pr_offer:        'Souhaitez-vous que je transmette une demande de recherche à notre équipe pièces ?',
       pr_offer_yes:    'Oui, me contacter',
       pr_offer_no:     'Non, merci',
+      pr_part_label:   'Pièce recherchée : ',
       pr_title:        'Demander cette pièce',
       pr_subtitle:     'Notre équipe recherche la référence pour {vehicle} et vous recontacte par email.',
       pr_subtitle_novehicle: 'Notre équipe recherche la référence et vous recontacte par email.',
       pr_email_label:  'Adresse e-mail',
       pr_email_ph:     'vous@exemple.com',
-      pr_consent:      'J\'autorise EveryParts à utiliser mon email pour me recontacter au sujet de cette demande.',
+      pr_consent:      'J\'autorise l\'utilisation de mon email afin de me recontacter au sujet de cette demande.',
       pr_submit:       'Envoyer ma demande',
       pr_sending:      'Envoi…',
       pr_cancel:       'Annuler',
@@ -91,6 +92,7 @@
       pr_err_empty_request:    'Merci de préciser votre demande.',
       pr_err_message_too_long: 'Votre message dépasse la longueur autorisée.',
       pr_err_unexpected:       'L\'envoi a échoué. Merci de réessayer dans quelques instants.',
+      after_parts_request:     'Souhaitez-vous faire une autre recherche ?',
       brand_url:       'https://www.every-parts.com/fr/',
     },
     'en-US': {
@@ -143,12 +145,13 @@
       pr_offer:        'Would you like me to pass a search request to our parts team?',
       pr_offer_yes:    'Yes, contact me',
       pr_offer_no:     'No, thanks',
+      pr_part_label:   'Searched part: ',
       pr_title:        'Request this part',
       pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you by email.',
       pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
       pr_email_label:  'Email address',
       pr_email_ph:     'you@example.com',
-      pr_consent:      'I allow EveryParts to use my email to get back to me about this request.',
+      pr_consent:      'I authorize the use of my email address to contact me regarding this request.',
       pr_submit:       'Send my request',
       pr_sending:      'Sending…',
       pr_cancel:       'Cancel',
@@ -159,6 +162,7 @@
       pr_err_empty_request:    'Please describe your request.',
       pr_err_message_too_long: 'Your message exceeds the allowed length.',
       pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
+      after_parts_request:     'Would you like to perform another search?',
       brand_url:       'https://www.every-parts.com/en/',
     },
     'en-GB': {
@@ -211,12 +215,13 @@
       pr_offer:        'Would you like me to pass a search request to our parts team?',
       pr_offer_yes:    'Yes, contact me',
       pr_offer_no:     'No, thanks',
+      pr_part_label:   'Searched part: ',
       pr_title:        'Request this part',
       pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you by email.',
       pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
       pr_email_label:  'Email address',
       pr_email_ph:     'you@example.com',
-      pr_consent:      'I allow EveryParts to use my email to get back to me about this request.',
+      pr_consent:      'I authorize the use of my email address to contact me regarding this request.',
       pr_submit:       'Send my request',
       pr_sending:      'Sending…',
       pr_cancel:       'Cancel',
@@ -227,6 +232,7 @@
       pr_err_empty_request:    'Please describe your request.',
       pr_err_message_too_long: 'Your message exceeds the allowed length.',
       pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
+      after_parts_request:     'Would you like to perform another search?',
       brand_url:       'https://www.every-parts.com/en/',
     },
   };
@@ -351,6 +357,8 @@
       if (CONFIG.logo) {
         const alt = escHtml(CONFIG.title || 'EveryParts');
         parts.push(`<img id="ep-header-logo-img" src="${escHtml(CONFIG.logo)}" alt="${alt}">`);
+      } else {
+        parts.push(`<div id="ep-header-logo-img">${markSvg(25, 25, '#fff')}</div>`);
       }
       if (CONFIG.title || CONFIG.subtitle) {
         const text = [];
@@ -1413,7 +1421,7 @@
     /* « Oui » : blanc tant qu'on n'a pas cliqué, vert une fois la demande envoyée.
        Le vert EST la marque du choix — d'où l'absence de liseré (cf. .ep-pr-chosen). */
     .ep-pr-btn-yes { border: 1px solid #DCE6E1; background: var(--ep-white); color: var(--ep-dark); }
-    .ep-pr-btn-yes.ep-pr-chosen { background: var(--ep-primary); color: #04332F; border-color: transparent; }
+    .ep-pr-btn-yes.ep-pr-chosen { background: var(--ep-primary); color: #fff; border-color: transparent; }
     .ep-pr-btn-no  { border: 1px solid #DCE6E1; background: var(--ep-white); color: #5A6B68; font-weight: 600; }
     .ep-pr-btn:hover:not(:disabled) { filter: brightness(1.04); }
     .ep-pr-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
@@ -1455,6 +1463,49 @@
     #ep-pr-title { font-family: var(--ep-font-title); font-size: 16px; font-weight: 800; color: #0C2A27; }
     .ep-pr-sub { font-size: 13px; line-height: 1.45; color: #5A6B68; }
     .ep-pr-sub strong { font-weight: 700; color: #12312D; }
+
+    /* Rappel de la pièce recherchée : pré-rempli avec la requête de l'utilisateur,
+       mais ÉDITABLE — sa valeur part dans le champ message de /parts-request.
+       L'encart reprend l'habillage vert du frame ; l'input est transparent pour
+       lire comme le texte en gras du frame, avec un anneau de focus pour signaler
+       qu'il se modifie. */
+    .ep-pr-recall {
+      display: flex;
+      align-items: center;
+      /* Le frame tient sur une ligne ; ici la valeur est éditable, donc elle doit
+         rester LISIBLE en entier. On autorise le repli : libellé et champ restent
+         côte à côte tant que ça passe, sinon le champ prend la ligne suivante. */
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      padding: 9px 12px;
+      background: #F2FCF8;
+      border: 1px solid #CDEFE1;
+      border-radius: 11px;
+    }
+    .ep-pr-recall svg { flex: none; }
+    .ep-pr-recall-label { flex: none; font-size: 12.5px; line-height: 1.35; color: #5A6B68; }
+    #ep-pr-message {
+      /* Base 100% : le champ prend TOUJOURS sa propre ligne sous le libellé. Une base
+         plus étroite le laisserait tenir à côté (~200px) et tronquer la valeur — or
+         l'utilisateur doit lire en entier ce qu'il s'apprête à envoyer. Et c'est une
+         zone de texte, pas un input : à 16px sur mobile, la valeur (requête + moto)
+         dépasse une ligne, qu'un input mono-ligne rognerait. Elle s'étend toute seule. */
+      flex: 1 1 100%;
+      min-width: 0;
+      resize: none;
+      overflow: hidden;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      font-family: var(--ep-font-body);
+      /* ≥16px : empêche le zoom auto iOS, cf. #ep-input / #ep-pr-email. */
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: #12312D;
+    }
+    #ep-pr-message:focus { outline: 2px solid var(--ep-primary); outline-offset: 3px; border-radius: 3px; }
+    .ep-pr-recall:has(#ep-pr-message[aria-invalid="true"]) { border-color: #C0392B; background: #FDF3F2; }
 
     .ep-pr-field { display: flex; flex-direction: column; gap: 6px; }
     #ep-pr-email {
@@ -1554,10 +1605,11 @@
       #ep-window.ep-pos-bottom-left  { bottom: 96px; left: 24px; top: auto; right: auto; }
       #ep-window.ep-pos-top-right    { top: 96px; right: 24px; bottom: auto; left: auto; }
       #ep-window.ep-pos-top-left     { top: 96px; left: 24px; bottom: auto; right: auto; }
-      #ep-header { padding: 14px 16px; }
+      #ep-header { padding: 12px 12px; }
       #ep-fab.ep-window-open { display: block; }
       #ep-input { font-size: 14px; }
       #ep-pr-email { font-size: 13.5px; }   /* valeur du frame 2a */
+      #ep-pr-message { font-size: 12.5px; } /* idem — 16px sur mobile contre le zoom iOS */
       .ep-clari-filter { font-size: 13px; }
       .ep-products-filter { font-size: 13px; padding: 8px 12px; }
       .ep-products-sort { font-size: 13px; padding: 8px 6px; min-height: 36px; }
@@ -1604,6 +1656,11 @@
   // la barre de contexte « Ma moto », affichée uniquement quand marque + modèle sont
   // connus. null tant qu'aucune moto n'est identifiée. Persisté avec la session.
   let identifiedVehicle = null;
+  // Type de pièce interprété par le serveur (`interpreted.part_type`, ex. « guidon »).
+  // Même logique que identifiedVehicle : c'est la lecture SERVEUR de la demande, pas le
+  // texte brut tapé par l'utilisateur — lequel contient souvent déjà la moto
+  // (« guidon honda cbr 600 85 ») et ferait doublon avec le véhicule. Persisté aussi.
+  let identifiedPart = null;
 
   // ── Persistance de session (survit à la navigation) ─────────────────────────
   // Historique ordonné de la conversation, maintenue à jour au fil
@@ -1663,6 +1720,7 @@
         sessionId,
         conversationContext,
         identifiedVehicle,
+        identifiedPart,
         transcript,
         lastActive: Date.now(),
       }));
@@ -1774,6 +1832,8 @@
     const prSub      = win.querySelector('#ep-pr-sub');
     const prEmail    = win.querySelector('#ep-pr-email');
     const prEmailErr = win.querySelector('#ep-pr-email-err');
+    const prMessage  = win.querySelector('#ep-pr-message');
+    const prMsgErr   = win.querySelector('#ep-pr-message-err');
     const prConsent  = win.querySelector('#ep-pr-consent-input');
     const prConsErr  = win.querySelector('#ep-pr-consent-err');
     const prFormErr  = win.querySelector('#ep-pr-form-err');
@@ -2171,6 +2231,7 @@
       pendingRefinement = null;
       activeList = null;
       identifiedVehicle = null;
+      identifiedPart = null;
       sessionId = generateUUID();
       clearState();
       renderMotoBar();       // masque la barre « Ma moto »
@@ -2274,6 +2335,23 @@
       if (!isRestoring) saveState();
     }
 
+    // Type de pièce interprété par le serveur. Indépendant du véhicule : une requête
+    // peut nommer la pièce sans que la moto soit encore identifiée, et inversement —
+    // d'où une fonction distincte de updateVehicleFromData(), qui sort tôt sans moto.
+    function updatePartFromData(data) {
+      const part = data && data.interpreted && data.interpreted.part_type;
+      if (!part) return;
+      identifiedPart = String(part).trim() || null;
+      if (!isRestoring) saveState();
+    }
+
+    // Majuscule initiale seule : `part_type` arrive en minuscules (« guidon »), et
+    // titleCase() capitaliserait chaque mot (« Plaquette De Frein »).
+    function capitalize(s) {
+      s = String(s || '');
+      return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+    }
+
     // Casse titre (l'API renvoie la marque en capitales, ex. « HONDA »).
     function titleCase(s) {
       return String(s || '').replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -2363,6 +2441,7 @@
       sessionId = saved.sessionId || sessionId;
       conversationContext = saved.conversationContext || { previous_clarifications: [] };
       identifiedVehicle = saved.identifiedVehicle || null;
+      identifiedPart = saved.identifiedPart || null;
       transcript = saved.transcript;
 
       isRestoring = true;
@@ -2534,6 +2613,7 @@
     function renderResponse(data) {
       // Met à jour la barre « Ma moto » dès qu'une réponse identifie le véhicule.
       updateVehicleFromData(data);
+      updatePartFromData(data);
       switch (data.type) {
         case 'results':
           renderResults(data);
@@ -3267,6 +3347,15 @@
       renderPartsRequestOffer();
     }
 
+    // Dernière requête de l'utilisateur — celle qui a produit la recherche
+    // infructueuse, puisque appendUserMessage() précède toujours callSearch().
+    function lastUserQuery() {
+      for (let i = transcript.length - 1; i >= 0; i--) {
+        if (transcript[i].t === 'user') return transcript[i].text || '';
+      }
+      return '';
+    }
+
     // ── Fiche modale de demande de pièce (frame 2a) ─────────────────────────
     // Un seul formulaire réutilisé, rattaché à la proposition qui l'a ouvert.
     let prOpenFor = null;      // { entry, trigger } — entrée journalisée + bouton d'origine
@@ -3277,8 +3366,8 @@
     const PR_ERROR_FIELDS = {
       invalid_email:    'email',
       consent_required: 'consent',
-      empty_request:    'form',
-      message_too_long: 'form',
+      empty_request:    'message',
+      message_too_long: 'message',
     };
     const PR_ERROR_FALLBACK = {
       invalid_email:    'pr_err_invalid_email',
@@ -3290,9 +3379,11 @@
     function prClearErrors() {
       prEmailErr.textContent = '';
       prConsErr.textContent = '';
+      prMsgErr.textContent = '';
       prFormErr.textContent = '';
       prEmail.removeAttribute('aria-invalid');
       prConsent.removeAttribute('aria-invalid');
+      prMessage.removeAttribute('aria-invalid');
     }
 
     // Place un message sur le bon champ et y amène le focus (première erreur).
@@ -3305,6 +3396,10 @@
         prConsErr.textContent = message;
         prConsent.setAttribute('aria-invalid', 'true');
         prConsent.focus();
+      } else if (field === 'message') {
+        prMsgErr.textContent = message;
+        prMessage.setAttribute('aria-invalid', 'true');
+        prMessage.focus();
       } else {
         prFormErr.textContent = message;
       }
@@ -3337,6 +3432,20 @@
         prSub.textContent = t('pr_subtitle_novehicle');
       }
 
+      // Rappel de la pièce recherchée, pré-rempli et modifiable : c'est ce champ qui
+      // part en `message`. La requête vient de l'entrée journalisée (elle a capturé
+      // celle de la recherche infructueuse), pas du dernier message en date.
+      // La PIÈCE INTERPRÉTÉE, pas la requête brute : « guidon honda cbr 600 85 »
+      // suivi de « Honda CBR 600 F · 1985 » répéterait la moto. On ne retombe sur la
+      // requête que si le serveur n'a pas su isoler la pièce — dans ce cas on ne
+      // rajoute pas le véhicule, il y est déjà selon toute vraisemblance.
+      const part = (entry && entry.part) || identifiedPart;
+      const query = (entry && entry.query) || lastUserQuery();
+      prMessage.value = part
+        ? [capitalize(part), vehicle ? formatVehicle(vehicle) : ''].filter(Boolean).join(' — ')
+        : query;
+      prAutoGrow();
+
       prBackdrop.classList.add('ep-visible');
       prBackdrop.setAttribute('aria-hidden', 'false');
       // Mobile : pas de focus automatique — même règle que toggleWindow(). Ouvrir le
@@ -3361,6 +3470,19 @@
       return prBackdrop.classList.contains('ep-visible');
     }
 
+    // La zone de texte épouse son contenu : remise à zéro avant lecture de
+    // scrollHeight, sinon elle ne pourrait que grandir, jamais rétrécir.
+    function prAutoGrow() {
+      prMessage.style.height = 'auto';
+      prMessage.style.height = prMessage.scrollHeight + 'px';
+    }
+    prMessage.addEventListener('input', prAutoGrow);
+    // Entrée valide le formulaire plutôt que d'insérer un saut de ligne : le champ
+    // tient sur une ligne ou deux, ce n'est pas un espace de rédaction libre.
+    prMessage.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); submitPartsRequest(); }
+    });
+
     prCancel.addEventListener('click', closePartsRequest);
     prEmail.addEventListener('input', prSyncSubmit);
     prConsent.addEventListener('change', prSyncSubmit);
@@ -3382,6 +3504,13 @@
         prShowError('consent', t('pr_err_consent_required'));
         return;
       }
+      // Blanc = absent des deux côtés (cf. schéma) : le champ est facultatif, mais
+      // s'il est rempli il doit tenir dans les 5000 caractères.
+      const message = prMessage.value.trim();
+      if (message.length > 5000) {
+        prShowError('message', t('pr_err_message_too_long'));
+        return;
+      }
 
       const entry = prOpenFor && prOpenFor.entry;
       const trigger = prOpenFor && prOpenFor.trigger;
@@ -3392,7 +3521,7 @@
       prSubmit.disabled = true;
       prSubmit.textContent = t('pr_sending');
 
-      const result = await sendPartsRequest(email, prSessionId);
+      const result = await sendPartsRequest(email, prSessionId, message);
 
       prSending = false;
       prSubmit.textContent = t('pr_submit');
@@ -3423,7 +3552,7 @@
 
     // Un envoi par soumission : aucun réessai automatique (l'appel consomme le
     // quota du tenant au même titre qu'une recherche, et le serveur ne dédoublonne pas).
-    async function sendPartsRequest(email, prSessionId) {
+    async function sendPartsRequest(email, prSessionId, message) {
       try {
         const resp = await fetch(`${CONFIG.apiBase}/parts-request`, {
           method:  'POST',
@@ -3432,12 +3561,14 @@
             'Accept':        'application/json',
             'Authorization': `Bearer ${CONFIG.token}`,
           },
-          body: JSON.stringify({
+          // `message` n'est joint que s'il est non vide : le schéma impose
+          // minLength 1 et additionalProperties:false — une chaîne vide serait rejetée.
+          body: JSON.stringify(Object.assign({
             type:       'parts_request',
             email,
             consent:    true,
             session_id: prSessionId,
-          }),
+          }, message ? { message } : null)),
         });
 
         const data = await resp.json().catch(() => null);
@@ -3462,7 +3593,7 @@
       if (keepLive === undefined) keepLive = true;
       let logEntry = reuseEntry || null;
       if (!logEntry && !isRestoring) {
-        logEntry = { t: 'pr_offer', status: 'pending', sessionId, vehicle: identifiedVehicle };
+        logEntry = { t: 'pr_offer', status: 'pending', sessionId, vehicle: identifiedVehicle, part: identifiedPart, query: lastUserQuery() };
         transcript.push(logEntry);
         saveState();
       }
@@ -3508,10 +3639,12 @@
 
       yes.addEventListener('click', () => {
         openPartsRequest(logEntry, yes);
+        appendAssistantMessage(t('after_parts_request'));
       });
       no.addEventListener('click', () => {
         freeze('no');
         if (logEntry && !isRestoring) { logEntry.status = 'declined'; saveState(); }
+        appendAssistantMessage(t('after_parts_request'));
       });
     }
 
@@ -3548,9 +3681,14 @@
     function appendAssistantMessageEl(el) {
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-assistant';
+      const avatar = document.createElement('div');
+      avatar.className = 'ep-msg-avatar';
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.innerHTML = MARK_SVG;
       const bubble = document.createElement('div');
       bubble.className = 'ep-bubble';
       bubble.appendChild(el);
+      div.appendChild(avatar);
       div.appendChild(bubble);
       messagesEl.appendChild(div);
       scrollBottom();
@@ -3662,6 +3800,15 @@
           <div class="ep-pr-head">
             <span id="ep-pr-title">${escHtml(t('pr_title'))}</span>
             <span class="ep-pr-sub" id="ep-pr-sub"></span>
+          </div>
+          <div class="ep-pr-field">
+            <div class="ep-pr-recall">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.35-4.35"></path></svg>
+              <label class="ep-pr-recall-label" for="ep-pr-message">${escHtml(t('pr_part_label'))}</label>
+              <textarea id="ep-pr-message" rows="1" maxlength="5000"
+                        aria-describedby="ep-pr-message-err"></textarea>
+            </div>
+            <span class="ep-pr-error" id="ep-pr-message-err" role="alert"></span>
           </div>
           <div class="ep-pr-field">
             <label class="ep-sr-only" for="ep-pr-email">${escHtml(t('pr_email_label'))}</label>
