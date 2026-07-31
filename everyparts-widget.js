@@ -3107,7 +3107,6 @@
     return `
       <div id="ep-header">
         <div id="ep-header-brand">
-          ${CONFIG.logo}
           <div id="ep-header-logo">
             ${headerBrandHtml()}
           </div>
