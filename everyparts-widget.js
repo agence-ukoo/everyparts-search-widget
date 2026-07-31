@@ -71,6 +71,26 @@
       launcher_examples: ['Plaquette de frein Galfer …', 'Bougie CBR 600 de 1996 …', 'Kit chaîne pour Yamaha MT …'],
       teaser:          "Vous cherchez une pièce ?\rJe la trouve pour vous !",
       teaser_dismiss:  'Masquer',
+      // ── Demande de pièce (frame 2a) ──
+      pr_offer:        'Souhaitez-vous que je transmette une demande de recherche à notre équipe pièces ?',
+      pr_offer_yes:    'Oui, me contacter',
+      pr_offer_no:     'Non, merci',
+      pr_title:        'Demander cette pièce',
+      pr_subtitle:     'Notre équipe recherche la référence pour {vehicle} et vous recontacte par email.',
+      pr_subtitle_novehicle: 'Notre équipe recherche la référence et vous recontacte par email.',
+      pr_email_label:  'Adresse e-mail',
+      pr_email_ph:     'vous@exemple.com',
+      pr_consent:      'J\'autorise EveryParts à utiliser mon email pour me recontacter au sujet de cette demande.',
+      pr_submit:       'Envoyer ma demande',
+      pr_sending:      'Envoi…',
+      pr_cancel:       'Annuler',
+      pr_close:        'Fermer la demande',
+      pr_success:      'C\'est noté : notre équipe vous recontacte par email au sujet de cette pièce.',
+      pr_err_invalid_email:    'Merci d\'indiquer une adresse e-mail valide.',
+      pr_err_consent_required: 'Merci de cocher cette case pour continuer.',
+      pr_err_empty_request:    'Merci de préciser votre demande.',
+      pr_err_message_too_long: 'Votre message dépasse la longueur autorisée.',
+      pr_err_unexpected:       'L\'envoi a échoué. Merci de réessayer dans quelques instants.',
       brand_url:       'https://www.every-parts.com/fr/',
     },
     'en-US': {
@@ -119,6 +139,26 @@
       launcher_examples: ['Galfer brake pads…', 'Spark plug for a 1996 CBR 600…', 'Chain kit for a Yamaha MT…'],
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
+      // ── Part request (frame 2a) ──
+      pr_offer:        'Would you like me to pass a search request to our parts team?',
+      pr_offer_yes:    'Yes, contact me',
+      pr_offer_no:     'No, thanks',
+      pr_title:        'Request this part',
+      pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you by email.',
+      pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
+      pr_email_label:  'Email address',
+      pr_email_ph:     'you@example.com',
+      pr_consent:      'I allow EveryParts to use my email to get back to me about this request.',
+      pr_submit:       'Send my request',
+      pr_sending:      'Sending…',
+      pr_cancel:       'Cancel',
+      pr_close:        'Close the request',
+      pr_success:      'Noted — our team will get back to you by email about this part.',
+      pr_err_invalid_email:    'Please enter a valid email address.',
+      pr_err_consent_required: 'Please tick this box to continue.',
+      pr_err_empty_request:    'Please describe your request.',
+      pr_err_message_too_long: 'Your message exceeds the allowed length.',
+      pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
       brand_url:       'https://www.every-parts.com/en/',
     },
     'en-GB': {
@@ -167,6 +207,26 @@
       launcher_examples: ['Galfer brake pads…', 'Spark plug for a 1996 CBR 600…', 'Chain kit for a Yamaha MT…'],
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
+      // ── Part request (frame 2a) ──
+      pr_offer:        'Would you like me to pass a search request to our parts team?',
+      pr_offer_yes:    'Yes, contact me',
+      pr_offer_no:     'No, thanks',
+      pr_title:        'Request this part',
+      pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you by email.',
+      pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
+      pr_email_label:  'Email address',
+      pr_email_ph:     'you@example.com',
+      pr_consent:      'I allow EveryParts to use my email to get back to me about this request.',
+      pr_submit:       'Send my request',
+      pr_sending:      'Sending…',
+      pr_cancel:       'Cancel',
+      pr_close:        'Close the request',
+      pr_success:      'Noted — our team will get back to you by email about this part.',
+      pr_err_invalid_email:    'Please enter a valid email address.',
+      pr_err_consent_required: 'Please tick this box to continue.',
+      pr_err_empty_request:    'Please describe your request.',
+      pr_err_message_too_long: 'Your message exceeds the allowed length.',
+      pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
       brand_url:       'https://www.every-parts.com/en/',
     },
   };
@@ -1322,6 +1382,157 @@
     #ep-footer-brand svg { height: 15px; width: auto; display: block; }
     #ep-footer-brand:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
 
+    /* ── Demande de pièce (frame 2a) ──────────────────────────────────────────
+       Deux morceaux : la proposition en bulle assistant dans le fil, et la fiche
+       en feuille modale ancrée au bas de #ep-window (celle-ci est en position:fixed
+       + overflow:hidden, elle sert donc de bloc conteneur ET rogne la feuille qui
+       glisse depuis le bas). La modale ne couvre que le widget, jamais la page hôte. */
+    /* Libellé réservé aux lecteurs d'écran : le frame ne montre qu'un placeholder,
+       or un placeholder n'est pas un libellé (il disparaît à la saisie). */
+    .ep-sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      overflow: hidden; white-space: nowrap;
+      clip: rect(0 0 0 0); clip-path: inset(50%);
+    }
+
+    .ep-pr-offer { display: flex; flex-direction: column; gap: 10px; }
+    .ep-pr-offer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ep-pr-btn {
+      height: 32px;
+      padding: 0 13px;
+      border: 0;
+      border-radius: 10px;
+      font-family: var(--ep-font-title);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* « Oui » : blanc tant qu'on n'a pas cliqué, vert une fois la demande envoyée.
+       Le vert EST la marque du choix — d'où l'absence de liseré (cf. .ep-pr-chosen). */
+    .ep-pr-btn-yes { border: 1px solid #DCE6E1; background: var(--ep-white); color: var(--ep-dark); }
+    .ep-pr-btn-yes.ep-pr-chosen { background: var(--ep-primary); color: #04332F; border-color: transparent; }
+    .ep-pr-btn-no  { border: 1px solid #DCE6E1; background: var(--ep-white); color: #5A6B68; font-weight: 600; }
+    .ep-pr-btn:hover:not(:disabled) { filter: brightness(1.04); }
+    .ep-pr-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    /* Choix déjà fait (restauration ou après clic) : figé, l'option retenue reste lisible. */
+    .ep-pr-btn:disabled { cursor: default; opacity: .5; }
+    .ep-pr-btn.ep-pr-chosen:disabled { opacity: 1; }
+    /* « Non » n'a pas de couleur propre pour signaler le choix : il garde un liseré. */
+    .ep-pr-btn-no.ep-pr-chosen:disabled { box-shadow: inset 0 0 0 2px var(--ep-dark); }
+
+    #ep-pr-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      background: rgba(6,76,76,.45);
+      display: flex;
+      align-items: flex-end;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .22s ease, visibility 0s linear .22s;
+    }
+    #ep-pr-backdrop.ep-visible { opacity: 1; visibility: visible; transition: opacity .22s ease, visibility 0s; }
+    #ep-pr-sheet {
+      width: 100%;
+      background: var(--ep-white);
+      border-radius: 20px 20px 0 0;
+      padding: 20px 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 -12px 30px -10px rgba(6,76,76,.3);
+      transform: translateY(100%);
+      transition: transform .28s cubic-bezier(.2,.8,.2,1);
+      max-height: 100%;
+      overflow-y: auto;
+    }
+    #ep-pr-backdrop.ep-visible #ep-pr-sheet { transform: translateY(0); }
+    .ep-pr-handle { width: 36px; height: 4px; border-radius: 2px; background: #E4DFD2; align-self: center; flex: none; }
+    .ep-pr-head { display: flex; flex-direction: column; gap: 4px; }
+    #ep-pr-title { font-family: var(--ep-font-title); font-size: 16px; font-weight: 800; color: #0C2A27; }
+    .ep-pr-sub { font-size: 13px; line-height: 1.45; color: #5A6B68; }
+    .ep-pr-sub strong { font-weight: 700; color: #12312D; }
+
+    .ep-pr-field { display: flex; flex-direction: column; gap: 6px; }
+    #ep-pr-email {
+      height: 42px;
+      padding: 0 13px;
+      background: var(--ep-grey-100);
+      border: 1px solid #E4DFD2;
+      border-radius: 11px;
+      font-family: var(--ep-font-body);
+      /* ≥16px : empêche le zoom auto iOS (même règle que #ep-input). Le 13.5px du
+         frame est rétabli au-dessus de 641px, où le zoom au focus n'existe pas. */
+      font-size: 16px;
+      color: #12312D;
+      width: 100%;
+    }
+    #ep-pr-email::placeholder { color: #9AA6A3; }
+    #ep-pr-email:focus { outline: 2px solid var(--ep-primary); outline-offset: -1px; border-color: transparent; }
+    #ep-pr-email[aria-invalid="true"] { border-color: #C0392B; background: #FDF3F2; }
+
+    /* Case de consentement : input réel (focus + clavier natifs) masqué visuellement,
+       doublé d'un carré peint. JAMAIS pré-cochée — un consentement pré-coché n'en est pas un. */
+    .ep-pr-consent { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+    #ep-pr-consent-input {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      overflow: hidden; white-space: nowrap;
+      clip: rect(0 0 0 0); clip-path: inset(50%);
+    }
+    .ep-pr-box {
+      width: 15px; height: 15px;
+      flex: none;
+      margin-top: 1px;
+      border-radius: 4px;
+      border: 1.5px solid #C9D4D0;
+      background: var(--ep-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ep-pr-box svg { opacity: 0; }
+    #ep-pr-consent-input:checked ~ .ep-pr-box { border-color: #00A76F; background: #F2FCF8; }
+    #ep-pr-consent-input:checked ~ .ep-pr-box svg { opacity: 1; }
+    #ep-pr-consent-input:focus-visible ~ .ep-pr-box { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    #ep-pr-consent-input[aria-invalid="true"] ~ .ep-pr-box { border-color: #C0392B; }
+    .ep-pr-consent-text { font-size: 11.5px; line-height: 1.4; color: #5A6B68; }
+
+    .ep-pr-error { font-size: 11.5px; line-height: 1.35; font-weight: 600; color: #C0392B; }
+    .ep-pr-error:empty { display: none; }
+
+    #ep-pr-submit {
+      height: 42px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(150deg,#00D695,#00A76F);
+      color: #04332F;
+      font-family: var(--ep-font-title);
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #ep-pr-submit:hover:not(:disabled) { filter: brightness(1.06); }
+    #ep-pr-submit:disabled { opacity: .45; cursor: default; }
+    #ep-pr-submit:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
+    #ep-pr-cancel {
+      height: 20px;
+      border: 0;
+      background: transparent;
+      color: #93A19E;
+      font-family: var(--ep-font-title);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #ep-pr-cancel:hover { color: #5A6B68; }
+    #ep-pr-cancel:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 4px; }
+
     /* Masquer le FAB quand la fenêtre est ouverte (mobile plein écran) */
     #ep-fab.ep-window-open { display: none; }
 
@@ -1346,6 +1557,7 @@
       #ep-header { padding: 14px 16px; }
       #ep-fab.ep-window-open { display: block; }
       #ep-input { font-size: 14px; }
+      #ep-pr-email { font-size: 13.5px; }   /* valeur du frame 2a */
       .ep-clari-filter { font-size: 13px; }
       .ep-products-filter { font-size: 13px; padding: 8px 12px; }
       .ep-products-sort { font-size: 13px; padding: 8px 6px; min-height: 36px; }
@@ -1356,6 +1568,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       #ep-window, .ep-msg, .ep-card, .ep-card-arrow { transition: none; animation: none; }
+      #ep-pr-backdrop, #ep-pr-sheet { transition: none; }
       .ep-dot { animation: none; }
       #ep-input:placeholder-shown ~ #ep-send-btn:not(:disabled) { animation: none; }
       /* Le lanceur change d'état sans morphing ni défilement des exemples. Les sélecteurs
@@ -1555,6 +1768,17 @@
     const motoLabel  = win.querySelector('#ep-moto-label');
     const motoValue  = win.querySelector('#ep-moto-value');
     const motoEdit   = win.querySelector('#ep-moto-edit');
+    // Fiche « demander cette pièce » (frame 2a)
+    const prBackdrop = win.querySelector('#ep-pr-backdrop');
+    const prSheet    = win.querySelector('#ep-pr-sheet');
+    const prSub      = win.querySelector('#ep-pr-sub');
+    const prEmail    = win.querySelector('#ep-pr-email');
+    const prEmailErr = win.querySelector('#ep-pr-email-err');
+    const prConsent  = win.querySelector('#ep-pr-consent-input');
+    const prConsErr  = win.querySelector('#ep-pr-consent-err');
+    const prFormErr  = win.querySelector('#ep-pr-form-err');
+    const prSubmit   = win.querySelector('#ep-pr-submit');
+    const prCancel   = win.querySelector('#ep-pr-cancel');
 
     // ── Événements ────────────────────────────────────────────────────────
     let isOpen = false;
@@ -1579,7 +1803,10 @@
 
     // Fermeture à Échap
     shadow.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && isOpen) toggleWindow(false);
+      if (e.key !== 'Escape' || !isOpen) return;
+      // La fiche de demande passe avant : Échap la referme sans fermer le chat.
+      if (isPartsRequestOpen()) { closePartsRequest(); return; }
+      toggleWindow(false);
     });
 
     sendBtn.addEventListener('click', sendMessage);
@@ -1926,6 +2153,7 @@
         }
       } else {
         clearTimeout(settleTimer);
+        closePartsRequest();  // une fiche laissée ouverte ne doit pas réapparaître à la réouverture
         inputEl.blur();       // referme le clavier avant de rendre la main à la page
         applyViewport();      // dégèle et restaure la position de défilement
         fab.focus();
@@ -1936,6 +2164,7 @@
     // l'accueil. Permet à l'utilisateur de contourner la persistance de sa conversation
     // s'il souhaite recommencer
     function newConversation() {
+      closePartsRequest();   // la fiche est rattachée à une proposition qui disparaît
       transcript = [];
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
@@ -2207,6 +2436,11 @@
         }
         case 'no_results':
           appendAssistantMessageEl(buildNoResults(entry.message, entry.suggestions));
+          break;
+        case 'pr_offer':
+          // Seule la proposition encore ouverte en toute fin d'historique reste
+          // cliquable — même règle que les groupes d'options.
+          renderPartsRequestOffer(entry, isLast);
           break;
       }
     }
@@ -3027,6 +3261,258 @@
         conversationContext = { previous_clarifications: [] };
         saveState();
       }
+
+      // Frame 2a : la recherche infructueuse enchaîne sur une proposition de
+      // demande de pièce. L'utilisateur y entre explicitement — rien ne s'ouvre seul.
+      renderPartsRequestOffer();
+    }
+
+    // ── Fiche modale de demande de pièce (frame 2a) ─────────────────────────
+    // Un seul formulaire réutilisé, rattaché à la proposition qui l'a ouvert.
+    let prOpenFor = null;      // { entry, trigger } — entrée journalisée + bouton d'origine
+    let prSending = false;
+
+    // Codes 422 → champ concerné. Le libellé affiché reste celui du serveur
+    // (français, présentable) ; c'est le CODE qui décide de l'emplacement.
+    const PR_ERROR_FIELDS = {
+      invalid_email:    'email',
+      consent_required: 'consent',
+      empty_request:    'form',
+      message_too_long: 'form',
+    };
+    const PR_ERROR_FALLBACK = {
+      invalid_email:    'pr_err_invalid_email',
+      consent_required: 'pr_err_consent_required',
+      empty_request:    'pr_err_empty_request',
+      message_too_long: 'pr_err_message_too_long',
+    };
+
+    function prClearErrors() {
+      prEmailErr.textContent = '';
+      prConsErr.textContent = '';
+      prFormErr.textContent = '';
+      prEmail.removeAttribute('aria-invalid');
+      prConsent.removeAttribute('aria-invalid');
+    }
+
+    // Place un message sur le bon champ et y amène le focus (première erreur).
+    function prShowError(field, message) {
+      if (field === 'email') {
+        prEmailErr.textContent = message;
+        prEmail.setAttribute('aria-invalid', 'true');
+        prEmail.focus();
+      } else if (field === 'consent') {
+        prConsErr.textContent = message;
+        prConsent.setAttribute('aria-invalid', 'true');
+        prConsent.focus();
+      } else {
+        prFormErr.textContent = message;
+      }
+    }
+
+    // Le bouton ne s'active qu'avec un email non vide ET le consentement coché.
+    function prSyncSubmit() {
+      prSubmit.disabled = prSending || !prEmail.value.trim() || !prConsent.checked;
+    }
+
+    function openPartsRequest(entry, trigger) {
+      prOpenFor = { entry: entry || null, trigger: trigger || null };
+      prClearErrors();
+      prEmail.value = '';
+      prConsent.checked = false;      // jamais pré-coché
+      prSending = false;
+      prSubmit.textContent = t('pr_submit');
+      prSyncSubmit();
+
+      // Sous-titre : reprend le véhicule identifié, comme dans le frame.
+      const vehicle = (entry && entry.vehicle) || identifiedVehicle;
+      if (vehicle) {
+        // Jeton neutre, remplacé APRÈS échappement : le véhicule passe en gras sans
+        // jamais réinjecter de HTML venu du serveur. Un marqueur ' ' viserait la
+        // première espace de la phrase, pas le placeholder — d'où le caractère nul.
+        const TOKEN = '\u0000';
+        prSub.innerHTML = escHtml(t('pr_subtitle', { vehicle: TOKEN }))
+          .replace(TOKEN, `<strong>${escHtml(formatVehicle(vehicle))}</strong>`);
+      } else {
+        prSub.textContent = t('pr_subtitle_novehicle');
+      }
+
+      prBackdrop.classList.add('ep-visible');
+      prBackdrop.setAttribute('aria-hidden', 'false');
+      // Mobile : pas de focus automatique — même règle que toggleWindow(). Ouvrir le
+      // clavier d'emblée réduit la fiche de moitié et masque le consentement avant
+      // qu'il ait été lu. Sur desktop, le focus entre directement dans le champ.
+      if (!isMobile()) prEmail.focus();
+      else prSheet.scrollTop = 0;
+    }
+
+    function closePartsRequest() {
+      if (!prBackdrop.classList.contains('ep-visible')) return;
+      prBackdrop.classList.remove('ep-visible');
+      prBackdrop.setAttribute('aria-hidden', 'true');
+      const trigger = prOpenFor && prOpenFor.trigger;
+      prOpenFor = null;
+      // Le focus revient d'où il venait, sauf si le bouton a été figé entre-temps.
+      if (trigger && !trigger.disabled) trigger.focus();
+      else if (!isMobile()) inputEl.focus();
+    }
+
+    function isPartsRequestOpen() {
+      return prBackdrop.classList.contains('ep-visible');
+    }
+
+    prCancel.addEventListener('click', closePartsRequest);
+    prEmail.addEventListener('input', prSyncSubmit);
+    prConsent.addEventListener('change', prSyncSubmit);
+    // Un clic sur le fond ferme, comme une feuille modale usuelle.
+    prBackdrop.addEventListener('click', e => { if (e.target === prBackdrop) closePartsRequest(); });
+    prSheet.addEventListener('submit', e => { e.preventDefault(); submitPartsRequest(); });
+
+    async function submitPartsRequest() {
+      if (prSending) return;
+      prClearErrors();
+
+      const email = prEmail.value.trim();
+      // Validation miroir des 422 : une UI correcte ne doit jamais les déclencher.
+      if (!email || email.length > 255 || !prEmail.checkValidity()) {
+        prShowError('email', t('pr_err_invalid_email'));
+        return;
+      }
+      if (!prConsent.checked) {
+        prShowError('consent', t('pr_err_consent_required'));
+        return;
+      }
+
+      const entry = prOpenFor && prOpenFor.entry;
+      const trigger = prOpenFor && prOpenFor.trigger;
+      // Session de la recherche infructueuse, capturée à la création de l'entrée.
+      const prSessionId = (entry && entry.sessionId) || sessionId;
+
+      prSending = true;
+      prSubmit.disabled = true;
+      prSubmit.textContent = t('pr_sending');
+
+      const result = await sendPartsRequest(email, prSessionId);
+
+      prSending = false;
+      prSubmit.textContent = t('pr_submit');
+
+      if (result.ok) {
+        // La fiche disparaît et ne peut plus être renvoyée : la proposition est figée.
+        if (entry) {
+          entry.status = 'sent';
+          if (!isRestoring) saveState();
+        }
+        if (trigger) {
+          trigger.disabled = true;
+          trigger.classList.add('ep-pr-chosen');
+          const sibling = trigger.parentElement && trigger.parentElement.querySelector('.ep-pr-btn-no');
+          if (sibling) sibling.disabled = true;
+        }
+        closePartsRequest();
+        appendAssistantMessage(t('pr_success'));
+        return;
+      }
+
+      // Échec : la fiche reste ouverte, saisie conservée, message sur le bon champ.
+      const field = PR_ERROR_FIELDS[result.code] || 'form';
+      const fallbackKey = PR_ERROR_FALLBACK[result.code];
+      prShowError(field, result.message || (fallbackKey ? t(fallbackKey) : t('pr_err_unexpected')));
+      prSyncSubmit();
+    }
+
+    // Un envoi par soumission : aucun réessai automatique (l'appel consomme le
+    // quota du tenant au même titre qu'une recherche, et le serveur ne dédoublonne pas).
+    async function sendPartsRequest(email, prSessionId) {
+      try {
+        const resp = await fetch(`${CONFIG.apiBase}/parts-request`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Accept':        'application/json',
+            'Authorization': `Bearer ${CONFIG.token}`,
+          },
+          body: JSON.stringify({
+            type:       'parts_request',
+            email,
+            consent:    true,
+            session_id: prSessionId,
+          }),
+        });
+
+        const data = await resp.json().catch(() => null);
+        if (resp.status === 201 && data && data.recorded) return { ok: true };
+        return {
+          ok:      false,
+          code:    data && data.error ? data.error.code : null,
+          message: data && data.error ? data.error.message : null,
+        };
+      } catch (err) {
+        console.error(err);
+        return { ok: false, code: null, message: null };
+      }
+    }
+
+    // ── Demande de pièce (frame 2a) ─────────────────────────────────────────
+    // Bulle assistant « Oui, me contacter / Non, merci ». Journalisée comme les
+    // autres échanges : son statut (pending/declined/sent) survit à la navigation,
+    // et le session_id est capturé ICI — c'est la recherche infructueuse qu'on
+    // rattache à la demande, pas la session courante (startNewSession a pu passer).
+    function renderPartsRequestOffer(reuseEntry, keepLive) {
+      if (keepLive === undefined) keepLive = true;
+      let logEntry = reuseEntry || null;
+      if (!logEntry && !isRestoring) {
+        logEntry = { t: 'pr_offer', status: 'pending', sessionId, vehicle: identifiedVehicle };
+        transcript.push(logEntry);
+        saveState();
+      }
+      const status = logEntry ? logEntry.status : 'pending';
+
+      const content = document.createElement('div');
+      content.className = 'ep-pr-offer';
+
+      const p = document.createElement('p');
+      p.textContent = t('pr_offer');
+      content.appendChild(p);
+
+      const actions = document.createElement('div');
+      actions.className = 'ep-pr-offer-actions';
+
+      const yes = document.createElement('button');
+      yes.type = 'button';
+      yes.className = 'ep-pr-btn ep-pr-btn-yes';
+      yes.textContent = t('pr_offer_yes');
+
+      const no = document.createElement('button');
+      no.type = 'button';
+      no.className = 'ep-pr-btn ep-pr-btn-no';
+      no.textContent = t('pr_offer_no');
+
+      actions.appendChild(yes);
+      actions.appendChild(no);
+      content.appendChild(actions);
+      appendAssistantMessageEl(content);
+
+      function freeze(chosen) {
+        yes.disabled = true;
+        no.disabled = true;
+        if (chosen === 'yes') yes.classList.add('ep-pr-chosen');
+        if (chosen === 'no') no.classList.add('ep-pr-chosen');
+      }
+
+      if (status === 'declined') { freeze('no'); return; }
+      if (status === 'sent')     { freeze('yes'); return; }
+      // Proposition restée sans réponse mais dépassée (l'utilisateur a relancé une
+      // recherche derrière) : on la restaure figée, comme les groupes d'options.
+      if (!keepLive) { freeze(null); return; }
+
+      yes.addEventListener('click', () => {
+        openPartsRequest(logEntry, yes);
+      });
+      no.addEventListener('click', () => {
+        freeze('no');
+        if (logEntry && !isRestoring) { logEntry.status = 'declined'; saveState(); }
+      });
     }
 
     // ── Helpers DOM ────────────────────────────────────────────────────────
@@ -3166,6 +3652,39 @@
           <span id="ep-footer-text">${t('powered_by')}</span>
           <a id="ep-footer-brand" href="${escHtml(t('brand_url'))}" target="_blank" rel="noopener noreferrer" aria-label="EveryParts">${LOGO_GREEN_SVG}</a>
         </div>
+      </div>
+
+      <!-- Fiche « demander cette pièce » (frame 2a). Toujours dans le DOM, masquée :
+           les libellés d'erreur doivent exister avant d'être annoncés (aria-live). -->
+      <div id="ep-pr-backdrop" role="dialog" aria-modal="true" aria-labelledby="ep-pr-title" aria-hidden="true">
+        <form id="ep-pr-sheet" novalidate>
+          <span class="ep-pr-handle" aria-hidden="true"></span>
+          <div class="ep-pr-head">
+            <span id="ep-pr-title">${escHtml(t('pr_title'))}</span>
+            <span class="ep-pr-sub" id="ep-pr-sub"></span>
+          </div>
+          <div class="ep-pr-field">
+            <label class="ep-sr-only" for="ep-pr-email">${escHtml(t('pr_email_label'))}</label>
+            <input id="ep-pr-email" type="email" inputmode="email" autocomplete="email"
+                   maxlength="255" required spellcheck="false"
+                   placeholder="${escHtml(t('pr_email_ph'))}"
+                   aria-describedby="ep-pr-email-err">
+            <span class="ep-pr-error" id="ep-pr-email-err" role="alert"></span>
+          </div>
+          <div class="ep-pr-field">
+            <label class="ep-pr-consent" for="ep-pr-consent-input">
+              <input type="checkbox" id="ep-pr-consent-input" required aria-describedby="ep-pr-consent-err">
+              <span class="ep-pr-box" aria-hidden="true">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 18 20 6"></path></svg>
+              </span>
+              <span class="ep-pr-consent-text">${escHtml(t('pr_consent'))}</span>
+            </label>
+            <span class="ep-pr-error" id="ep-pr-consent-err" role="alert"></span>
+          </div>
+          <span class="ep-pr-error" id="ep-pr-form-err" role="alert"></span>
+          <button type="submit" id="ep-pr-submit" disabled>${escHtml(t('pr_submit'))}</button>
+          <button type="button" id="ep-pr-cancel">${escHtml(t('pr_cancel'))}</button>
+        </form>
       </div>
     `;
   }
