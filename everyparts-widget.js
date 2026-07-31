@@ -28,8 +28,8 @@
     'fr-FR': {
       placeholder:     'Rechercher une pièce compatible…',
       send:            'Envoyer',
-      welcome_p1:      'Bonjour 👋 Je suis {brand}, l\'assistant de recherche EveryParts.',
-      welcome_p2:      'Dites-moi votre moto et la pièce recherchée et je vous aiderai du mieux possible.',
+      welcome_p1:      'Bonjour 👋 Je suis l\'assistant IA de recherche EveryParts.',
+      welcome_p2:      'Décrivez-moi votre moto et la pièce recherchée, et je vous aiderai à la trouver.',
       typing:          'En train de répondre',
       error_token:     'Configuration invalide : token absent.',
       error_unknown:   'Erreur inconnue.',
@@ -68,15 +68,16 @@
       my_moto:         'Ma moto',
       edit_moto:       'Modifier',
       try_chips:       ['Bougie CBR 600 • 96', 'Plaquettes de frein', 'Filtre à huile', 'Kit chaîne'],
-      teaser:          'Vous cherchez une pièce ? Je la trouve pour vous !',
+      launcher_examples: ['Plaquette de frein Galfer …', 'Bougie CBR 600 de 1996 …', 'Kit chaîne pour Yamaha MT …'],
+      teaser:          "Vous cherchez une pièce ?\rJe la trouve pour vous !",
       teaser_dismiss:  'Masquer',
       brand_url:       'https://www.every-parts.com/fr/',
     },
     'en-US': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      'Hi 👋 I\'m {brand}, the EveryParts search assistant.',
-      welcome_p2:      'Tell me your bike and the part you need and I\'ll help you the best I can.',
+      welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
+      welcome_p2:      'Tell me about your motorcycle and the part you\'re looking for, and I\'ll help you find it.',
       typing:          'Typing',
       error_token:     'Invalid configuration: missing token.',
       error_unknown:   'Unknown error.',
@@ -115,15 +116,16 @@
       my_moto:         'My bike',
       edit_moto:       'Edit',
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
-      teaser:          'Looking for a part? I\'ll find it for you!',
+      launcher_examples: ['Galfer brake pads…', 'Spark plug for a 1996 CBR 600…', 'Chain kit for a Yamaha MT…'],
+      teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       brand_url:       'https://www.every-parts.com/en/',
     },
     'en-GB': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      'Hello 👋 I\'m {brand}, the EveryParts search assistant.',
-      welcome_p2:      'Tell me your bike and the part you need and I\'ll help you the best I can.',
+      welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
+      welcome_p2:      'Tell me about your motorcycle and the part you\'re looking for, and I\'ll help you find it.',
       typing:          'Typing',
       error_token:     'Invalid configuration: missing token.',
       error_unknown:   'Unknown error.',
@@ -162,7 +164,8 @@
       my_moto:         'My bike',
       edit_moto:       'Edit',
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
-      teaser:          'Looking for a part? I\'ll find it for you!',
+      launcher_examples: ['Galfer brake pads…', 'Spark plug for a 1996 CBR 600…', 'Chain kit for a Yamaha MT…'],
+      teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       brand_url:       'https://www.every-parts.com/en/',
     },
@@ -254,10 +257,14 @@
     return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
-  // ── Icotype SVG placeholder ────────────────────────────────────────────────
-  const ICOTYPE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 271 281" width="32" height="32" aria-hidden="true">
-    <path d="M 126 17.5 C 106.9 28.1, 60.8 53.1, 40 65.5 C 19.2 77.9, 34.5 69.5, 31.5 74 C 28.5 78.5, 27.6 61.6, 26.5 86 C 25.4 110.4, 25.4 160.6, 26.5 185 C 27.6 209.4, 27.4 191.8, 31.5 197 C 35.6 202.2, 24.2 196.1, 45 208.5 C 65.8 220.9, 104.2 243.8, 126 253.5 C 147.8 263.2, 122.7 262.6, 144 252.5 C 165.3 242.4, 202.9 219.9, 223 207.5 C 243.1 195.1, 231.7 202.1, 235.5 196 C 239.3 189.9, 239.4 187.9, 240.5 180 L 240.5 160 L 223 157.5 C 215.4 157.4, 215.7 154.4, 206 159.5 C 196.3 164.6, 188.7 174.3, 179 180.5 C 169.3 186.7, 174.1 186.2, 162 187.5 C 149.9 188.8, 135.7 188.0, 124 186.5 C 112.3 185.0, 114.0 183.5, 109 180.5 C 104.0 177.5, 103.3 175.6, 101.5 173 L 101 168.5 L 146 159.5 C 157.8 155.2, 152.8 156.8, 154.5 149 C 156.2 141.2, 154.8 132.1, 153.5 124 C 152.2 115.9, 150.8 115.8, 148.5 112 C 146.2 108.2, 146.4 107.9, 143 106.5 C 139.6 105.1, 144.2 104.0, 133 105.5 C 121.8 107.0, 101.7 111.7, 92 113.5 L 89 113.5 L 87.5 110 C 87.6 107.5, 87.2 105.6, 89.5 102 C 91.8 98.4, 89.1 99.5, 98 93.5 C 106.9 87.5, 119.9 79.6, 130 74.5 C 140.1 69.4, 137.6 71.2, 144 70.5 C 150.4 69.8, 153.1 70.0, 159 71.5 C 164.9 73.0, 164.2 72.2, 171 77.5 C 177.8 82.8, 182.1 89.1, 190 95.5 C 197.9 101.9, 197.8 103.4, 207 106.5 C 216.2 109.6, 224.6 109.2, 232 109.5 L 240.5 108 L 238.5 81 C 236.0 72.1, 249.8 81.3, 229 67.5 C 208.2 53.8, 166.4 29.5, 144 18.5 C 121.6 7.5, 131.0 17.7, 127 17.5 C 123.0 17.3, 145.1 6.9, 126 17.5 Z" fill="white"/>
-  </svg>`;
+  // ── Monogramme « e » everyparts ─────────────────────────────────────────────
+  // Asset de marque du projet design (everyparts-mark.svg). Les frames l'utilisent
+  // en masque à deux tailles : 22×25 blanc (bulle fermée) et 17×19 teal (pastille
+  // blanche de la façade déployée) — d'où le helper paramétré plutôt qu'une constante.
+  const MARK_PATH = 'M87.48 0.3C89.05 0.07 90.65 0.01 92.25 0C93.72 -0.01 95.21 -0.03 96.65 0.26C98.86 0.7 101.15 1.1 103.13 2.2C126.51 15.12 149.62 28.55 172.56 42.24C174.28 43.26 175.59 44.87 177.02 46.27C177.7 46.94 178.31 47.68 178.87 48.46C179.57 49.43 180.23 50.44 180.78 51.51C181.54 52.95 182.24 54.44 182.8 55.98C183.25 57.24 183.57 58.55 183.82 59.87C184 60.83 184.05 61.82 184.06 62.8C184.13 67.97 184.23 73.14 184.06 78.3C184.04 78.83 183.68 79.29 183.49 79.78C176.33 79.45 169.14 79.52 162.01 78.79C159.72 78.56 157.51 77.74 155.36 76.91C153.28 76.11 151.35 74.98 149.4 73.9C148.36 73.31 147.35 72.64 146.41 71.9C143.41 69.55 140.43 67.17 137.58 64.64C133.81 61.28 130.34 57.59 126.55 54.24C124.96 52.83 123.27 51.49 121.46 50.37C120.06 49.51 118.53 48.88 116.99 48.33C115.69 47.86 114.34 47.51 112.97 47.32C110.08 46.93 107.17 46.6 104.25 46.58C102.27 46.57 100.3 46.92 98.35 47.25C97.02 47.48 95.7 47.84 94.41 48.26C92.57 48.86 90.75 49.53 88.96 50.28C86.75 51.21 84.54 52.13 82.45 53.27C78.39 55.48 74.41 57.86 70.5 60.33C68.08 61.87 65.76 63.56 63.47 65.29C61.76 66.57 60.08 67.9 58.53 69.37C57.34 70.5 56.28 71.77 55.28 73.07C54.84 73.65 54.44 74.3 54.22 75C53.79 76.4 53.44 77.84 53.35 79.3C53.3 80.19 53.61 81.07 53.81 81.93C53.87 82.19 53.94 82.46 54.12 82.65C54.28 82.81 54.53 82.93 54.75 82.9C67.43 80.78 80.07 78.36 92.75 76.19C93.74 76.02 94.74 75.88 95.75 75.89C96.71 75.9 97.71 75.9 98.61 76.23C99.86 76.69 100.99 77.44 102.07 78.22C102.74 78.71 103.31 79.34 103.81 80.01C104.89 81.44 105.95 82.91 106.78 84.5C107.61 86.09 108.27 87.77 108.78 89.49C109.61 92.22 110.31 95.01 110.82 97.82C111.21 99.96 111.35 102.14 111.47 104.3C111.54 105.47 111.48 106.64 111.39 107.8C111.26 109.29 111.13 110.78 110.82 112.23C110.61 113.25 110.27 114.24 109.83 115.17C109.26 116.38 108.59 117.54 107.81 118.62C107.27 119.38 106.63 120.07 105.91 120.65C104.86 121.49 103.73 122.21 102.55 122.84C101.74 123.27 100.87 123.6 99.98 123.79C88.98 126.08 77.88 127.92 66.89 130.25C65.91 130.46 65.05 131.03 64.14 131.42C64.16 131.65 64.1 131.9 64.2 132.11C64.8 133.31 65.42 134.51 66.23 135.58C67.07 136.7 68.04 137.74 69.13 138.62C70.63 139.84 72.27 140.89 73.96 141.83C75.4 142.63 76.92 143.29 78.49 143.8C81.06 144.64 83.69 145.37 86.36 145.86C89.62 146.45 92.93 146.89 96.25 147.03C101.58 147.26 106.92 147.22 112.25 146.95C114.42 146.84 116.59 146.47 118.69 145.89C121.55 145.1 124.34 144.06 127.05 142.84C128.82 142.04 130.44 140.94 132.06 139.87C133.95 138.62 135.83 137.34 137.57 135.89C141.3 132.8 144.75 129.38 148.46 126.28C149.38 125.51 150.4 124.85 151.47 124.29C152.92 123.52 154.43 122.85 155.98 122.3C157.25 121.85 158.57 121.48 159.91 121.27C161.34 121.04 162.8 120.95 164.25 120.99C170.38 121.12 176.52 121.33 182.64 121.77C183.12 121.8 183.5 122.18 183.93 122.39C183.97 128.53 184.12 134.67 184.07 140.8C184.06 142.06 183.96 143.33 183.75 144.57C183.54 145.79 183.22 146.99 182.8 148.16C182.25 149.7 181.6 151.2 180.84 152.65C180.28 153.71 179.62 154.72 178.87 155.65C177.68 157.13 176.42 158.56 175.03 159.84C173.8 160.96 172.42 161.91 171.02 162.81C168.25 164.58 165.37 166.18 162.53 167.82C144.04 178.51 125.61 189.3 107.02 199.81C104.95 200.98 102.84 202.11 100.58 202.85C98.54 203.53 96.39 203.87 94.25 204.03C91.99 204.19 89.72 204.06 87.47 203.81C86.11 203.65 84.77 203.26 83.48 202.81C81.92 202.27 80.39 201.64 78.96 200.83C56.89 188.29 34.95 175.52 13.02 162.76C12.1 162.22 11.22 161.6 10.4 160.93C9.56 160.25 8.75 159.51 8.03 158.71C6.7 157.22 5.29 155.77 4.24 154.08C3 152.06 2.02 149.87 1.2 147.64C0.67 146.2 0.46 144.66 0.21 143.15C0.06 142.21 0 141.26 0 140.3C-0.06 114.64 -0.06 88.97 0.02 63.3C0.02 62.38 0.08 61.44 0.24 60.53C0.48 59.16 0.82 57.82 1.21 56.48C1.46 55.61 1.75 54.74 2.14 53.92C2.77 52.59 3.49 51.31 4.26 50.05C4.81 49.14 5.42 48.27 6.1 47.45C6.79 46.61 7.57 45.85 8.34 45.09C9.01 44.43 9.67 43.76 10.4 43.18C11.34 42.44 12.32 41.75 13.35 41.15C35.17 28.45 57 15.76 78.95 3.27C80.38 2.46 81.89 1.81 83.44 1.27C84.75 0.82 86.11 0.5 87.48 0.3Z';
+  function markSvg(w, h, color) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184.07 204.03" width="${w}" height="${h}" fill="none" aria-hidden="true"><path fill="${color}" fill-rule="evenodd" clip-rule="evenodd" d="${MARK_PATH}"></path></svg>`;
+  }
 
   // Icône affichée sur le lanceur quand le chat est OUVERT (chevron bas = réduire).
   const FAB_CLOSE_ICON = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>`;
@@ -335,55 +342,166 @@
       --ep-shadow:    0 8px 32px rgba(6,76,76,.18);
     }
 
-    /* ── Bouton flottant ── */
+    /* ── Bouton flottant (frames 5a / 4a) ──
+       Un seul bouton, trois couches superposées en inset:0 qui se croisent en
+       opacité — jamais en display, sans quoi la morphologie sauterait :
+         .ep-fab-closed    bulle ronde : monogramme + compteur ;
+         .ep-fab-face      façade de champ de recherche, révélée par .ep-fab-expanded ;
+         .ep-fab-chevron   chevron « réduire », quand la fenêtre de chat est ouverte.
+       Seule la LARGEUR est animée : le bord ancré au coin (right/left selon
+       data-position) ne bouge pas, la pilule s'étire vers l'intérieur de la page. */
     #ep-fab {
       position: fixed;
       z-index: 2147483646;
       width: 60px;
-      height: 60px;
-      border-radius: 35%;
+      height: 58px;
+      border-radius: 29px;
+      /* Teal de fond permanent : chaque couche pose ensuite SA propre surface
+         (bulle teal, façade blanche). Le conteneur n'est jamais transparent, donc
+         le fondu croisé ne laisse jamais voir la page à travers la pilule — c'est
+         la seule entorse au frame, qui superpose deux couches opaques sur un fond
+         de canvas et se retrouve à ~25 % de transparence à mi-course. */
       background: var(--ep-dark);
       border: none;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 16px rgba(6,76,76,.35);
-      transition: transform .2s ease, box-shadow .2s ease;
+      display: block;
+      box-shadow: 0 14px 30px -14px rgba(6,76,76,.55);
       padding: 0;
       -webkit-tap-highlight-color: transparent;
+      /* Repli : .54s, soit le segment 58 %→64 % de la boucle 9 s du frame. */
+      transition: width .54s ease-in-out, transform .15s ease, box-shadow .15s ease;
+      /* Sans fill-mode : l'état final revient à la règle de base, sinon le
+         transform des keyframes neutraliserait définitivement :hover. */
+      animation: ep-fab-enter .7s cubic-bezier(.2,.8,.2,1);
     }
     #ep-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(6,76,76,.45); }
+    /* Déployé, la pilule fait 372px : la mettre à l'échelle au survol jurerait. */
+    #ep-fab.ep-fab-expanded:hover { transform: none; box-shadow: 0 16px 34px -14px rgba(6,76,76,.6); }
     #ep-fab:focus-visible { outline: 3px solid var(--ep-primary); outline-offset: 3px; }
     #ep-fab svg { display: block; }
 
-    /* Bascule d'icône du lanceur : monogramme (fermé) ⇄ chevron (ouvert). */
-    .ep-fab-ico { display: flex; align-items: center; justify-content: center; }
-    #ep-fab .ep-fab-ico-close { display: none; }
-    #ep-fab.ep-window-open .ep-fab-ico-open { display: none; }
-    #ep-fab.ep-window-open .ep-fab-ico-close { display: flex; }
+    @keyframes ep-fab-enter {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-    /* Badge de notification (messages non lus) sur le lanceur. */
-    #ep-fab-badge {
+    .ep-fab-layer {
       position: absolute;
-      top: -3px;
-      right: -3px;
-      min-width: 27px;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;   /* les clics reviennent au bouton */
+    }
+    /* Chaque couche porte sa propre surface — bulle teal / façade blanche cerclée de
+       teal — comme dans le 5a actualisé : c'est le FOND, pas seulement le contenu,
+       qui bascule. La façade est en overflow:hidden car ses ~113 px de contenu
+       minimum ne tiennent pas dans la pilule encore étroite : sans cela la pastille
+       déborderait du bord ancré pendant les ~400 premières ms. */
+    #ep-fab .ep-fab-closed  { opacity: 1; transition: opacity .54s ease-in-out; border-radius: 29px; background: var(--ep-dark); }
+    #ep-fab .ep-fab-face    { opacity: 0; transition: opacity .54s ease-in-out; justify-content: flex-start; gap: 12px; padding: 0 8px 0 18px; border-radius: 29px; background: var(--ep-white); border: 1.5px solid var(--ep-dark); overflow: hidden; }
+    #ep-fab .ep-fab-chevron { opacity: 0; transition: opacity .2s ease; }
+    /* Compteur de la façade : couche NON rognée. Il déborde volontairement du coin
+       arrondi — à 1 px du haut, un rayon de 29 px ne laisse la pilule s'étendre que
+       jusqu'à ~21 px du bord droit, alors que le compteur va jusqu'à 2 px. Le laisser
+       dans la façade (overflow:hidden) le coupait net. Il suit son fondu à l'identique. */
+    #ep-fab .ep-fab-face-badge { opacity: 0; transition: opacity .54s ease-in-out; }
+
+    /* Déploiement : largeur ET fondu croisé sur la MÊME fenêtre de 1,35 s (segment
+       10 %→25 % de la boucle 9 s), même easing — c'est ce parallélisme qui rend le
+       morphing identique au frame. Tout décalage entre les deux se voit. */
+    #ep-fab.ep-fab-expanded {
+      width: min(372px, calc(100vw - 32px));
+      transition: width 1.35s ease-in-out, transform .15s ease, box-shadow .15s ease;
+    }
+    #ep-fab.ep-fab-expanded .ep-fab-closed { opacity: 0; transition: opacity 1.35s ease-in-out; }
+    #ep-fab.ep-fab-expanded .ep-fab-face,
+    #ep-fab.ep-fab-expanded .ep-fab-face-badge { opacity: 1; transition: opacity 1.35s ease-in-out; }
+
+    /* Fenêtre de chat ouverte : retour à la bulle ronde, porteuse du chevron. */
+    #ep-fab.ep-window-open .ep-fab-closed,
+    #ep-fab.ep-window-open .ep-fab-face,
+    #ep-fab.ep-window-open .ep-fab-face-badge { opacity: 0; }
+    #ep-fab.ep-window-open .ep-fab-chevron { opacity: 1; transition: opacity .3s ease .3s; }
+
+    /* Façade déployée : loupe + exemples de recherche défilants + pastille de marque. */
+    .ep-fab-search { flex: none; }
+    .ep-fab-examples {
+      flex: 1;
+      position: relative;
       height: 18px;
-      padding: 0 5px;
-      border-radius: 9px;
-      background: var(--ep-primary);
-      border: 2px solid var(--ep-white);
-      color: #04332F;
-      font-family: var(--ep-font-title);
-      font-size: 10.5px;
-      font-weight: 800;
-      line-height: 1;
-      display: none;
+      overflow: hidden;
+      min-width: 0;
+    }
+    /* Les trois exemples se relaient dans le même créneau (cycle de 9 s décalé de
+       -3 s / -6 s) : un seul est visible à la fois, cf. frame 4a. */
+    .ep-fab-examples > span {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      font-family: var(--ep-font-body);
+      font-size: 14px;
+      font-weight: 500;
+      color: #5A6B68;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #ep-fab.ep-fab-expanded .ep-fab-examples > span { animation: ep-fab-example 9s ease-in-out infinite; }
+    #ep-fab.ep-fab-expanded .ep-fab-examples > span:nth-child(2) { animation-delay: -3s; }
+    #ep-fab.ep-fab-expanded .ep-fab-examples > span:nth-child(3) { animation-delay: -6s; }
+    @keyframes ep-fab-example {
+      0%   { opacity: 0; transform: translateY(5px); }
+      4%   { opacity: 1; transform: translateY(0); }
+      28%  { opacity: 1; transform: translateY(0); }
+      33%  { opacity: 0; transform: translateY(-5px); }
+      100% { opacity: 0; }
+    }
+    .ep-fab-disc {
+      flex: none;
+      width: 46px;
+      height: 46px;
+      border-radius: 23px;
+      background: var(--ep-dark);
+      display: flex;
       align-items: center;
       justify-content: center;
     }
-    #ep-fab-badge.ep-visible { display: flex; }
+
+    /* Compteur (messages non lus) : présent dans les deux états, d'où deux nœuds —
+       leur ancrage diffère (coin de la bulle vs coin de la pastille blanche).
+       Visibilité pilotée en opacité, pas en display : chaque compteur vit dans une
+       couche qui se fond, et un display:none le ferait disparaître d'un coup au lieu
+       de suivre sa couche. Absolu et dans une couche pointer-events:none : le laisser
+       dans le flux à opacité 0 n'a aucun effet de mise en page ni de clic. */
+    .ep-fab-badge {
+      position: absolute;
+      min-width: 26px;
+      height: 17px;
+      padding: 0 5px;
+      border-radius: 7px;
+      background: var(--ep-primary);
+      color: #fff;
+      font-family: var(--ep-font-title);
+      font-size: 9.5px;
+      font-weight: 800;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+    .ep-fab-badge.ep-visible { opacity: 1; }
+    .ep-fab-badge-bubble { top: -4px; right: -2px; border: 2px solid var(--ep-white); }
+    /* Ancré sur la pilule (sa couche fait inset:0), plus sur le disque : 1px/2px
+       reproduisent le -5px/-6px du frame, mesurés depuis le disque de 46px centré. */
+    .ep-fab-badge-disc   { top: 1px; right: 2px; border: 2px solid #fff; }
+    /* Déployé, le compteur n'appartient qu'à la pastille de la façade. Sans cette
+       règle il apparaîtrait aussi sur la bulle au tout début du déploiement — le
+       temps que la couche fermée s'efface — car showBadge() et .ep-fab-expanded
+       tombent dans le même tick. Sans transition : jamais visible, même brièvement. */
+    #ep-fab.ep-fab-expanded .ep-fab-badge-bubble { opacity: 0; transition: none; }
 
     .ep-pos-bottom-right { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); }
     .ep-pos-bottom-left  { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
@@ -1226,7 +1344,7 @@
       #ep-window.ep-pos-top-right    { top: 96px; right: 24px; bottom: auto; left: auto; }
       #ep-window.ep-pos-top-left     { top: 96px; left: 24px; bottom: auto; right: auto; }
       #ep-header { padding: 14px 16px; }
-      #ep-fab.ep-window-open { display: flex; }
+      #ep-fab.ep-window-open { display: block; }
       #ep-input { font-size: 14px; }
       .ep-clari-filter { font-size: 13px; }
       .ep-products-filter { font-size: 13px; padding: 8px 12px; }
@@ -1240,6 +1358,20 @@
       #ep-window, .ep-msg, .ep-card, .ep-card-arrow { transition: none; animation: none; }
       .ep-dot { animation: none; }
       #ep-input:placeholder-shown ~ #ep-send-btn:not(:disabled) { animation: none; }
+      /* Le lanceur change d'état sans morphing ni défilement des exemples. Les sélecteurs
+         doivent égaler la spécificité des règles d'état ci-dessus (une media query n'en
+         ajoute pas) : sinon transition survivrait sur les couches. Le premier exemple
+         reste affiché — sans l'animation, les trois seraient à opacity 0. */
+      #ep-fab,
+      #ep-fab.ep-fab-expanded,
+      #ep-fab .ep-fab-layer,
+      #ep-fab .ep-fab-badge,
+      #ep-fab.ep-fab-expanded .ep-fab-closed,
+      #ep-fab.ep-fab-expanded .ep-fab-face,
+      #ep-fab.ep-fab-expanded .ep-fab-face-badge,
+      #ep-fab.ep-window-open .ep-fab-chevron { transition: none; animation: none; }
+      #ep-fab.ep-fab-expanded .ep-fab-examples > span { animation: none; }
+      #ep-fab.ep-fab-expanded .ep-fab-examples > span:first-child { opacity: 1; }
     }
   `;
 
@@ -1359,15 +1491,36 @@
     styleEl.textContent = STYLES;
     shadow.appendChild(styleEl);
 
-    // Bouton flottant : monogramme (fermé) + chevron (ouvert) + badge non-lus.
+    // Bouton flottant (frames 5a / 4a) : trois couches superposées — bulle ronde
+    // (monogramme + compteur), façade de champ de recherche déployée, chevron
+    // « réduire ». Le CSS les croise en opacité selon .ep-fab-expanded / .ep-window-open.
+    // Le texte de la façade est purement décoratif : le bouton porte son propre
+    // aria-label, les couches sont donc masquées aux lecteurs d'écran.
     const fab = document.createElement('button');
     fab.id = 'ep-fab';
     fab.className = `ep-pos-${CONFIG.position}`;
     fab.setAttribute('aria-label', t('open'));
     fab.title = t('open');
-    fab.innerHTML = `<span class="ep-fab-ico ep-fab-ico-open">${ICOTYPE_SVG}</span><span class="ep-fab-ico ep-fab-ico-close">${FAB_CLOSE_ICON}</span><span id="ep-fab-badge" aria-hidden="true"></span>`;
+    const fabExamples = tList('launcher_examples')
+      .map(s => `<span>${escHtml(s)}</span>`).join('');
+    fab.innerHTML =
+      `<span class="ep-fab-layer ep-fab-closed" aria-hidden="true">` +
+        markSvg(22, 25, '#fff') +
+        `<span class="ep-fab-badge ep-fab-badge-bubble"></span>` +
+      `</span>` +
+      `<span class="ep-fab-layer ep-fab-face" aria-hidden="true">` +
+        `<svg class="ep-fab-search" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7C8A88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.35-4.35"></path></svg>` +
+        `<span class="ep-fab-examples">${fabExamples}</span>` +
+        `<span class="ep-fab-disc">${markSvg(17, 19, '#fff')}</span>` +
+      `</span>` +
+      // Le compteur de la façade est une couche à part : il déborde du coin arrondi
+      // (cf. frame), or la façade est rognée. Il se fond au même rythme qu'elle.
+      `<span class="ep-fab-layer ep-fab-face-badge" aria-hidden="true">` +
+        `<span class="ep-fab-badge ep-fab-badge-disc"></span>` +
+      `</span>` +
+      `<span class="ep-fab-layer ep-fab-chevron" aria-hidden="true">${FAB_CLOSE_ICON}</span>`;
     shadow.appendChild(fab);
-    const fabBadge = fab.querySelector('#ep-fab-badge');
+    const fabBadges = fab.querySelectorAll('.ep-fab-badge');
 
     // Bandeau d'amorce / aperçu (affiché quand le chat est fermé).
     const teaser = document.createElement('div');
@@ -1415,6 +1568,9 @@
     let teaserTimer = null;
     const TEASER_DELAY_MS = 4000;
     const TEASER_DISMISS_KEY = `everyparts-teaser-dismissed:${CONFIG.token}`;
+    // Déploiement du lanceur : ~1 s après son animation d'entrée, comme en 5a.
+    let expandTimer = null;
+    const LAUNCHER_EXPAND_MS = 1000;
     teaser.addEventListener('click', () => toggleWindow(true));
     teaser.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleWindow(true); }
@@ -1458,10 +1614,22 @@
       try { return sessionStorage.getItem(TEASER_DISMISS_KEY) === '1'; } catch (e) { return false; }
     }
     function showBadge(n) {
-      fabBadge.textContent = n > 9 ? '9+' : String(n);
-      fabBadge.classList.add('ep-visible');
+      const label = n > 9 ? '9+' : String(n);
+      fabBadges.forEach(b => { b.textContent = label; b.classList.add('ep-visible'); });
     }
-    function hideBadge() { fabBadge.classList.remove('ep-visible'); }
+    function hideBadge() { fabBadges.forEach(b => b.classList.remove('ep-visible')); }
+
+    // ── Lanceur déployé (frame 5a) ───────────────────────────────────────────
+    // La bulle ronde s'étire en façade de champ de recherche et le reste jusqu'au
+    // premier clic (la boucle du frame ne sert qu'à la démonstration sur le canvas).
+    function expandLauncher() {
+      if (isOpen) return;
+      fab.classList.add('ep-fab-expanded');
+    }
+    function collapseLauncher() {
+      if (expandTimer) { clearTimeout(expandTimer); expandTimer = null; }
+      fab.classList.remove('ep-fab-expanded');
+    }
 
     function hasUserInteraction() {
       return transcript.some(e => e.t === 'user');
@@ -1493,16 +1661,27 @@
       }
       return text ? { text: text, count: count } : null;
     }
-    // Au chargement, chat fermé : si une conversation est en cours et que l'assistant
-    // a répondu en dernier → badge + aperçu tronqué ; sinon (visiteur neuf) → amorce
-    // générique après un court délai. Rien si l'utilisateur a écrit sans réponse.
+    // Au chargement, chat fermé, deux cas :
+    // - conversation déjà engagée → le lanceur RESTE une bulle ronde fermée, avec le
+    //   badge de non-lus et l'aperçu du dernier message de l'assistant ;
+    // - visiteur neuf → la bulle se déploie en façade de recherche (frame 5a) et le
+    //   reste jusqu'au premier clic. Ce déploiement remplace l'ancien bandeau d'amorce
+    //   générique : même intention, même coin, même instant — les cumuler ferait deux
+    //   sollicitations concurrentes, et les frames n'en montrent qu'une.
+    // Rien du tout si l'utilisateur a écrit sans avoir encore reçu de réponse.
     function initClosedLauncher() {
       if (isOpen) return;
       const preview = lastAssistantPreview();
       if (preview) {
         showBadge(preview.count);
         if (!teaserDismissed()) showTeaser(truncateText(preview.text, 100));
-      } else if (!hasUserInteraction() && !teaserDismissed()) {
+      } else if (!hasUserInteraction()) {
+        expandTimer = setTimeout(function () {
+          if (isOpen) return;
+          expandLauncher();
+          showBadge(1);   // le message d'accueil compte comme 1 message assistant
+        }, LAUNCHER_EXPAND_MS);
+
         teaserTimer = setTimeout(function () {
           if (!isOpen && !teaserDismissed()) {
             showTeaser(t('teaser'));
@@ -1731,7 +1910,10 @@
       fab.setAttribute('aria-label', open ? t('close') : t('open'));
       fab.title = open ? t('close') : t('open');
       if (open) {
-        // L'ouverture « consomme » l'amorce/aperçu et le badge de non-lus.
+        // L'ouverture « consomme » l'amorce/aperçu et le badge de non-lus, et replie
+        // la façade déployée en bulle ronde — le repli court pendant l'ouverture de
+        // la fenêtre, comme en 5a.
+        collapseLauncher();
         hideTeaser();
         hideBadge();
         applyViewport();      // gèle la page et cale la fenêtre avant tout focus
@@ -1793,12 +1975,7 @@
       bubble.className = 'ep-bubble ep-welcome';
 
       const p1 = document.createElement('p');
-      const seg = t('welcome_p1').split('{brand}');
-      p1.appendChild(document.createTextNode(seg[0]));
-      const strong = document.createElement('strong');
-      strong.textContent = 'PartsMind';
-      p1.appendChild(strong);
-      p1.appendChild(document.createTextNode(seg[1] || ''));
+      p1.textContent = t('welcome_p1');
 
       const p2 = document.createElement('p');
       p2.className = 'ep-welcome-sub';
