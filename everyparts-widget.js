@@ -2584,8 +2584,9 @@
 
       const body = {
         query,
-        session_id: sessionId,
-        context:    conversationContext,
+        session_id:     sessionId,
+        context:        conversationContext,
+        default_locale: CONFIG.locale,
       };
       if (extraBody) Object.assign(body, extraBody);
 
