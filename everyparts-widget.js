@@ -2517,9 +2517,13 @@
           appendAssistantMessageEl(buildNoResults(entry.message, entry.suggestions));
           break;
         case 'pr_offer':
-          // Seule la proposition encore ouverte en toute fin d'historique reste
-          // cliquable — même règle que les groupes d'options.
-          renderPartsRequestOffer(entry, isLast);
+          // Une proposition SANS RÉPONSE reste cliquable quelle que soit sa position —
+          // même règle que les avis, pas celle des groupes d'options. Elle cesse d'être
+          // la dernière entrée dès que le message de relance est ajouté ; la figer là
+          // condamnerait définitivement la demande de quiconque a ouvert la fiche puis
+          // annulé. Chaque entrée porte sa session, sa moto et sa pièce : rouvrir une
+          // proposition ancienne reste rattaché à la bonne recherche.
+          renderPartsRequestOffer(entry);
           break;
       }
     }
@@ -3356,6 +3360,17 @@
       return '';
     }
 
+    // Relance « Souhaitez-vous faire une autre recherche ? ». Deux points d'appel, tous
+    // deux terminaux : le refus, et le 201 — après « C'est noté… », jamais avant, sinon
+    // la relance devancerait la confirmation de la demande qu'elle invite à dépasser.
+    // Le drapeau vit sur l'entrée persistée : au plus une relance par proposition, même
+    // après rechargement, quel que soit le chemin emprunté.
+    function showAfterPartsRequest(entry) {
+      if (entry && entry.afterShown) return;
+      if (entry) entry.afterShown = true;   // saveState() suit, via appendAssistantMessage
+      appendAssistantMessage(t('after_parts_request'));
+    }
+
     // ── Fiche modale de demande de pièce (frame 2a) ─────────────────────────
     // Un seul formulaire réutilisé, rattaché à la proposition qui l'a ouvert.
     let prOpenFor = null;      // { entry, trigger } — entrée journalisée + bouton d'origine
@@ -3388,18 +3403,21 @@
 
     // Place un message sur le bon champ et y amène le focus (première erreur).
     function prShowError(field, message) {
+      // preventScroll : les champs sont déjà visibles dans la feuille, et un
+      // scroll-into-view ferait défiler #ep-window (défilable par programme malgré
+      // overflow:hidden), ce qui décale l'en-tête hors cadre — durablement.
       if (field === 'email') {
         prEmailErr.textContent = message;
         prEmail.setAttribute('aria-invalid', 'true');
-        prEmail.focus();
+        prEmail.focus({ preventScroll: true });
       } else if (field === 'consent') {
         prConsErr.textContent = message;
         prConsent.setAttribute('aria-invalid', 'true');
-        prConsent.focus();
+        prConsent.focus({ preventScroll: true });
       } else if (field === 'message') {
         prMsgErr.textContent = message;
         prMessage.setAttribute('aria-invalid', 'true');
-        prMessage.focus();
+        prMessage.focus({ preventScroll: true });
       } else {
         prFormErr.textContent = message;
       }
@@ -3451,7 +3469,7 @@
       // Mobile : pas de focus automatique — même règle que toggleWindow(). Ouvrir le
       // clavier d'emblée réduit la fiche de moitié et masque le consentement avant
       // qu'il ait été lu. Sur desktop, le focus entre directement dans le champ.
-      if (!isMobile()) prEmail.focus();
+      if (!isMobile()) prEmail.focus({ preventScroll: true });
       else prSheet.scrollTop = 0;
     }
 
@@ -3459,11 +3477,18 @@
       if (!prBackdrop.classList.contains('ep-visible')) return;
       prBackdrop.classList.remove('ep-visible');
       prBackdrop.setAttribute('aria-hidden', 'true');
+      // Filet : si le navigateur a tout de même fait défiler la fenêtre pour révéler
+      // un champ, le décalage survivrait à la fermeture et rognerait l'en-tête.
+      win.scrollTop = 0;
       const trigger = prOpenFor && prOpenFor.trigger;
       prOpenFor = null;
       // Le focus revient d'où il venait, sauf si le bouton a été figé entre-temps.
-      if (trigger && !trigger.disabled) trigger.focus();
-      else if (!isMobile()) inputEl.focus();
+      // preventScroll ici aussi : rendre le bouton visible ferait défiler #ep-window
+      // APRÈS la remise à zéro ci-dessus, et l'en-tête repartirait hors cadre. La
+      // conversation, elle, garde sa propre position — on ferme sur la vue d'où
+      // l'utilisateur a ouvert la fiche, le bouton y est donc déjà visible.
+      if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
+      else if (!isMobile()) inputEl.focus({ preventScroll: true });
     }
 
     function isPartsRequestOpen() {
@@ -3540,6 +3565,7 @@
         }
         closePartsRequest();
         appendAssistantMessage(t('pr_success'));
+        showAfterPartsRequest(entry);
         return;
       }
 
@@ -3589,8 +3615,7 @@
     // autres échanges : son statut (pending/declined/sent) survit à la navigation,
     // et le session_id est capturé ICI — c'est la recherche infructueuse qu'on
     // rattache à la demande, pas la session courante (startNewSession a pu passer).
-    function renderPartsRequestOffer(reuseEntry, keepLive) {
-      if (keepLive === undefined) keepLive = true;
+    function renderPartsRequestOffer(reuseEntry) {
       let logEntry = reuseEntry || null;
       if (!logEntry && !isRestoring) {
         logEntry = { t: 'pr_offer', status: 'pending', sessionId, vehicle: identifiedVehicle, part: identifiedPart, query: lastUserQuery() };
@@ -3633,18 +3658,17 @@
 
       if (status === 'declined') { freeze('no'); return; }
       if (status === 'sent')     { freeze('yes'); return; }
-      // Proposition restée sans réponse mais dépassée (l'utilisateur a relancé une
-      // recherche derrière) : on la restaure figée, comme les groupes d'options.
-      if (!keepLive) { freeze(null); return; }
 
+      // « Oui » ne fige PAS la proposition (annuler doit permettre d'y revenir) et
+      // n'ajoute AUCUN message : la relance appartient aux issues terminales, refus
+      // ou envoi confirmé — cf. showAfterPartsRequest().
       yes.addEventListener('click', () => {
         openPartsRequest(logEntry, yes);
-        appendAssistantMessage(t('after_parts_request'));
       });
       no.addEventListener('click', () => {
         freeze('no');
         if (logEntry && !isRestoring) { logEntry.status = 'declined'; saveState(); }
-        appendAssistantMessage(t('after_parts_request'));
+        showAfterPartsRequest(logEntry);
       });
     }
 
