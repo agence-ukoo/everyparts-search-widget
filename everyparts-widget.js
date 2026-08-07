@@ -84,8 +84,8 @@
       try_label:       'Essayez',
       my_moto:         'Ma moto',
       edit_moto:       'Modifier',
-      try_chips:       ['Bougie CBR 600 • 96', 'Plaquettes de frein', 'Filtre à huile', 'Kit chaîne'],
-      launcher_examples: ['Plaquette de frein Galfer …', 'Bougie CBR 600 de 1996 …', 'Kit chaîne pour Yamaha MT …'],
+      try_chips:       ['Cache culbuteur gasgas fse 450 enduro (2006)', 'Demarreur kawasaki zzr 1100 (1991)', 'Cache lateral yamaha xp 500 t-max (2004)'],
+      launcher_examples: ['Cache culbuteur gasgas fse 450 enduro (2006)', 'Demarreur kawasaki zzr 1100 (1991)', 'Cache lateral yamaha xp 500 t-max (2004)'],
       teaser:          "Vous cherchez une pièce ?\rJe la trouve pour vous !",
       teaser_dismiss:  'Masquer',
       // ── Demande de pièce (frame 2a) ──
@@ -1004,6 +1004,7 @@
     .ep-chip {
       display: inline-flex;
       align-items: center;
+      text-align: left;
       gap: 7px;
       min-height: 34px;
       padding: 0 13px;
