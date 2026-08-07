@@ -69,6 +69,18 @@
       review_question: 'Êtes-vous satisfait de ces résultats ?',
       review_yes:      'Oui, satisfait',
       review_no:       'Non, pas satisfait',
+      review_reason_prompt:  'Qu\'est-ce qui n\'a pas fonctionné ?',
+      review_reason_1:       'Résultat incohérent',
+      review_reason_2:       'Véhicule ou pièce non identifié',
+      review_reason_3:       'Temps de réponse',
+      review_reason_other:   'Autre, préciser',
+      review_other_title:    'Préciser votre retour',
+      review_other_sub:      'Votre remarque nous aide à améliorer les prochaines recherches.',
+      review_other_label:    'Votre remarque',
+      review_other_ph:       'Dites-nous ce qui n\'a pas fonctionné…',
+      review_other_submit:   'Envoyer',
+      review_other_cancel:   'Annuler',
+      review_reason_thx:     'Merci pour votre avis !',
       try_label:       'Essayez',
       my_moto:         'Ma moto',
       edit_moto:       'Modifier',
@@ -144,6 +156,18 @@
       review_question: 'Are you satisfied with these results?',
       review_yes:      'Yes, satisfied',
       review_no:       'No, not satisfied',
+      review_reason_prompt:  'What went wrong?',
+      review_reason_1:       'Inconsistent result',
+      review_reason_2:       'Vehicle or part not identified',
+      review_reason_3:       'Response time',
+      review_reason_other:   'Other, please specify',
+      review_other_title:    'Tell us more',
+      review_other_sub:      'Your feedback helps us improve future searches.',
+      review_other_label:    'Your feedback',
+      review_other_ph:       'Tell us what went wrong…',
+      review_other_submit:   'Send',
+      review_other_cancel:   'Cancel',
+      review_reason_thx:     'Thank you for your feedback!',
       try_label:       'Try',
       my_moto:         'My bike',
       edit_moto:       'Edit',
@@ -219,6 +243,18 @@
       review_question: 'Are you satisfied with these results?',
       review_yes:      'Yes, satisfied',
       review_no:       'No, not satisfied',
+      review_reason_prompt:  'What went wrong?',
+      review_reason_1:       'Inconsistent result',
+      review_reason_2:       'Vehicle or part not identified',
+      review_reason_3:       'Response time',
+      review_reason_other:   'Other, please specify',
+      review_other_title:    'Tell us more',
+      review_other_sub:      'Your feedback helps us improve future searches.',
+      review_other_label:    'Your feedback',
+      review_other_ph:       'Tell us what went wrong…',
+      review_other_submit:   'Send',
+      review_other_cancel:   'Cancel',
+      review_reason_thx:     'Thank you for your feedback!',
       try_label:       'Try',
       my_moto:         'My bike',
       edit_moto:       'Edit',
@@ -1500,6 +1536,58 @@
     #ep-footer-brand svg { height: 15px; width: auto; display: block; }
     #ep-footer-brand:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
 
+    /* ── Motif d'un avis négatif ───────────────────────────────────────────────
+       Quatre options sous le pouce bas. Les trois premières renvoient /review
+       directement ; « Autre » ouvre une feuille modale (même habillage que la
+       demande de pièce, cf. .ep-sheet-*). */
+    .ep-review-reasons { display: flex; flex-direction: column; gap: 9px; }
+    .ep-review-reason-prompt { font-size: 13px; line-height: 1.45; color: #5A6B68; }
+    .ep-review-reason-list { display: flex; flex-wrap: wrap; gap: 7px; }
+    .ep-review-reason {
+      border: 1px solid #DCE6E1;
+      background: var(--ep-white);
+      color: #12312D;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-family: var(--ep-font-title);
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1.3;
+      text-align: left;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ep-review-reason:hover:not(:disabled) { border-color: var(--ep-primary); color: var(--ep-dark); }
+    .ep-review-reason:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    .ep-review-reason:disabled { cursor: default; opacity: .45; }
+    /* Motif retenu : reste lisible alors que les autres s'estompent. */
+    .ep-review-reason.ep-selected:disabled {
+      opacity: 1;
+      border-color: var(--ep-dark);
+      background: #F2FCF8;
+      color: var(--ep-dark);
+    }
+    .ep-review-thx {color: #00A76F; font-size: 13px;}
+
+    /* Zone de texte de la feuille « Autre » — 16px sur mobile contre le zoom iOS,
+       valeur resserrée seulement au-dessus de 641px (cf. #ep-input, #ep-pr-email). */
+    #ep-rv-text {
+      width: 100%;
+      min-height: 88px;
+      resize: none;
+      padding: 11px 13px;
+      background: var(--ep-grey-100);
+      border: 1px solid #E4DFD2;
+      border-radius: 11px;
+      font-family: var(--ep-font-body);
+      font-size: 16px;
+      line-height: 1.45;
+      color: #12312D;
+    }
+    #ep-rv-text::placeholder { color: #9AA6A3; }
+    #ep-rv-text:focus { outline: 2px solid var(--ep-primary); outline-offset: -1px; border-color: transparent; }
+    .ep-rv-count { align-self: flex-end; font-size: 11.5px; color: #93A19E; }
+
     /* ── Demande de pièce (frame 2a) ──────────────────────────────────────────
        Deux morceaux : la proposition en bulle assistant dans le fil, et la fiche
        en feuille modale ancrée au bas de #ep-window (celle-ci est en position:fixed
@@ -1541,7 +1629,7 @@
     /* « Non » n'a pas de couleur propre pour signaler le choix : il garde un liseré. */
     .ep-pr-btn-no.ep-pr-chosen:disabled { box-shadow: inset 0 0 0 2px var(--ep-dark); }
 
-    #ep-pr-backdrop {
+    .ep-sheet-backdrop {
       position: absolute;
       inset: 0;
       z-index: 5;
@@ -1552,8 +1640,8 @@
       visibility: hidden;
       transition: opacity .22s ease, visibility 0s linear .22s;
     }
-    #ep-pr-backdrop.ep-visible { opacity: 1; visibility: visible; transition: opacity .22s ease, visibility 0s; }
-    #ep-pr-sheet {
+    .ep-sheet-backdrop.ep-visible { opacity: 1; visibility: visible; transition: opacity .22s ease, visibility 0s; }
+    .ep-sheet {
       width: 100%;
       background: var(--ep-white);
       border-radius: 20px 20px 0 0;
@@ -1567,12 +1655,12 @@
       max-height: 100%;
       overflow-y: auto;
     }
-    #ep-pr-backdrop.ep-visible #ep-pr-sheet { transform: translateY(0); }
-    .ep-pr-handle { width: 36px; height: 4px; border-radius: 2px; background: #E4DFD2; align-self: center; flex: none; }
-    .ep-pr-head { display: flex; flex-direction: column; gap: 4px; }
-    #ep-pr-title { font-family: var(--ep-font-title); font-size: 16px; font-weight: 800; color: #0C2A27; }
-    .ep-pr-sub { font-size: 13px; line-height: 1.45; color: #5A6B68; }
-    .ep-pr-sub strong { font-weight: 700; color: #12312D; }
+    .ep-sheet-backdrop.ep-visible .ep-sheet { transform: translateY(0); }
+    .ep-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: #E4DFD2; align-self: center; flex: none; }
+    .ep-sheet-head { display: flex; flex-direction: column; gap: 4px; }
+    .ep-sheet-title { font-family: var(--ep-font-title); font-size: 16px; font-weight: 800; color: #0C2A27; }
+    .ep-sheet-sub { font-size: 13px; line-height: 1.45; color: #5A6B68; }
+    .ep-sheet-sub strong { font-weight: 700; color: #12312D; }
 
     /* Rappel de la pièce recherchée : pré-rempli avec la requête de l'utilisateur,
        mais ÉDITABLE — sa valeur part dans le champ message de /parts-request.
@@ -1666,7 +1754,7 @@
     .ep-pr-error { font-size: 11.5px; line-height: 1.35; font-weight: 600; color: #C0392B; }
     .ep-pr-error:empty { display: none; }
 
-    #ep-pr-submit {
+    .ep-sheet-submit {
       height: 42px;
       border: 0;
       border-radius: 12px;
@@ -1678,10 +1766,10 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-    #ep-pr-submit:hover:not(:disabled) { filter: brightness(1.06); }
-    #ep-pr-submit:disabled { opacity: .45; cursor: default; }
-    #ep-pr-submit:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
-    #ep-pr-cancel {
+    .ep-sheet-submit:hover:not(:disabled) { filter: brightness(1.06); }
+    .ep-sheet-submit:disabled { opacity: .45; cursor: default; }
+    .ep-sheet-submit:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
+    .ep-sheet-cancel {
       height: 20px;
       border: 0;
       background: transparent;
@@ -1691,8 +1779,8 @@
       font-weight: 600;
       cursor: pointer;
     }
-    #ep-pr-cancel:hover { color: #5A6B68; }
-    #ep-pr-cancel:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 4px; }
+    .ep-sheet-cancel:hover { color: #5A6B68; }
+    .ep-sheet-cancel:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 4px; }
 
     /* Masquer le FAB quand la fenêtre est ouverte (mobile plein écran) */
     #ep-fab.ep-window-open { display: none; }
@@ -1720,6 +1808,7 @@
       #ep-input { font-size: 14px; }
       #ep-pr-email { font-size: 13.5px; }   /* valeur du frame 2a */
       #ep-pr-message { font-size: 12.5px; } /* idem — 16px sur mobile contre le zoom iOS */
+      #ep-rv-text { font-size: 13.5px; }    /* idem */
       .ep-clari-filter { font-size: 13px; }
       .ep-products-filter { font-size: 13px; padding: 8px 12px; }
       .ep-products-sort { font-size: 13px; padding: 8px 6px; min-height: 36px; }
@@ -1730,7 +1819,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       #ep-window, .ep-msg, .ep-card, .ep-card-arrow { transition: none; animation: none; }
-      #ep-pr-backdrop, #ep-pr-sheet { transition: none; }
+      .ep-sheet-backdrop, .ep-sheet { transition: none; }
       /* Le voile reste — c'est lui qui signale l'attente ; seule la rotation cesse. */
       .ep-retry-spinner { animation: none; }
       .ep-dot { animation: none; }
@@ -1953,6 +2042,13 @@
     const motoValue  = win.querySelector('#ep-moto-value');
     const motoEdit   = win.querySelector('#ep-moto-edit');
     // Fiche « demander cette pièce » (frame 2a)
+    // Feuille « préciser votre retour » (motif Autre)
+    const rvBackdrop = win.querySelector('#ep-rv-backdrop');
+    const rvSheet    = win.querySelector('#ep-rv-sheet');
+    const rvText     = win.querySelector('#ep-rv-text');
+    const rvCount    = win.querySelector('#ep-rv-count');
+    const rvSubmit   = win.querySelector('#ep-rv-submit');
+    const rvCancel   = win.querySelector('#ep-rv-cancel');
     const prBackdrop = win.querySelector('#ep-pr-backdrop');
     const prSheet    = win.querySelector('#ep-pr-sheet');
     const prSub      = win.querySelector('#ep-pr-sub');
@@ -1991,6 +2087,7 @@
     shadow.addEventListener('keydown', e => {
       if (e.key !== 'Escape' || !isOpen) return;
       // La fiche de demande passe avant : Échap la referme sans fermer le chat.
+      if (isReviewOtherOpen()) { closeReviewOther(); return; }
       if (isPartsRequestOpen()) { closePartsRequest(); return; }
       toggleWindow(false);
     });
@@ -2339,6 +2436,7 @@
         }
       } else {
         clearTimeout(settleTimer);
+        closeReviewOther();
         closePartsRequest();  // une fiche laissée ouverte ne doit pas réapparaître à la réouverture
         inputEl.blur();       // referme le clavier avant de rendre la main à la page
         applyViewport();      // dégèle et restaure la position de défilement
@@ -2350,6 +2448,7 @@
     // l'accueil. Permet à l'utilisateur de contourner la persistance de sa conversation
     // s'il souhaite recommencer
     function newConversation() {
+      closeReviewOther();
       closePartsRequest();   // la fiche est rattachée à une proposition qui disparaît
       transcript = [];
       conversationContext = { previous_clarifications: [] };
@@ -2635,7 +2734,10 @@
           if (!answered) {
             renderReviewPrompt(undefined, entry);
           } else {
-            renderReviewPrompt(entry.rating);
+            // L'entree est passee AUSSI pour un avis deja donne : les pouces restent
+            // figes (restoreRating), mais les motifs ont besoin d'elle pour retrouver
+            // lequel avait ete choisi.
+            renderReviewPrompt(entry.rating, entry);
           }
           break;
         }
@@ -2819,7 +2921,12 @@
         renderReviewPrompt();
       }
 
-      appendAssistantMessage(t('after_result'));
+      // si au bout de 10s l'utilisateur n'a pas réécrit et que le message de relance n'a pas déjà été affiché, on l'affiche
+      setTimeout(() => {
+        if (transcript[transcript.length - 1].t !== 'user' && transcript[transcript.length - 1].text !== t('after_result')) {
+          appendAssistantMessage(t('after_result'));
+        }
+      }, 10000);
 
       // Nouvelle session logique dès l'after_result : la recherche suivante démarre
       // sur un nouvel identifiant MAIS hérite du contexte (moto identifiée). L'avis
@@ -2878,6 +2985,9 @@
           btn.classList.add('ep-selected');
           if (logEntry) { logEntry.rating = rating; saveState(); }
           sendReview(rating, reviewSessionId);
+          // Avis negatif : on demande pourquoi. Le vote est deja parti, le motif
+          // suivra dans un second appel.
+          if (rating === 'down') renderReviewReasons(logEntry, reviewSessionId); else appendAssistantMessageWithDelay(t('after_result'), 1000);
         });
         return btn;
       };
@@ -2900,12 +3010,144 @@
       }
 
       appendAssistantMessageEl(content);
+
+      // Rejeu d'un avis negatif : les motifs reviennent avec lui — figes sur celui
+      // qui avait ete choisi, ou encore cliquables si l'utilisateur n'avait pas
+      // repondu (meme regle que l'avis lui-meme, qui reste ouvert ou qu'il soit).
+      if (isReplay && restoreRating === 'down') {
+        renderReviewReasons(logEntry, reviewSessionId);
+      }
     }
+
+    // ── Motif d'un avis négatif ─────────────────────────────────────────────
+    // Quatre options sous le pouce bas. Les trois premières repartent aussitôt en
+    // /review avec `comment` ; « Autre » ouvre la feuille de saisie. Le motif est
+    // journalisé sur l'entrée d'avis, donc il survit au rechargement et n'est pas
+    // redemandé. reviewSessionId : la session notée, pas forcément la courante.
+    function renderReviewReasons(entry, reviewSessionId) {
+      const OTHER = t('review_reason_other');
+      const labels = [t('review_reason_1'), t('review_reason_2'), t('review_reason_3'), OTHER];
+
+      const box = document.createElement('div');
+      box.className = 'ep-review-reasons';
+
+      const prompt = document.createElement('div');
+      prompt.className = 'ep-review-reason-prompt';
+      prompt.textContent = t('review_reason_prompt');
+      box.appendChild(prompt);
+
+      const list = document.createElement('div');
+      list.className = 'ep-review-reason-list';
+      box.appendChild(list);
+
+      const buttons = [];
+      // Fige le groupe en marquant l'option retenue. `chosen` est le LIBELLE, pas le
+      // texte libre : pour « Autre », c'est le libelle qui identifie le bouton.
+      function freeze(chosen) {
+        buttons.forEach(b => {
+          b.disabled = true;
+          if (b.dataset.label === chosen) b.classList.add('ep-selected');
+        });
+      }
+
+      labels.forEach(label => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ep-review-reason';
+        b.dataset.label = label;
+        b.textContent = label;
+        list.appendChild(b);
+        buttons.push(b);
+        b.addEventListener('click', () => {
+          if (b.disabled) return;
+          if (label === OTHER) {
+            openReviewOther(entry, reviewSessionId, freeze, OTHER, b);
+            return;
+          }
+          if (entry) { entry.reason = label; if (!isRestoring) saveState(); }
+          freeze(label);
+          sendReview('down', reviewSessionId, label);
+          appendAssistantMessageWithDelay(t('after_result'), 1000);
+
+          appendReviewThank();
+        });
+      });
+
+      if (entry && entry.reason) freeze(entry.reason);
+      appendAssistantMessageEl(box);
+    }
+
+    function appendReviewThank() {
+      const reviewThanks = document.createElement('div');
+      reviewThanks.className = 'ep-review-thx';
+      reviewThanks.innerHTML = `<div>${t('review_reason_thx')}</div>`;
+      win.querySelector('.ep-review-reasons').appendChild(reviewThanks);
+      pinToBottom();
+    }
+
+    // ── Feuille « préciser votre retour » ───────────────────────────────────
+    let rvOpenFor = null;   // { entry, sessionId, freeze, label, trigger }
+
+    function rvSyncSubmit() {
+      const n = rvText.value.length;
+      rvCount.textContent = n + ' / 200';
+      rvSubmit.disabled = !rvText.value.trim();
+    }
+
+    function openReviewOther(entry, reviewSessionId, freeze, label, trigger) {
+      rvOpenFor = { entry, sessionId: reviewSessionId, freeze, label, trigger };
+      rvText.value = '';
+      rvSyncSubmit();
+      rvBackdrop.classList.add('ep-visible');
+      rvBackdrop.setAttribute('aria-hidden', 'false');
+      // Mêmes règles que la fiche de demande : pas de clavier impose sur mobile, et
+      // jamais de scroll-into-view (il decalerait #ep-window durablement).
+      if (!isMobile()) rvText.focus({ preventScroll: true });
+      else rvSheet.scrollTop = 0;
+    }
+
+    function closeReviewOther() {
+      if (!rvBackdrop.classList.contains('ep-visible')) return;
+      rvBackdrop.classList.remove('ep-visible');
+      rvBackdrop.setAttribute('aria-hidden', 'true');
+      win.scrollTop = 0;
+      const trigger = rvOpenFor && rvOpenFor.trigger;
+      rvOpenFor = null;
+      // Annulation : les motifs restent cliquables, l'utilisateur peut changer d'avis.
+      if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
+      else if (!isMobile()) inputEl.focus({ preventScroll: true });
+
+      appendAssistantMessageWithDelay(t('after_result'), 1000);
+    }
+
+    function isReviewOtherOpen() {
+      return rvBackdrop.classList.contains('ep-visible');
+    }
+
+    rvText.addEventListener('input', rvSyncSubmit);
+    rvCancel.addEventListener('click', closeReviewOther);
+    rvBackdrop.addEventListener('click', e => { if (e.target === rvBackdrop) closeReviewOther(); });
+    rvSheet.addEventListener('submit', e => {
+      e.preventDefault();
+      const ctx = rvOpenFor;
+      const comment = rvText.value.trim();
+      if (!ctx || !comment) return;
+      // Le libelle identifie le bouton a marquer ; le texte libre est ce qui part.
+      if (ctx.entry) {
+        ctx.entry.reason = ctx.label;
+        ctx.entry.reasonText = comment;
+        if (!isRestoring) saveState();
+      }
+      ctx.freeze(ctx.label);
+      sendReview('down', ctx.sessionId, comment);
+      closeReviewOther();
+      appendReviewThank();
+    });
 
     // Envoi de l'avis — silencieux en cas d'échec (ne bloque pas l'UX).
     // reviewSessionId : session de la recherche notée (cf. renderReviewPrompt),
     // pas forcément la session courante.
-    async function sendReview(rating, reviewSessionId) {
+    async function sendReview(rating, reviewSessionId, comment) {
       try {
         await fetch(`${CONFIG.apiBase}/review`, {
           method:  'POST',
@@ -2913,11 +3155,13 @@
             'Content-Type':  'application/json',
             'Authorization': `Bearer ${CONFIG.token}`,
           },
-          body: JSON.stringify({
+          // `comment` n'est joint que s'il est renseigné : un second POST part
+          // apres le vote pour porter le motif de l'insatisfaction.
+          body: JSON.stringify(Object.assign({
             type:       'review',
             rating,
             session_id: reviewSessionId || sessionId,
-          }),
+          }, comment ? { comment } : null)),
         });
       } catch (err) {
         /* no-op : l'avis est best-effort */
@@ -3853,20 +4097,30 @@
     }
 
     function appendAssistantMessage(text) {
-      const div = document.createElement('div');
-      div.className = 'ep-msg ep-msg-assistant';
-      const avatar = document.createElement('div');
-      avatar.className = 'ep-msg-avatar';
-      avatar.setAttribute('aria-hidden', 'true');
-      avatar.innerHTML = MARK_SVG;
-      const bubble = document.createElement('div');
-      bubble.className = 'ep-bubble';
-      bubble.textContent = text;
-      div.appendChild(avatar);
-      div.appendChild(bubble);
-      messagesEl.appendChild(div);
-      scrollBottom();
-      if (!isRestoring) { transcript.push({ t: 'assistant', text }); saveState(); }
+        // security guard to avoid duplicate assistant messages
+        if (transcript[transcript.length - 1].text === text) {
+          return;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'ep-msg ep-msg-assistant';
+        const avatar = document.createElement('div');
+        avatar.className = 'ep-msg-avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+        avatar.innerHTML = MARK_SVG;
+        const bubble = document.createElement('div');
+        bubble.className = 'ep-bubble';
+        bubble.textContent = text;
+        div.appendChild(avatar);
+        div.appendChild(bubble);
+        messagesEl.appendChild(div);
+        scrollBottom();
+        if (!isRestoring) { transcript.push({ t: 'assistant', text }); saveState(); }
+    }
+
+    function appendAssistantMessageWithDelay(text, delay = 0) {
+      if (delay > 0) setTimeout(() => appendAssistantMessage(text), delay);
+      else appendAssistantMessage(text);
     }
 
     function appendAssistantMessageEl(el) {
@@ -4087,14 +4341,34 @@
         </div>
       </div>
 
+      <!-- Feuille « préciser votre retour » (motif « Autre » d'un avis négatif).
+           Même habillage que la fiche de demande — classes .ep-sheet-*. Indépendante
+           de data-enable-parts-request : éteindre les demandes ne coupe pas les avis. -->
+      <div id="ep-rv-backdrop" class="ep-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="ep-rv-title" aria-hidden="true">
+        <form id="ep-rv-sheet" class="ep-sheet" novalidate>
+          <span class="ep-sheet-handle" aria-hidden="true"></span>
+          <div class="ep-sheet-head">
+            <span id="ep-rv-title" class="ep-sheet-title">${escHtml(t('review_other_title'))}</span>
+            <span class="ep-sheet-sub">${escHtml(t('review_other_sub'))}</span>
+          </div>
+          <label class="ep-sr-only" for="ep-rv-text">${escHtml(t('review_other_label'))}</label>
+          <textarea id="ep-rv-text" rows="3" maxlength="200"
+                    placeholder="${escHtml(t('review_other_ph'))}"
+                    aria-describedby="ep-rv-count"></textarea>
+          <span class="ep-rv-count" id="ep-rv-count" aria-live="polite"></span>
+          <button type="submit" id="ep-rv-submit" class="ep-sheet-submit" disabled>${escHtml(t('review_other_submit'))}</button>
+          <button type="button" id="ep-rv-cancel" class="ep-sheet-cancel">${escHtml(t('review_other_cancel'))}</button>
+        </form>
+      </div>
+
       <!-- Fiche « demander cette pièce » (frame 2a). Toujours dans le DOM, masquée :
            les libellés d'erreur doivent exister avant d'être annoncés (aria-live). -->
-      <div id="ep-pr-backdrop" role="dialog" aria-modal="true" aria-labelledby="ep-pr-title" aria-hidden="true">
-        <form id="ep-pr-sheet" novalidate>
-          <span class="ep-pr-handle" aria-hidden="true"></span>
-          <div class="ep-pr-head">
-            <span id="ep-pr-title">${escHtml(t('pr_title'))}</span>
-            <span class="ep-pr-sub" id="ep-pr-sub"></span>
+      <div id="ep-pr-backdrop" class="ep-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="ep-pr-title" aria-hidden="true">
+        <form id="ep-pr-sheet" class="ep-sheet" novalidate>
+          <span class="ep-sheet-handle" aria-hidden="true"></span>
+          <div class="ep-sheet-head">
+            <span id="ep-pr-title" class="ep-sheet-title">${escHtml(t('pr_title'))}</span>
+            <span class="ep-sheet-sub" id="ep-pr-sub"></span>
           </div>
           <div class="ep-pr-field">
             <div class="ep-pr-recall">
@@ -4124,8 +4398,8 @@
             <span class="ep-pr-error" id="ep-pr-consent-err" role="alert"></span>
           </div>
           <span class="ep-pr-error" id="ep-pr-form-err" role="alert"></span>
-          <button type="submit" id="ep-pr-submit" disabled>${escHtml(t('pr_submit'))}</button>
-          <button type="button" id="ep-pr-cancel">${escHtml(t('pr_cancel'))}</button>
+          <button type="submit" id="ep-pr-submit" class="ep-sheet-submit" disabled>${escHtml(t('pr_submit'))}</button>
+          <button type="button" id="ep-pr-cancel" class="ep-sheet-cancel">${escHtml(t('pr_cancel'))}</button>
         </form>
       </div>
     `;
