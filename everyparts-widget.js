@@ -29,7 +29,7 @@
       placeholder:     'Rechercher une pièce compatible…',
       send:            'Envoyer',
       welcome_p1:      'Bonjour 👋 Je suis l\'assistant IA de recherche EveryParts.',
-      welcome_p2:      'Décrivez-moi votre moto et la pièce recherchée, et je vous aiderai à la trouver.',
+      welcome_p2:      'Décrivez-moi votre moto (marque, modèle, cylindrée et année) et la pièce recherchée, et je vous aiderai à la trouver.',
       typing:          'En train de répondre',
       error_token:     'Configuration invalide : token absent.',
       error_unknown:   'Erreur inconnue.',
@@ -86,7 +86,7 @@
       pr_sending:      'Envoi…',
       pr_cancel:       'Annuler',
       pr_close:        'Fermer la demande',
-      pr_success:      'C\'est noté : notre équipe vous recontacte par email au sujet de cette pièce.',
+      pr_success:      'C\'est noté : notre équipe vous recontactera par email au sujet de cette pièce.',
       pr_err_invalid_email:    'Merci d\'indiquer une adresse e-mail valide.',
       pr_err_consent_required: 'Merci de cocher cette case pour continuer.',
       pr_err_empty_request:    'Merci de préciser votre demande.',
@@ -99,7 +99,7 @@
       placeholder:     'Search for a compatible part…',
       send:            'Send',
       welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
-      welcome_p2:      'Tell me about your motorcycle and the part you\'re looking for, and I\'ll help you find it.',
+      welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
       typing:          'Typing',
       error_token:     'Invalid configuration: missing token.',
       error_unknown:   'Unknown error.',
@@ -169,7 +169,7 @@
       placeholder:     'Search for a compatible part…',
       send:            'Send',
       welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
-      welcome_p2:      'Tell me about your motorcycle and the part you\'re looking for, and I\'ll help you find it.',
+      welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
       typing:          'Typing',
       error_token:     'Invalid configuration: missing token.',
       error_unknown:   'Unknown error.',
@@ -272,6 +272,23 @@
     return DEFAULT_LOCALE;
   }
 
+  /**
+   * Attribut booléen de snippet. Absent → `fallback` (l'attribut est un interrupteur
+   * d'extinction, pas un opt-in : les intégrations existantes ne changent pas de
+   * comportement). Présent nu (`data-x`) → true, comme les booléens HTML natifs.
+   * Seuls « false » et « 0 » désactivent ; toute autre valeur est ignorée au profit
+   * du défaut plutôt que traitée comme false — une faute de frappe ne doit pas
+   * éteindre une fonctionnalité en silence.
+   */
+  function boolAttr(name, fallback) {
+    const raw = SCRIPT_EL?.getAttribute(name);
+    if (raw == null) return fallback;
+    const v = raw.trim().toLowerCase();
+    if (v === '' || v === 'true' || v === '1') return true;
+    if (v === 'false' || v === '0') return false;
+    return fallback;
+  }
+
   const CONFIG = {
     token:    SCRIPT_EL?.getAttribute('data-token') || '',
     // data-locale remplace data-lang (rétro-compatibilité conservée en repli).
@@ -282,6 +299,10 @@
     logo:     SCRIPT_EL?.getAttribute('data-logo')  || '',
     title:    SCRIPT_EL?.getAttribute('data-title') || '',
     subtitle: SCRIPT_EL?.getAttribute('data-subtitle') || '',
+    // Demande de pièce sur recherche infructueuse (frame 2a). Activée sauf
+    // data-enable-parts-request="false" : une boutique qui n'a personne pour traiter
+    // ces demandes peut l'éteindre sans toucher au reste de l'intégration.
+    partsRequest: boolAttr('data-enable-parts-request', true),
   };
 
   function t(key, vars = {}) {
@@ -2517,6 +2538,10 @@
           appendAssistantMessageEl(buildNoResults(entry.message, entry.suggestions));
           break;
         case 'pr_offer':
+          // Éteinte entre-temps : une conversation journalisée quand la fonctionnalité
+          // était active ne doit pas la faire réapparaître. L'entrée reste dans
+          // l'historique — la rejouer serait proposer un service qui n'existe plus.
+          if (!CONFIG.partsRequest) break;
           // Une proposition SANS RÉPONSE reste cliquable quelle que soit sa position —
           // même règle que les avis, pas celle des groupes d'options. Elle cesse d'être
           // la dernière entrée dès que le message de relance est ajouté ; la figer là
@@ -3349,7 +3374,15 @@
 
       // Frame 2a : la recherche infructueuse enchaîne sur une proposition de
       // demande de pièce. L'utilisateur y entre explicitement — rien ne s'ouvre seul.
-      renderPartsRequestOffer();
+      if (CONFIG.partsRequest) {
+        renderPartsRequestOffer();
+      } else {
+        // Demandes éteintes : sans relance, la conversation resterait suspendue sur
+        // l'échec. Elle sort donc tout de suite, à la place de la proposition — et
+        // sans entrée à laquelle s'adosser, d'où l'appel avec null : renderNoResults()
+        // ne s'exécute qu'une fois par réponse, il n'y a rien à dédoublonner.
+        showAfterPartsRequest(null);
+      }
     }
 
     // Dernière requête de l'utilisateur — celle qui a produit la recherche
