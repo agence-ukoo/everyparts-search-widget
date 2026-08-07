@@ -31,9 +31,14 @@
       welcome_p1:      'Bonjour 👋 Je suis l\'assistant IA de recherche EveryParts.',
       welcome_p2:      'Décrivez-moi votre moto (marque, modèle, cylindrée et année) et la pièce recherchée, et je vous aiderai à la trouver.',
       typing:          'En train de répondre',
-      error_token:     'Configuration invalide : token absent.',
       error_unknown:   'Erreur inconnue.',
       error_unexpected:'La recherche est momentanément indisponible. Merci de réessayer dans quelques instants.',
+      // Échec de recherche (carte de réessai) — remplace l'affichage brut d'error_unexpected.
+      retry_title:     'Aucun résultat trouvé pour le moment.',
+      retry_sub:       'Cela peut être temporaire ou lié à une information manquante.',
+      retry_hint:      'Essayez à nouveau dans quelques instants, ou reformulez votre demande avec d\'autres mots.',
+      retry_action:    'Réessayer maintenant',
+      retry_exhausted: 'Plusieurs tentatives ont échoué. Réessayez plus tard, ou reformulez votre demande avec d\'autres mots.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmée par {n} sources',
       suggestions:     'Suggestions :',
@@ -101,9 +106,14 @@
       welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
       welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
       typing:          'Typing',
-      error_token:     'Invalid configuration: missing token.',
       error_unknown:   'Unknown error.',
       error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
+      // Search failure (retry card) — replaces the plain error_unexpected bubble.
+      retry_title:     'No result found for now.',
+      retry_sub:       'This may be temporary, or due to missing information.',
+      retry_hint:      'Try again in a few moments, or rephrase your request using different words.',
+      retry_action:    'Try again now',
+      retry_exhausted: 'Several attempts have failed. Please try again later, or rephrase your request using different words.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmed by {n} sources',
       suggestions:     'Suggestions:',
@@ -171,9 +181,14 @@
       welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
       welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
       typing:          'Typing',
-      error_token:     'Invalid configuration: missing token.',
       error_unknown:   'Unknown error.',
       error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
+      // Search failure (retry card) — replaces the plain error_unexpected bubble.
+      retry_title:     'No result found for now.',
+      retry_sub:       'This may be temporary, or due to missing information.',
+      retry_hint:      'Try again in a few moments, or rephrase your request using different words.',
+      retry_action:    'Try again now',
+      retry_exhausted: 'Several attempts have failed. Please try again later, or rephrase your request using different words.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmed by {n} sources',
       suggestions:     'Suggestions:',
@@ -841,6 +856,80 @@
       color: var(--ep-red);
       border: 1px solid #ffd0da;
     }
+
+    /* ── Carte d'échec de recherche ────────────────────────────────────────────
+       Remplace la bulle d'erreur brute quand /search n'aboutit pas : titre, cause
+       probable, conseil, et un bouton qui rejoue la MÊME requête. Transitoire comme
+       toutes les erreurs — jamais journalisée, donc jamais restaurée (rejouer une
+       panne passée afficherait un état faux). Occupe toute la largeur de la bulle,
+       d'où .ep-msg-wide sur le conteneur. */
+    .ep-retry-card {
+      position: relative;   /* ancre l'overlay de chargement */
+      background: #FFF5F7;
+      border: 1px solid #FFD3DC;
+      border-radius: 14px;
+      padding: 14px 15px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+    .ep-retry-row { display: flex; gap: 10px; align-items: flex-start; }
+    .ep-retry-row svg { flex: none; margin-top: 1px; }
+    .ep-retry-title {
+      font-family: var(--ep-font-title);
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.35;
+      color: var(--ep-red);
+    }
+    .ep-retry-sub { font-size: 13px; line-height: 1.45; color: #5A6B68; margin-top: 3px; }
+    .ep-retry-sep { height: 1px; background: #FFD3DC; }
+    .ep-retry-hint { font-size: 13px; line-height: 1.45; color: #5A6B68; }
+    .ep-retry-btn {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 34px;
+      margin-left: 28px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--ep-red);
+      color: var(--ep-white);
+      font-family: var(--ep-font-title);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ep-retry-btn:hover:not(:disabled) { filter: brightness(1.06); }
+    .ep-retry-btn:disabled { opacity: .5; cursor: default; }
+    .ep-retry-btn:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
+
+    /* Chargement du reessai : voile PAR-DESSUS la carte, qui reste en place. Le
+       contenu doit rester lisible dessous — on ne remplace pas, on couvre. */
+    .ep-retry-loading {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      /* Blanc, pas le rose de la carte : un voile de la meme teinte que le fond
+         qu'il couvre ne se voit pas. Le contenu doit visiblement reculer. */
+      background: rgba(255,255,255,.78);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: progress;
+    }
+    .ep-retry-spinner {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,72,105,.25);
+      border-top-color: var(--ep-red);
+      animation: ep-retry-spin .7s linear infinite;
+    }
+    @keyframes ep-retry-spin { to { transform: rotate(360deg); } }
 
     /* Avatar assistant (refonte 1a) : carré teal contenant la marque « everyparts »
        (hexagone) en vert. */
@@ -1642,6 +1731,8 @@
     @media (prefers-reduced-motion: reduce) {
       #ep-window, .ep-msg, .ep-card, .ep-card-arrow { transition: none; animation: none; }
       #ep-pr-backdrop, #ep-pr-sheet { transition: none; }
+      /* Le voile reste — c'est lui qui signale l'attente ; seule la rotation cesse. */
+      .ep-retry-spinner { animation: none; }
       .ep-dot { animation: none; }
       #ep-input:placeholder-shown ~ #ep-send-btn:not(:disabled) { animation: none; }
       /* Le lanceur change d'état sans morphing ni défilement des exemples. Les sélecteurs
@@ -1676,6 +1767,20 @@
   // Véhicule identifié par le serveur (champ `interpreted` des réponses). Alimente
   // la barre de contexte « Ma moto », affichée uniquement quand marque + modèle sont
   // connus. null tant qu'aucune moto n'est identifiée. Persisté avec la session.
+  // Derniere tentative de /search ({ query, extraBody }), rejouee telle quelle par le
+  // bouton de la carte d'echec. Hors persistance : une panne ne se restaure pas.
+  // Plafond d'essais pour UN MEME message, garde-fou anti-martelage du serveur :
+  // au-dela, s'acharner ne sert a rien. Le premier envoi compte comme un essai —
+  // il reste donc SEARCH_MAX_TRIES - 1 clics sur « Reessayer ».
+  const SEARCH_MAX_TRIES = 3;
+  // ... mais « reessayez plus tard » doit rester vrai : passe ce delai sans nouvelle
+  // tentative, le compteur du meme message repart de zero.
+  const SEARCH_TRIES_RESET_MS = 5 * 60 * 1000;
+  let lastSearchAttempt = null;
+  // Carte d'echec a reutiliser pour l'appel EN COURS (renseignee seulement quand
+  // l'appel vient du bouton de reessai), et marqueur de l'issue de cet appel.
+  let pendingRetryCard = null;
+  let searchFailedNow = false;
   let identifiedVehicle = null;
   // Type de pièce interprété par le serveur (`interpreted.part_type`, ex. « guidon »).
   // Même logique que identifiedVehicle : c'est la lecture SERVEUR de la demande, pas le
@@ -2601,8 +2706,23 @@
     }
 
     // ── Appel API ──────────────────────────────────────────────────────────
-    async function callSearch(query, extraBody) {
+    async function callSearch(query, extraBody, retryCard) {
       if (isLoading) return;
+      // Memorisee pour le bouton de reessai de la carte d'echec : on rejoue la MEME
+      // requete et les memes extras (affinage, pagination), sans reafficher le
+      // message utilisateur — il est deja dans le fil.
+      // Compteur par message : reinitialise des que la requete change, ou apres le
+      // delai de repos ci-dessus.
+      const sameMessage = lastSearchAttempt
+        && lastSearchAttempt.query === query
+        && (Date.now() - lastSearchAttempt.at) < SEARCH_TRIES_RESET_MS;
+      lastSearchAttempt = {
+        query, extraBody,
+        tries: (sameMessage ? lastSearchAttempt.tries : 0) + 1,
+        at: Date.now(),
+      };
+      pendingRetryCard = retryCard || null;
+      searchFailedNow = false;
       isLoading = true;
       sendBtn.disabled = true;
       showTyping(true);
@@ -2630,9 +2750,13 @@
         renderResponse(data);
       } catch (err) {
         showTyping(false);
-        appendErrorMessage(t('error_unexpected'));
+        renderSearchFailure();
         console.error(err);
       } finally {
+        // Reessai abouti : la carte disparait, la conversation a repris. Echoue :
+        // renderSearchFailure() l'a deja remise en etat, elle reste en place.
+        if (retryCard && !searchFailedNow) retryCard.remove();
+        pendingRetryCard = null;
         isLoading = false;
         sendBtn.disabled = false;
         if (!isMobile()) inputEl.focus();
@@ -2655,10 +2779,15 @@
           renderNoResults(data);
           break;
         case 'error':
-          appendErrorMessage(data.error?.message || t('error_unknown'));
+          if (data.error?.code === 'pagination_expired' && data.error?.message) {
+            appendErrorMessage(data.error.message);
+          } else {
+            console.error(data.error || t('error_unknown'));
+            renderSearchFailure();
+          }
           break;
         default:
-          appendErrorMessage(t('error_unexpected'));
+          renderSearchFailure();
       }
     }
 
@@ -3707,14 +3836,18 @@
     }
 
     // ── Helpers DOM ────────────────────────────────────────────────────────
-    function appendUserMessage(text) {
+    // beforeEl : insere le message AVANT ce noeud plutot qu'en fin de fil. Sert au
+    // reessai, ou le message resoumis doit suivre le precedent et donc passer
+    // au-dessus de la carte d'echec, qui reste en dernier.
+    function appendUserMessage(text, beforeEl) {
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-user';
       const bubble = document.createElement('div');
       bubble.className = 'ep-bubble';
       bubble.textContent = text;
       div.appendChild(bubble);
-      messagesEl.appendChild(div);
+      if (beforeEl && beforeEl.parentNode === messagesEl) messagesEl.insertBefore(div, beforeEl);
+      else messagesEl.appendChild(div);
       scrollBottom();
       if (!isRestoring) { transcript.push({ t: 'user', text }); saveState(); }
     }
@@ -3752,12 +3885,116 @@
       scrollBottom();
     }
 
+    // Echec de recherche : carte avec cause probable, conseil, et reessai. Remplace
+    // l'affichage brut d'error_unexpected sur le chemin /search. Non journalisee :
+    // rejouer une panne passee afficherait un etat faux.
+    function renderSearchFailure() {
+      searchFailedNow = true;
+      const exhausted = !!lastSearchAttempt && lastSearchAttempt.tries >= SEARCH_MAX_TRIES;
+      // Echec d'un reessai : on ne cree pas une seconde carte, on rend la main
+      // a celle qui est deja affichee — sauf si le plafond est atteint, auquel cas
+      // elle perd son bouton.
+      if (pendingRetryCard) {
+        pendingRetryCard.stopLoading();
+        if (exhausted) pendingRetryCard.exhaust();
+        return;
+      }
+      const ICO_FACE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF4869" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 15.2c1-.9 2.2-1.3 3.5-1.3s2.5.4 3.5 1.3"></path><path d="M9 9.5h.01M15 9.5h.01"></path></svg>`;
+      const ICO_BULB = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4A62A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .8 1.6v.5h5.4v-.5c0-.6.3-1.2.8-1.6A6 6 0 0 0 12 3Z"></path><path d="M10 19.5h4"></path></svg>`;
+      const ICO_REFRESH = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"></path><path d="M20 4v4.5h-4.5"></path></svg>`;
+
+      const card = document.createElement('div');
+      card.className = 'ep-retry-card';
+      card.setAttribute('role', 'alert');
+
+      const head = document.createElement('div');
+      head.className = 'ep-retry-row';
+      head.innerHTML = ICO_FACE +
+        `<div><div class="ep-retry-title">${escHtml(t('retry_title'))}</div>` +
+        `<div class="ep-retry-sub">${escHtml(t('retry_sub'))}</div></div>`;
+      card.appendChild(head);
+
+      const sep = document.createElement('div');
+      sep.className = 'ep-retry-sep';
+      card.appendChild(sep);
+
+      const hintText = document.createElement('div');
+      hintText.className = 'ep-retry-hint';
+      hintText.textContent = t('retry_hint');
+      const hint = document.createElement('div');
+      hint.className = 'ep-retry-row';
+      hint.innerHTML = ICO_BULB;
+      hint.appendChild(hintText);
+      card.appendChild(hint);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ep-retry-btn';
+      btn.innerHTML = `<span>${escHtml(t('retry_action'))}</span>` + ICO_REFRESH;
+      card.appendChild(btn);
+
+      const overlay = document.createElement('div');
+      overlay.className = 'ep-retry-loading';
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.innerHTML = '<span class="ep-retry-spinner"></span>';
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'ep-msg ep-msg-assistant ep-msg-wide';
+      wrapper.appendChild(card);
+      messagesEl.appendChild(wrapper);
+      scrollBottom();
+
+      // La carte survit aux tentatives : elle se voile pendant l'essai et se
+      // redecouvre s'il echoue, au lieu de disparaitre puis reapparaitre.
+      const controller = {
+        startLoading() {
+          btn.disabled = true;
+          card.setAttribute('aria-busy', 'true');
+          card.appendChild(overlay);
+        },
+        stopLoading() {
+          overlay.remove();
+          card.removeAttribute('aria-busy');
+          btn.disabled = false;
+        },
+        remove() { wrapper.remove(); },
+        // Plafond atteint : le bouton disparait plutot que de rester grise — rien
+        // ne le reactivera dans cet ecran, et le conseil dit quoi faire a la place.
+        exhaust() {
+          btn.remove();
+          hintText.textContent = t('retry_exhausted');
+        },
+      };
+
+      // Carte nee alors que le plafond est deja atteint (l'utilisateur a renvoye le
+      // meme message a la main) : pas de bouton du tout.
+      if (exhausted) controller.exhaust();
+
+      btn.addEventListener('click', () => {
+        if (!lastSearchAttempt || btn.disabled) return;
+        if (lastSearchAttempt.tries >= SEARCH_MAX_TRIES) { controller.exhaust(); return; }
+        const attempt = lastSearchAttempt;
+        controller.startLoading();
+        // Le message resoumis se glisse AVANT la carte, donc a la suite du precedent :
+        // l'utilisateur voit que c'est bien sa demande qui repart.
+        appendUserMessage(attempt.query, wrapper);
+        setTimeout(() => {
+          callSearch(attempt.query, attempt.extraBody, controller);
+        }, 500);
+      });
+    }
+
     function appendErrorMessage(text) {
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-assistant ep-msg-error';
+      const avatar = document.createElement('div');
+      avatar.className = 'ep-msg-avatar';
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.innerHTML = MARK_SVG;
       const bubble = document.createElement('div');
       bubble.className = 'ep-bubble';
       bubble.textContent = text;
+      div.appendChild(avatar);
       div.appendChild(bubble);
       messagesEl.appendChild(div);
       scrollBottom();
