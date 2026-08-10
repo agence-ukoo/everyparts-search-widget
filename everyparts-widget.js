@@ -98,6 +98,8 @@
       pr_subtitle_novehicle: 'Notre équipe recherche la référence et vous recontacte par email.',
       pr_email_label:  'Adresse e-mail',
       pr_email_ph:     'vous@exemple.com',
+      pr_phone_label:  'Numéro de téléphone',
+      pr_phone_ph:     'numéro de téléphone - facultatif',
       pr_consent:      'J\'autorise l\'utilisation de mon email afin de me recontacter au sujet de cette demande.',
       pr_submit:       'Envoyer ma demande',
       pr_sending:      'Envoi…',
@@ -105,6 +107,7 @@
       pr_close:        'Fermer la demande',
       pr_success:      'C\'est noté : notre équipe vous recontactera par email au sujet de cette pièce.',
       pr_err_invalid_email:    'Merci d\'indiquer une adresse e-mail valide.',
+      pr_err_invalid_phone:    'Merci d\'indiquer un numéro de téléphone valide.',
       pr_err_consent_required: 'Merci de cocher cette case pour continuer.',
       pr_err_empty_request:    'Merci de préciser votre demande.',
       pr_err_message_too_long: 'Votre message dépasse la longueur autorisée.',
@@ -185,6 +188,8 @@
       pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
       pr_email_label:  'Email address',
       pr_email_ph:     'you@example.com',
+      pr_phone_label:  'Phone number',
+      pr_phone_ph:     'phone number - optional',
       pr_consent:      'I authorize the use of my email address to contact me regarding this request.',
       pr_submit:       'Send my request',
       pr_sending:      'Sending…',
@@ -192,6 +197,7 @@
       pr_close:        'Close the request',
       pr_success:      'Noted — our team will get back to you by email about this part.',
       pr_err_invalid_email:    'Please enter a valid email address.',
+      pr_err_invalid_phone:    'Please enter a valid phone number.',
       pr_err_consent_required: 'Please tick this box to continue.',
       pr_err_empty_request:    'Please describe your request.',
       pr_err_message_too_long: 'Your message exceeds the allowed length.',
@@ -272,6 +278,8 @@
       pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
       pr_email_label:  'Email address',
       pr_email_ph:     'you@example.com',
+      pr_phone_label:  'Phone number',
+      pr_phone_ph:     'phone number - optional',
       pr_consent:      'I authorize the use of my email address to contact me regarding this request.',
       pr_submit:       'Send my request',
       pr_sending:      'Sending…',
@@ -279,6 +287,7 @@
       pr_close:        'Close the request',
       pr_success:      'Noted — our team will get back to you by email about this part.',
       pr_err_invalid_email:    'Please enter a valid email address.',
+      pr_err_invalid_phone:    'Please enter a valid phone number.',
       pr_err_consent_required: 'Please tick this box to continue.',
       pr_err_empty_request:    'Please describe your request.',
       pr_err_message_too_long: 'Your message exceeds the allowed length.',
@@ -1571,7 +1580,7 @@
     .ep-review-thx {color: #00A76F; font-size: 13px;}
 
     /* Zone de texte de la feuille « Autre » — 16px sur mobile contre le zoom iOS,
-       valeur resserrée seulement au-dessus de 641px (cf. #ep-input, #ep-pr-email). */
+       valeur resserrée seulement au-dessus de 641px (cf. #ep-input, #ep-pr-email, #ep-pr-phone). */
     #ep-rv-text {
       width: 100%;
       min-height: 88px;
@@ -1697,7 +1706,7 @@
       background: transparent;
       padding: 0;
       font-family: var(--ep-font-body);
-      /* ≥16px : empêche le zoom auto iOS, cf. #ep-input / #ep-pr-email. */
+      /* ≥16px : empêche le zoom auto iOS, cf. #ep-input / #ep-pr-email / #ep-pr-phone. */
       font-size: 16px;
       font-weight: 700;
       line-height: 1.35;
@@ -1707,7 +1716,7 @@
     .ep-pr-recall:has(#ep-pr-message[aria-invalid="true"]) { border-color: #C0392B; background: #FDF3F2; }
 
     .ep-pr-field { display: flex; flex-direction: column; gap: 6px; }
-    #ep-pr-email {
+    #ep-pr-email, #ep-pr-phone {
       height: 42px;
       padding: 0 13px;
       background: var(--ep-grey-100);
@@ -1720,9 +1729,9 @@
       color: #12312D;
       width: 100%;
     }
-    #ep-pr-email::placeholder { color: #9AA6A3; }
-    #ep-pr-email:focus { outline: 2px solid var(--ep-primary); outline-offset: -1px; border-color: transparent; }
-    #ep-pr-email[aria-invalid="true"] { border-color: #C0392B; background: #FDF3F2; }
+    #ep-pr-email::placeholder, #ep-pr-phone::placeholder { color: #9AA6A3; }
+    #ep-pr-email:focus, #ep-pr-phone:focus { outline: 2px solid var(--ep-primary); outline-offset: -1px; border-color: transparent; }
+    #ep-pr-email[aria-invalid="true"], #ep-pr-phone[aria-invalid="true"] { border-color: #C0392B; background: #FDF3F2; }
 
     /* Case de consentement : input réel (focus + clavier natifs) masqué visuellement,
        doublé d'un carré peint. JAMAIS pré-cochée — un consentement pré-coché n'en est pas un. */
@@ -1807,7 +1816,7 @@
       #ep-header { padding: 12px 12px; }
       #ep-fab.ep-window-open { display: block; }
       #ep-input { font-size: 14px; }
-      #ep-pr-email { font-size: 13.5px; }   /* valeur du frame 2a */
+      #ep-pr-email, #ep-pr-phone { font-size: 13.5px; }   /* valeur du frame 2a */
       #ep-pr-message { font-size: 12.5px; } /* idem — 16px sur mobile contre le zoom iOS */
       #ep-rv-text { font-size: 13.5px; }    /* idem */
       .ep-clari-filter { font-size: 13px; }
@@ -2055,6 +2064,8 @@
     const prSub      = win.querySelector('#ep-pr-sub');
     const prEmail    = win.querySelector('#ep-pr-email');
     const prEmailErr = win.querySelector('#ep-pr-email-err');
+    const prPhone    = win.querySelector('#ep-pr-phone');
+    const prPhoneErr = win.querySelector('#ep-pr-phone-err');
     const prMessage  = win.querySelector('#ep-pr-message');
     const prMsgErr   = win.querySelector('#ep-pr-message-err');
     const prConsent  = win.querySelector('#ep-pr-consent-input');
@@ -3788,23 +3799,36 @@
     // (français, présentable) ; c'est le CODE qui décide de l'emplacement.
     const PR_ERROR_FIELDS = {
       invalid_email:    'email',
+      invalid_phone:    'phone',
       consent_required: 'consent',
       empty_request:    'message',
       message_too_long: 'message',
     };
     const PR_ERROR_FALLBACK = {
       invalid_email:    'pr_err_invalid_email',
+      invalid_phone:    'pr_err_invalid_phone',
       consent_required: 'pr_err_consent_required',
       empty_request:    'pr_err_empty_request',
       message_too_long: 'pr_err_message_too_long',
     };
 
+    const PHONE_CHARS = /^[+0-9 .\-()]+$/;
+    function isPhoneValid(value) {
+      if (!PHONE_CHARS.test(value)) return false;
+      const plus = (value.match(/\+/g) || []).length;
+      if (plus > 1 || (plus === 1 && value.indexOf('+') !== 0)) return false;
+      const digits = value.replace(/\D/g, '').length;
+      return digits >= 6 && digits <= 15;
+    }
+
     function prClearErrors() {
       prEmailErr.textContent = '';
+      prPhoneErr.textContent = '';
       prConsErr.textContent = '';
       prMsgErr.textContent = '';
       prFormErr.textContent = '';
       prEmail.removeAttribute('aria-invalid');
+      prPhone.removeAttribute('aria-invalid');
       prConsent.removeAttribute('aria-invalid');
       prMessage.removeAttribute('aria-invalid');
     }
@@ -3818,6 +3842,10 @@
         prEmailErr.textContent = message;
         prEmail.setAttribute('aria-invalid', 'true');
         prEmail.focus({ preventScroll: true });
+      } else if (field === 'phone') {
+        prPhoneErr.textContent = message;
+        prPhone.setAttribute('aria-invalid', 'true');
+        prPhone.focus({ preventScroll: true });
       } else if (field === 'consent') {
         prConsErr.textContent = message;
         prConsent.setAttribute('aria-invalid', 'true');
@@ -3840,6 +3868,7 @@
       prOpenFor = { entry: entry || null, trigger: trigger || null };
       prClearErrors();
       prEmail.value = '';
+      prPhone.value = '';
       prConsent.checked = false;      // jamais pré-coché
       prSending = false;
       prSubmit.textContent = t('pr_submit');
@@ -3933,6 +3962,13 @@
         prShowError('email', t('pr_err_invalid_email'));
         return;
       }
+
+      // Facultatif : vide = absent. Rempli, il doit avoir la forme d'un numero.
+      const phone = prPhone.value.trim();
+      if (phone && !isPhoneValid(phone)) {
+        prShowError('phone', t('pr_err_invalid_phone'));
+        return;
+      }
       if (!prConsent.checked) {
         prShowError('consent', t('pr_err_consent_required'));
         return;
@@ -3954,7 +3990,7 @@
       prSubmit.disabled = true;
       prSubmit.textContent = t('pr_sending');
 
-      const result = await sendPartsRequest(email, prSessionId, message);
+      const result = await sendPartsRequest(email, phone, prSessionId, message);
 
       prSending = false;
       prSubmit.textContent = t('pr_submit');
@@ -3986,7 +4022,7 @@
 
     // Un envoi par soumission : aucun réessai automatique (l'appel consomme le
     // quota du tenant au même titre qu'une recherche, et le serveur ne dédoublonne pas).
-    async function sendPartsRequest(email, prSessionId, message) {
+    async function sendPartsRequest(email, phone, prSessionId, message) {
       try {
         const resp = await fetch(`${CONFIG.apiBase}/parts-request`, {
           method:  'POST',
@@ -4002,7 +4038,7 @@
             email,
             consent:    true,
             session_id: prSessionId,
-          }, message ? { message } : null)),
+          }, phone ? { phone } : null, message ? { message } : null)),
         });
 
         const data = await resp.json().catch(() => null);
@@ -4387,6 +4423,22 @@
                    placeholder="${escHtml(t('pr_email_ph'))}"
                    aria-describedby="ep-pr-email-err">
             <span class="ep-pr-error" id="ep-pr-email-err" role="alert"></span>
+          </div>
+          <div class="ep-pr-field">
+            <label class="ep-sr-only" for="ep-pr-phone">${escHtml(t('pr_phone_label'))}</label>
+            <!-- inputmode="tel" et autocomplete="tel" : « phone » n'est pas un token
+                 valide pour ces deux attributs, il etait donc ignore (pas de pavé
+                 numerique sur mobile, pas de remplissage automatique). Pas de
+                 required : le champ est facultatif, cf. son placeholder. Le
+                 pattern double la verification JS et donne le retour natif ;
+                 maxlength 25 pour laisser place a la mise en forme (« +33 6 12 34 56 78 »
+                 fait 17 caracteres), le vrai plafond etant sur les chiffres. -->
+            <input id="ep-pr-phone" type="tel" inputmode="tel" autocomplete="tel"
+                   maxlength="25" spellcheck="false"
+                   pattern="[+0-9 .()\\-]+"
+                   placeholder="${escHtml(t('pr_phone_ph'))}"
+                   aria-describedby="ep-pr-phone-err">
+            <span class="ep-pr-error" id="ep-pr-phone-err" role="alert"></span>
           </div>
           <div class="ep-pr-field">
             <label class="ep-pr-consent" for="ep-pr-consent-input">
