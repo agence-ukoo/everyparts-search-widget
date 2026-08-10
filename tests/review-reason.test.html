@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — motif d'avis négatif (/review)</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Motif d'un avis négatif — tests d'intégration</h1>
+<p class="sub">
+  Pouce bas → 4 options → second POST /review portant <code>comment</code>.
+  Couvre les trois options directes, la feuille « Autre », l'annulation et le rejeu.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+function eq(name, a, e) { check(name, JSON.stringify(a) === JSON.stringify(e), `attendu ${JSON.stringify(e)}, reçu ${JSON.stringify(a)}`); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 2500) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_REVIEW_TOKEN';
+const calls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  calls.push({ url: u, body: opts.body ? JSON.parse(opts.body) : null });
+  if (u.endsWith('/review')) return { status: 200, ok: true, headers: new Headers(), json: async () => ({}) };
+  return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+    type: 'results', message: 'Voici les pièces compatibles.',
+    interpreted: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1996, part_type: 'bougie' },
+    results: [{ product_ref: 'NGK-CR8E', name: 'Bougie NGK CR8E', brand: 'NGK', price: 5.9,
+                compatibility: { compatible: true, n_sources: 5, label: 'Compatibilité confirmée' } }],
+    meta: {},
+  }) };
+};
+
+let shadow;
+const $ = s => shadow.querySelector(s);
+const reasons = () => [...shadow.querySelectorAll('.ep-review-reason')];
+const reviewCalls = () => calls.filter(c => /\/review$/.test(c.url));
+
+// Recherche fraîche menée jusqu'aux 4 motifs.
+async function downVote() {
+  $('#ep-reset-btn').click();
+  await sleep(30);
+  $('#ep-input').value = 'bougie cbr 600';
+  $('#ep-send-btn').click();
+  await until(() => shadow.querySelector('.ep-review-down'));
+  calls.length = 0;
+  shadow.querySelector('.ep-review-down').click();
+  await until(() => reasons().length === 4);
+}
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  shadow = host.shadowRoot;
+  $('#ep-fab').click();
+  await sleep(40);
+
+  // ── 1. Le pouce bas ouvre les motifs ──
+  await downVote();
+  eq('4 options proposées', reasons().map(b => b.textContent),
+     ['Résultat incohérent', 'Véhicule ou pièce non identifié', 'Temps de réponse', 'Autre, préciser']);
+  eq('le vote seul part d\'abord, sans comment', reviewCalls().length, 1);
+  check('1er POST : rating down, pas de comment',
+        reviewCalls()[0].body.rating === 'down' && !('comment' in reviewCalls()[0].body),
+        JSON.stringify(reviewCalls()[0].body));
+
+  // Le pouce HAUT ne demande aucun motif.
+  $('#ep-reset-btn').click(); await sleep(30);
+  $('#ep-input').value = 'bougie cbr 600'; $('#ep-send-btn').click();
+  await until(() => shadow.querySelector('.ep-review-up'));
+  shadow.querySelector('.ep-review-up').click();
+  await sleep(80);
+  eq('un avis positif n\'ouvre pas de motifs', reasons().length, 0);
+
+  // ── 2. Les trois premières options renvoient directement ──
+  for (const [i, attendu] of [[0, 'Résultat incohérent'], [1, 'Véhicule ou pièce non identifié'], [2, 'Temps de réponse']]) {
+    await downVote();
+    calls.length = 0;
+    reasons()[i].click();
+    await until(() => reviewCalls().length > 0);
+    const body = reviewCalls()[0].body;
+    eq(`option « ${attendu} » → comment`, body.comment, attendu);
+    eq(`option « ${attendu} » → rating conservé`, body.rating, 'down');
+    check(`option « ${attendu} » → session_id present`, !!body.session_id);
+    eq(`option « ${attendu} » → un seul appel`, reviewCalls().length, 1);
+    check(`option « ${attendu} » → groupe figé`, reasons().every(b => b.disabled));
+    eq(`option « ${attendu} » → choix marqué`,
+       reasons().filter(b => b.classList.contains('ep-selected')).map(b => b.textContent), [attendu]);
+    check('la feuille ne s\'ouvre pas pour ces options',
+          !$('#ep-rv-backdrop').classList.contains('ep-visible'));
+  }
+
+  // ── 3. « Autre » ouvre la feuille, sans rien envoyer ──
+  await downVote();
+  calls.length = 0;
+  reasons()[3].click();
+  await until(() => $('#ep-rv-backdrop').classList.contains('ep-visible'));
+  check('feuille en overlay du chat, dans #ep-window',
+        $('#ep-rv-backdrop').closest('#ep-window') !== null);
+  check('même habillage que la demande de pièce',
+        $('#ep-rv-backdrop').classList.contains('ep-sheet-backdrop') && $('#ep-rv-sheet').classList.contains('ep-sheet'));
+  eq('ouverture : aucun appel', reviewCalls().length, 0);
+  eq('zone de texte bornée à 200', $('#ep-rv-text').getAttribute('maxlength'), '200');
+  eq('c\'est bien une zone de texte', $('#ep-rv-text').tagName, 'TEXTAREA');
+  check('envoi désactivé tant que vide', $('#ep-rv-submit').disabled);
+  check('libellé relié au champ', !!shadow.querySelector('label[for="ep-rv-text"]'));
+
+  // ── 4. Annuler : rien n'est envoyé, les motifs restent ouverts ──
+  $('#ep-rv-cancel').click();
+  await until(() => !$('#ep-rv-backdrop').classList.contains('ep-visible'));
+  eq('annulation : aucun appel', reviewCalls().length, 0);
+  check('annulation : motifs toujours cliquables', reasons().every(b => !b.disabled));
+
+  // ── 5. Soumission du texte libre ──
+  reasons()[3].click();
+  await until(() => $('#ep-rv-backdrop').classList.contains('ep-visible'));
+  const ta = $('#ep-rv-text');
+  ta.value = '  La compatibilité ne correspond pas à mon millésime.  ';
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  await sleep(40);
+  check('envoi actif une fois rempli', !$('#ep-rv-submit').disabled);
+  calls.length = 0;
+  $('#ep-rv-sheet').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  await until(() => reviewCalls().length > 0);
+  eq('le texte libre part en comment (détouré)',
+     reviewCalls()[0].body.comment, 'La compatibilité ne correspond pas à mon millésime.');
+  eq('un seul appel', reviewCalls().length, 1);
+  check('la feuille se referme', !$('#ep-rv-backdrop').classList.contains('ep-visible'));
+  eq('« Autre » marqué comme choisi',
+     reasons().filter(b => b.classList.contains('ep-selected')).map(b => b.textContent), ['Autre, préciser']);
+  check('groupe figé, plus renvoyable', reasons().every(b => b.disabled));
+
+  // ── 6. Journalisation : motif et texte survivent ──
+  const saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  const rev = (saved.transcript || []).filter(e => e.t === 'review').pop();
+  eq('motif journalisé', rev && rev.reason, 'Autre, préciser');
+  eq('texte libre journalisé', rev && rev.reasonText, 'La compatibilité ne correspond pas à mon millésime.');
+  eq('note journalisée', rev && rev.rating, 'down');
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_REVIEW_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>

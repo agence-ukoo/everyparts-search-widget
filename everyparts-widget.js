@@ -363,6 +363,9 @@
     // data-enable-parts-request="false" : une boutique qui n'a personne pour traiter
     // ces demandes peut l'éteindre sans toucher au reste de l'intégration.
     partsRequest: boolAttr('data-enable-parts-request', true),
+    // Journalise meta.ignored des events : c'est ainsi qu'on attrape un nom de
+    // champ mal orthographie. A laisser eteint en production.
+    debug: boolAttr('data-debug', false),
   };
 
   function t(key, vars = {}) {
@@ -397,6 +400,12 @@
     const num = typeof value === 'number' ? value : parseFloat(value);
     if (isNaN(num)) return String(value ?? '');
     return priceFormatter ? priceFormatter.format(num) : `${num.toFixed(2)} €`;
+  }
+
+  // Prix numerique ou rien : l'API le renvoie tantot en nombre, tantot en chaine.
+  function toPrice(value) {
+    const n = typeof value === 'number' ? value : parseFloat(value);
+    return (typeof n === 'number' && isFinite(n) && n >= 0) ? n : undefined;
   }
 
   // Normalisation pour le filtre d'options (insensible aux accents/casse)
@@ -1875,6 +1884,301 @@
   // ... mais « reessayez plus tard » doit rester vrai : passe ce delai sans nouvelle
   // tentative, le compteur du meme message repart de zero.
   const SEARCH_TRIES_RESET_MS = 5 * 60 * 1000;
+
+  // ══ Télémétrie comportementale ═══════════════════════════════════════════
+  // Module isolé : un seul point d'entrée `track(event, payload)`, une file en
+  // mémoire, un envoi groupé. AUCUN fetch de télémétrie ailleurs dans le widget.
+  //
+  // Trois règles qui priment sur tout le reste :
+  //   1. la télémétrie ne bloque, ne retarde et ne casse jamais l'UI — tout est
+  //      en fire-and-forget, chaque appel est encapsulé, rien ne remonte ;
+  //   2. on ne réessaie JAMAIS un 4xx : il échouera identiquement pour toujours ;
+  //   3. sur 429 ou 5xx on vide la file et on se tait — la télémétrie ne doit
+  //      jamais marteler l'endpoint qui sert aussi les recherches.
+  const Telemetry = (function () {
+    const MAX_BATCH   = 20;      // le serveur refuse au-delà (too_many_events)
+    const MAX_BODY    = 10000;   // octets, corps entier
+    const MAX_PAYLOAD = 4000;    // octets, par payload
+    const IDLE_MS     = 5000;    // debounce d'inactivité
+    const MAX_AGE     = 86400000;
+    // Coupé pour toute la visite après un 429/5xx ; persisté pour l'onglet
+    // quand c'est le quota d'événements qui est épuisé.
+    const OFF_KEY = 'everyparts-events-off';
+
+    let queue = [];
+    let timer = null;
+    let off = false;
+
+    try { if (sessionStorage.getItem(OFF_KEY) === '1') off = true; } catch (e) { /* ignore */ }
+
+    // ── Validation locale ──────────────────────────────────────────────────
+    // Un lot est TOUT-OU-RIEN côté serveur : une entrée invalide rejette
+    // l'ensemble. On valide donc avant d'empiler, et une requête refusée coûte
+    // un crédit de quota — raison de plus de ne jamais en envoyer une mauvaise.
+    const str = max => v => (typeof v === 'string' && v.trim() && v.length <= max) ? v : undefined;
+    const url = max => v => {
+      if (typeof v !== 'string' || !v || v.length > max) return undefined;
+      try { new URL(v); return v; } catch (e) { return undefined; }
+    };
+    const int = (min, max) => v =>
+      (typeof v === 'number' && isFinite(v) && Math.round(v) >= min && Math.round(v) <= max)
+        ? Math.round(v) : undefined;
+    const num = min => v => (typeof v === 'number' && isFinite(v) && v >= min) ? v : undefined;
+    const bool = () => v => typeof v === 'boolean' ? v : undefined;
+    const oneOf = list => v => list.indexOf(v) !== -1 ? v : undefined;
+    const exactLen = n => v => (typeof v === 'string' && v.length === n) ? v : undefined;
+    // `interpreted` : exactement ces quatre clés, les autres seraient signalées
+    // dans meta.ignored.
+    const interpreted = () => v => {
+      if (!v || typeof v !== 'object') return undefined;
+      const out = {};
+      const m = str(191)(v.manufacturer); if (m !== undefined) out.manufacturer = m;
+      const mo = str(191)(v.model);       if (mo !== undefined) out.model = mo;
+      const y = int(1900, 2100)(v.year);  if (y !== undefined) out.year = y;
+      const pt = str(191)(v.part_type);   if (pt !== undefined) out.part_type = pt;
+      return Object.keys(out).length ? out : undefined;
+    };
+
+    // `!` en tête = champ requis : s'il ne passe pas, l'événement entier est
+    // abandonné plutôt que de faire échouer tout le lot côté serveur.
+    const SCHEMA = {
+      session_start:      { url: url(2048), referrer: str(2048), locale: str(35) },
+      session_end:        { duration_ms: int(0, MAX_AGE), message_count: int(0, 1000),
+                            '!reason': oneOf(['new_conversation', 'result_shown', 'session_expired', 'model_reset']) },
+      widget_open:        { '!url': url(2048), page_title: str(255), referrer: str(2048) },
+      widget_close:       { url: url(2048), page_title: str(255), referrer: str(2048), open_ms: int(0, MAX_AGE) },
+      product_click:      { '!product_ref': str(191), position: int(1, 500), page: int(1, 1e9),
+                            query: str(500), interpreted: interpreted(),
+                            model_confirmed: bool(), result_count: int(0, 1000), refined: bool(),
+                            price: num(0), currency: exactLen(3), name: str(255),
+                            brand: str(191), url: url(2048) },
+      samples_click:      { '!sample': str(191), position: int(1, 50), sample_count: int(1, 50) },
+      // with_comment : second review_submit émis quand le motif d'un avis négatif
+      // est effectivement soumis (canné ou texte libre) — has_comment, lui, ne
+      // décrit que ce qui est déjà connu au moment du vote initial.
+      review_submit:      { '!rating': oneOf(['up', 'down']), has_comment: bool(), with_comment: bool() },
+      parts_request_open:  { query: str(500), reason: oneOf(['no_results', 'manual']) },
+      parts_request_close: { filled: bool() },
+      parts_request_submit:{ has_message: bool(), consent: bool() },
+    };
+
+    // Journal de mise au point (data-debug). Prefixe explicite : la console d'une
+    // boutique est partagee avec son theme et ses autres scripts, il faut pouvoir
+    // reconnaitre d'un coup d'oeil ce qui vient du widget. Jamais bloquant : meme
+    // un console indisponible ne doit rien casser.
+    const LOG = '[PartsMind]';
+    function dbg(kind, args) {
+      if (!CONFIG.debug) return;
+      try { (console[kind] || console.log).apply(console, [LOG].concat(args)); } catch (e) { /* ignore */ }
+    }
+    const dlog  = (...args) => dbg('log', args);
+    const dwarn = (...args) => dbg('warn', args);
+
+    function byteLength(s) {
+      try { return new TextEncoder().encode(s).length; } catch (e) { return s.length * 3; }
+    }
+
+    // Ne conserve que les clés connues et valides. Renvoie null si un champ
+    // requis manque — l'événement est alors purement et simplement abandonné.
+    function sanitize(event, raw) {
+      const schema = SCHEMA[event];
+      if (!schema) return null;
+      const payload = {};
+      for (const key of Object.keys(schema)) {
+        const required = key.charAt(0) === '!';
+        const name = required ? key.slice(1) : key;
+        const value = schema[key]((raw || {})[name]);
+        if (value === undefined) {
+          if (required) return null;
+          continue;
+        }
+        payload[name] = value;
+      }
+      if (byteLength(JSON.stringify(payload)) > MAX_PAYLOAD) return null;
+      return payload;
+    }
+
+    // ── File ───────────────────────────────────────────────────────────────
+    function track(event, raw, sid) {
+      if (off) {
+        dwarn('event.' + event, 'ignored, telemetry disabled');
+        return;
+      }
+      try {
+        const session = sid || (typeof sessionId === 'string' ? sessionId : '');
+        if (!session) {                     // empty_session_id : inutile d'envoyer
+          dwarn('event.' + event, 'ignored, no session');
+          return;
+        }
+        const payload = sanitize(event, raw);
+        if (payload === null) {
+          // Le cas le plus utile a voir en developpement : type inconnu, champ
+          // requis manquant ou invalide, ou payload au-dela de 4 000 octets.
+          dwarn('event.' + event, 'dropped at validation:', raw);
+          return;
+        }
+        // performance.now() et JAMAIS l'horloge murale : une horloge décalée
+        // placerait l'événement dans le futur ou hors fenêtre de rétention.
+        queue.push({ event, payload, session, t: performance.now() });
+        // widget_close : le sujet (chemin d'URL) est mis en avant dans la trace,
+        // plutôt que noyé dans le payload, pour repérer d'un coup d'œil la page.
+        if (event === 'widget_close' && payload.url) {
+          let subject = payload.url;
+          try { subject = new URL(payload.url).pathname; } catch (e) { /* garde l'URL complète */ }
+          dlog('event.' + event, payload, '· subject', subject, '· session', session, '· queue', queue.length);
+        } else {
+          dlog('event.' + event, payload, '· session', session, '· queue', queue.length);
+        }
+        if (queue.length >= MAX_BATCH) flush();
+        else schedule();
+      } catch (e) { /* la télémétrie ne remonte jamais d'erreur */ }
+    }
+
+    function schedule() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(flush, IDLE_MS);
+    }
+
+    // Découpe en corps respectant les deux plafonds (20 entrées, 10 000 octets).
+    function buildBodies(entries) {
+      const bodies = [];
+      let batch = [];
+      const now = performance.now();
+      const encode = list => {
+        const top = list[0].session;
+        return JSON.stringify({
+          session_id: top,
+          events: list.map(e => {
+            const out = { event: e.event, age_ms: Math.min(MAX_AGE, Math.max(0, Math.round(now - e.t))) };
+            if (Object.keys(e.payload).length) out.payload = e.payload;
+            // Le session_id de tête sert de défaut ; une entrée d'une autre
+            // session porte le sien (le widget en renouvelle un par recherche).
+            if (e.session !== top) out.session_id = e.session;
+            return out;
+          }),
+        });
+      };
+      for (const entry of entries) {
+        const next = batch.concat([entry]);
+        if (next.length > MAX_BATCH || byteLength(encode(next)) > MAX_BODY) {
+          if (batch.length) bodies.push(encode(batch));
+          batch = [entry];
+          // Une entrée seule qui dépasse encore : impossible à envoyer, on la jette.
+          if (byteLength(encode(batch)) > MAX_BODY) batch = [];
+        } else {
+          batch = next;
+        }
+      }
+      if (batch.length) bodies.push(encode(batch));
+      return bodies;
+    }
+
+    function flush() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (off || !queue.length) return;
+      const entries = queue;
+      queue = [];
+      let bodies;
+      try { bodies = buildBodies(entries); } catch (e) { return; }
+      dlog('flushing', entries.length, 'event(s) in', bodies.length, 'request(s):',
+           entries.map(e => e.event).join(', '));
+      bodies.forEach(send);
+    }
+
+    function stop(persist) {
+      dwarn('telemetry disabled for this visit' + (persist ? ' and this tab (quota exceeded)' : ''));
+      off = true;
+      queue = [];
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (persist) { try { sessionStorage.setItem(OFF_KEY, '1'); } catch (e) { /* ignore */ } }
+    }
+
+    function send(body) {
+      try {
+        // keepalive et NON sendBeacon : ce dernier ne sait pas poser l'en-tête
+        // Authorization, donc ne peut pas s'authentifier. Le plafond keepalive
+        // (64 Ko) est très au-dessus de nos 10 000 octets.
+        fetch(`${CONFIG.apiBase}/events`, {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${CONFIG.token}`,
+          },
+          body,
+        }).then(resp => {
+          if (resp.status === 201) {
+            if (CONFIG.debug) {
+              resp.json().then(d => {
+                const ignored = d && d.meta && d.meta.ignored;
+                // meta.ignored non vide = un nom de champ que le serveur ne connait
+                // pas. C'est LE signal qui attrape une faute de frappe.
+                if (ignored && ignored.length) dwarn('fields dropped by server:', ignored);
+                else dlog('201 · stored', d && d.count ? '(' + d.count + ')' : '');
+              }).catch(() => {});
+            }
+            return;
+          }
+          if (resp.status === 429 || resp.status >= 500) {
+            // On se tait pour le reste de la visite. Le quota d'événements est
+            // distinct de celui des recherches : la recherche n'est pas affectée,
+            // et rien n'est montré au visiteur.
+            resp.json().then(d => {
+              stop(d && d.error && d.error.code === 'event_quota_exceeded');
+            }).catch(() => stop(false));
+            return;
+          }
+          // 4xx : jamais de réessai, les entrées sont déjà hors de la file.
+          if (CONFIG.debug) {
+            resp.json().then(d => {
+              dwarn('rejected', resp.status, d && d.error ? d.error.code : '', d && d.meta ? d.meta : '');
+            }).catch(() => dwarn('rejected', resp.status));
+          }
+        }).catch(() => { dwarn('network failure, events lost'); });
+      } catch (e) { /* fetch indisponible : la télémétrie s'efface */ }
+    }
+
+    return {
+      track,
+      flush,
+      isOff: () => off,
+      // exposés pour les tests
+      _sanitize: sanitize,
+      _buildBodies: buildBodies,
+    };
+  })();
+
+  // Suivi de session pour la telemetrie : un couple session_start/session_end
+  // par session_id — le widget en renouvelle un a chaque recherche aboutie.
+  // Session ecartee pour expiration du TTL, a clore en session_end « timeout ».
+  let expiredSession = null;
+  let restoredSession = false;
+  let telemetrySessionAt = 0;
+  let telemetryMessages = 0;
+  // Dernier `meta` de /search, repris tel quel dans les product_click.
+  let lastSearchMeta = null;
+
+  function telemetryStartSession() {
+    telemetrySessionAt = performance.now();
+    telemetryMessages = 0;
+    Telemetry.track('session_start', {
+      url: location.href,
+      referrer: document.referrer,
+      locale: CONFIG.locale,          // BCP-47 complet, jamais tronque
+    });
+  }
+  // `endingId` : la session qui se termine, pas la courante — au moment d'une
+  // rotation, sessionId a deja change.
+  function telemetryEndSession(reason, endingId) {
+    if (!telemetrySessionAt) return;
+    Telemetry.track('session_end', {
+      duration_ms: Math.round(performance.now() - telemetrySessionAt),
+      message_count: telemetryMessages,
+      reason,
+    }, endingId || sessionId);
+    telemetrySessionAt = 0;
+  }
+
   let lastSearchAttempt = null;
   // Carte d'echec a reutiliser pour l'appel EN COURS (renseignee seulement quand
   // l'appel vient du bouton de reessai), et marqueur de l'issue de cet appel.
@@ -1927,9 +2231,21 @@
       return null;
     }
     // Payload d'une autre version, d'un autre token, ou périmé → on repart à neuf.
+    const expired = saved && saved.v === STORAGE_SCHEMA_VERSION && saved.token === CONFIG.token
+      && Array.isArray(saved.transcript) && saved.sessionId
+      && (Date.now() - (saved.lastActive || 0)) > SESSION_TTL_MS;
     if (!saved || saved.v !== STORAGE_SCHEMA_VERSION || saved.token !== CONFIG.token
         || !Array.isArray(saved.transcript)
         || (Date.now() - (saved.lastActive || 0)) > SESSION_TTL_MS) {
+      // Perime par le TTL : la session a REELLEMENT existe, elle vient de s'eteindre
+      // faute d'activite. C'est le seul « timeout » qu'on puisse constater — on garde
+      // de quoi le declarer, l'envoi se fait au montage.
+      if (expired) {
+        expiredSession = {
+          sessionId: saved.sessionId,
+          messageCount: saved.transcript.filter(e => e && e.t === 'user').length,
+        };
+      }
       clearState();
       return null;
     }
@@ -2117,6 +2433,63 @@
     renderMotoBar();
     // Lanceur fermé : badge + aperçu du dernier message assistant, ou amorce générique.
     initClosedLauncher();
+
+    // ── Télémétrie : cycle de vie ──────────────────────────────────────────
+    // AUCUN session_start au chargement : un visiteur qui ne touche jamais au
+    // widget ne doit pas compter comme une session, sinon toute page vue en
+    // creerait une et les statistiques ne voudraient plus rien dire. La session
+    // s'ouvre a la PREMIERE ouverture du panneau (cf. toggleWindow).
+    //
+    // Seule exception : une session periment par TTL a bel et bien existe, on la
+    // clot donc ici, meme si le visiteur n'ouvre pas le widget. duration_ms est
+    // omis — on n'a jamais persiste l'instant de debut, et l'inventer serait faux.
+    if (expiredSession) {
+      Telemetry.track('session_end', {
+        message_count: expiredSession.messageCount,
+        reason: 'session_expired',
+      }, expiredSession.sessionId);
+      expiredSession = null;
+    }
+
+    // Deux declencheurs, deux roles DISTINCTS — les confondre produisait quatre
+    // faux evenements (onglet change, rafraichissement compte double, session
+    // terminee alors qu'elle survit) :
+    //
+    //   visibilitychange->hidden : on VIDE seulement la file. Changer d'onglet
+    //     n'est ni une fermeture du panneau ni une fin de session — le visiteur
+    //     revient. C'est en revanche la derniere occasion fiable d'expedier ce qui
+    //     attend, sur mobile ou l'onglet peut ne jamais etre « decharge ».
+    //
+    //   pagehide : la page part pour de bon. Le panneau ouvert se ferme donc
+    //     effectivement. `once` + drapeau : un rafraichissement declenche pagehide
+    //     ET visibilitychange, et pagehide lui-meme peut se repeter.
+    //
+    // AUCUN session_end ici : la conversation est persistee (TTL 30 min) et
+    // reprend au rechargement. Un depart de page ne termine donc pas la session ;
+    // elle se termine a une rotation, a une reinitialisation, ou par expiration.
+    let finalized = false;
+    function telemetryPageHide() {
+      if (finalized) return;
+      finalized = true;
+      try {
+        if (isOpen) {
+          Telemetry.track('widget_close', {
+            url: location.href,
+            page_title: document.title,
+            referrer: document.referrer,
+            open_ms: openedAt ? Math.round(performance.now() - openedAt) : undefined,
+          });
+          openedAt = 0;
+        }
+        Telemetry.flush();
+      } catch (e) { /* jamais rien remonter depuis un handler de fin de vie */ }
+    }
+    window.addEventListener('pagehide', telemetryPageHide);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        try { Telemetry.flush(); } catch (e) { /* ignore */ }
+      }
+    });
 
     // ── Lanceur fermé : amorce, aperçu, badge ────────────────────────────────
     function showTeaser(text) {
@@ -2425,8 +2798,32 @@
     inputEl.addEventListener('focus', function () { inputFocused = true; settleViewport(); });
     inputEl.addEventListener('blur', function () { inputFocused = false; settleViewport(); });
 
+    let openedAt = 0;
     function toggleWindow(open) {
       isOpen = open;
+      if (open) {
+        // Premiere ouverture : c'est ICI que la session commence. Une conversation
+        // restaurée reprend la sienne — son session_start est deja parti lors d'une
+        // vue precedente, en emettre un second violerait « once per session_id ».
+        if (!telemetrySessionAt) {
+          if (restoredSession) telemetrySessionAt = performance.now();
+          else telemetryStartSession();
+        }
+        openedAt = performance.now();
+        Telemetry.track('widget_open', {
+          url: location.href,                 // requis
+          page_title: document.title,
+          referrer: document.referrer,
+        });
+      } else {
+        Telemetry.track('widget_close', {
+          url: location.href,
+          page_title: document.title,
+          referrer: document.referrer,
+          open_ms: openedAt ? Math.round(performance.now() - openedAt) : undefined,
+        });
+        openedAt = 0;
+      }
       win.classList.toggle('ep-hidden', !open);
       fab.classList.toggle('ep-window-open', open);
       fab.setAttribute('aria-label', open ? t('close') : t('open'));
@@ -2469,7 +2866,9 @@
       activeList = null;
       identifiedVehicle = null;
       identifiedPart = null;
+      telemetryEndSession('new_conversation', sessionId);
       sessionId = generateUUID();
+      telemetryStartSession();
       clearState();
       renderMotoBar();       // masque la barre « Ma moto »
       messagesEl.innerHTML = '';
@@ -2534,13 +2933,16 @@
 
       const row = document.createElement('div');
       row.className = 'ep-chips';
-      chips.forEach(text => {
+      chips.forEach((text, i) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ep-chip';
         btn.textContent = text;
         btn.addEventListener('click', () => {
           if (isLoading) return;
+          Telemetry.track('samples_click', {
+            sample: text, position: i + 1, sample_count: chips.length,
+          });
           removeTryChips();
           appendUserMessage(text);
           callSearch(text);
@@ -2625,12 +3027,14 @@
     // côté widget ne suffit pas — sans nouvelle session, le serveur réutiliserait le
     // véhicule mémorisé au prochain /search. On repart donc d'une session vierge.
     function editMoto() {
+      telemetryEndSession('model_reset', sessionId);
       identifiedVehicle = null;
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
       pendingRefinement = null;
       activeList = null;
       sessionId = generateUUID();
+      telemetryStartSession();
       renderMotoBar();
       saveState();
       inputEl.focus();
@@ -2660,7 +3064,9 @@
     // Les avis et listes paginées déjà affichés gardent l'ancien session_id capturé ;
     // activeList n'est pas remis à zéro pour que « Voir plus » reste fonctionnel.
     function startNewSession() {
+      telemetryEndSession('result_shown', sessionId);   // avant la rotation
       sessionId = generateUUID();
+      telemetryStartSession();
       lastClarificationField = null;
       pendingRefinement = null;
       if (identifiedVehicle) {
@@ -2675,6 +3081,7 @@
       const saved = loadState();
       if (!saved || !saved.transcript.length) return;
 
+      restoredSession = !!saved.sessionId;
       sessionId = saved.sessionId || sessionId;
       conversationContext = saved.conversationContext || { previous_clarifications: [] };
       identifiedVehicle = saved.identifiedVehicle || null;
@@ -2879,6 +3286,7 @@
 
     // ── Rendu des réponses ─────────────────────────────────────────────────
     function renderResponse(data) {
+      if (data && data.meta) lastSearchMeta = data.meta;
       // Met à jour la barre « Ma moto » dès qu'une réponse identifie le véhicule.
       updateVehicleFromData(data);
       updatePartFromData(data);
@@ -2996,6 +3404,13 @@
           btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
           btn.classList.add('ep-selected');
           if (logEntry) { logEntry.rating = rating; saveState(); }
+          // JAMAIS le texte du commentaire : il part sur /review et n'a rien a
+          // faire ici. has_comment n'est connu que pour un avis positif — pour un
+          // avis negatif le motif est demande APRES, on l'omet donc.
+          Telemetry.track('review_submit', {
+            rating,
+            has_comment: rating === 'up' ? false : undefined,
+          }, reviewSessionId);
           sendReview(rating, reviewSessionId);
           // Avis negatif : on demande pourquoi. Le vote est deja parti, le motif
           // suivra dans un second appel.
@@ -3078,6 +3493,7 @@
           }
           if (entry) { entry.reason = label; if (!isRestoring) saveState(); }
           freeze(label);
+          Telemetry.track('review_submit', { rating: 'down', with_comment: true }, reviewSessionId);
           sendReview('down', reviewSessionId, label);
           appendAssistantMessageWithDelay(t('after_result'), 1000);
 
@@ -3151,6 +3567,7 @@
         if (!isRestoring) saveState();
       }
       ctx.freeze(ctx.label);
+      Telemetry.track('review_submit', { rating: 'down', with_comment: true }, ctx.sessionId);
       sendReview('down', ctx.sessionId, comment);
       closeReviewOther();
       appendReviewThank();
@@ -3539,6 +3956,39 @@
     function buildProductCard(product) {
       const card = document.createElement('a');
       card.className = 'ep-card';
+      // On empile puis on vide la file en keepalive, SANS attendre la reponse :
+      // le lien s'ouvre immediatement. Le rang et la page viennent de la liste
+      // reellement affichee ; le reste est l'echo de la reponse /search.
+      card.addEventListener('click', () => {
+        const list = activeList;
+        const idx = list ? list.entries.findIndex(e => e.product === product) : -1;
+        Telemetry.track('product_click', {
+          product_ref: product.product_ref,
+          position: idx >= 0 ? idx + 1 : undefined,
+          page: list && list.pagination ? list.pagination.page : undefined,
+          query: lastSearchAttempt ? lastSearchAttempt.query : undefined,
+          interpreted: identifiedVehicle ? {
+            manufacturer: identifiedVehicle.manufacturer,
+            model: identifiedVehicle.model,
+            year: identifiedVehicle.year,
+            part_type: identifiedPart || undefined,
+          } : undefined,
+          model_confirmed: lastSearchMeta ? lastSearchMeta.model_confirmed : undefined,
+          // pagination.total d'abord : c'est le total de la recherche, alors que
+          // meta.result_count ne vaut que pour la page servie.
+          result_count: (list && list.pagination && typeof list.pagination.total === 'number')
+            ? list.pagination.total
+            : (lastSearchMeta ? lastSearchMeta.result_count : undefined),
+          // L'API peut renvoyer le prix en chaine (« 5.90 ») — le widget lui-meme
+          // le parse ailleurs. Un test de type strict le faisait disparaitre.
+          price: toPrice(product.price),
+          currency: 'EUR',
+          name: product.name,
+          brand: product.brand,
+          url: product.url,
+        }, list && list.sessionId ? list.sessionId : undefined);
+        Telemetry.flush();
+      });
       card.href = product.url || '#';
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
@@ -3865,7 +4315,11 @@
     }
 
     function openPartsRequest(entry, trigger) {
-      prOpenFor = { entry: entry || null, trigger: trigger || null };
+      prOpenFor = { entry: entry || null, trigger: trigger || null, submitted: false };
+      Telemetry.track('parts_request_open', {
+        query: (entry && entry.query) || lastUserQuery() || undefined,
+        reason: 'no_results',            // seul chemin d'entree aujourd'hui
+      }, (entry && entry.sessionId) || undefined);
       prClearErrors();
       prEmail.value = '';
       prPhone.value = '';
@@ -3912,6 +4366,13 @@
 
     function closePartsRequest() {
       if (!prBackdrop.classList.contains('ep-visible')) return;
+      // Abandon seulement : apres un envoi reussi, la fermeture n'est pas un
+      // abandon et ne doit pas emettre parts_request_close.
+      if (prOpenFor && !prOpenFor.submitted) {
+        Telemetry.track('parts_request_close', {
+          filled: !!(prEmail.value.trim() || prPhone.value.trim() || prMessage.value.trim()),
+        }, (prOpenFor.entry && prOpenFor.entry.sessionId) || undefined);
+      }
       prBackdrop.classList.remove('ep-visible');
       prBackdrop.setAttribute('aria-hidden', 'true');
       // Filet : si le navigateur a tout de même fait défiler la fenêtre pour révéler
@@ -3996,6 +4457,12 @@
       prSubmit.textContent = t('pr_submit');
 
       if (result.ok) {
+        // NI l'email, NI le telephone, NI le texte : ces donnees partent sur
+        // /parts-request et seraient de toute facon rejetees ici.
+        Telemetry.track('parts_request_submit', {
+          has_message: !!message, consent: true,
+        }, prSessionId);
+        if (prOpenFor) prOpenFor.submitted = true;
         // La fiche disparaît et ne peut plus être renvoyée : la proposition est figée.
         if (entry) {
           entry.status = 'sent';
@@ -4129,6 +4596,7 @@
       div.appendChild(bubble);
       if (beforeEl && beforeEl.parentNode === messagesEl) messagesEl.insertBefore(div, beforeEl);
       else messagesEl.appendChild(div);
+      if (!isRestoring) telemetryMessages = Math.min(1000, telemetryMessages + 1);
       scrollBottom();
       if (!isRestoring) { transcript.push({ t: 'user', text }); saveState(); }
     }
@@ -4426,16 +4894,9 @@
           </div>
           <div class="ep-pr-field">
             <label class="ep-sr-only" for="ep-pr-phone">${escHtml(t('pr_phone_label'))}</label>
-            <!-- inputmode="tel" et autocomplete="tel" : « phone » n'est pas un token
-                 valide pour ces deux attributs, il etait donc ignore (pas de pavé
-                 numerique sur mobile, pas de remplissage automatique). Pas de
-                 required : le champ est facultatif, cf. son placeholder. Le
-                 pattern double la verification JS et donne le retour natif ;
-                 maxlength 25 pour laisser place a la mise en forme (« +33 6 12 34 56 78 »
-                 fait 17 caracteres), le vrai plafond etant sur les chiffres. -->
             <input id="ep-pr-phone" type="tel" inputmode="tel" autocomplete="tel"
                    maxlength="25" spellcheck="false"
-                   pattern="[+0-9 .()\\-]+"
+                   pattern="[+0-9 .\\(\\)\\-]+"
                    placeholder="${escHtml(t('pr_phone_ph'))}"
                    aria-describedby="ep-pr-phone-err">
             <span class="ep-pr-error" id="ep-pr-phone-err" role="alert"></span>

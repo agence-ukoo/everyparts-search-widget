@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — demande de pièce (/parts-request)</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Demande de pièce — tests d'intégration API</h1>
+<p class="sub">
+  Pilote le vrai widget dans un vrai DOM, <code>fetch</code> bouchonné.
+  Couvre la forme du payload, le chemin 201, et le mapping de chaque code 422 sur son champ.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+// ── Micro-harnais, zéro dépendance ────────────────────────────────────────
+// Le projet n'a ni package.json ni runner : les tests s'exécutent là où le
+// widget vit réellement, dans une page. Ouvrir ce fichier suffit.
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+function eq(name, actual, expected) {
+  const a = JSON.stringify(actual), e = JSON.stringify(expected);
+  check(name, a === e, `attendu ${e}, reçu ${a}`);
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 2000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+// ── Bouchon fetch : enregistre les appels, rejoue une réponse programmée ───
+const calls = [];
+let nextResponse = null;
+window.fetch = async (url, opts = {}) => {
+  calls.push({ url: String(url), opts, body: opts.body ? JSON.parse(opts.body) : null });
+  const r = nextResponse || { status: 500, json: {} };
+  return {
+    status: r.status,
+    ok: r.status >= 200 && r.status < 300,
+    json: async () => r.json,
+    headers: new Headers(r.headers || {}),
+  };
+};
+
+const TOKEN = 'ep_live_TEST_TOKEN';
+let shadow;
+const $ = sel => shadow.querySelector(sel);
+
+// Amène le widget jusqu'à la fiche ouverte, prête à soumettre.
+async function openSheet() {
+  // repart d'une conversation vierge
+  $('#ep-reset-btn').click();
+  await sleep(20);
+
+  // une recherche qui ne donne rien
+  nextResponse = { status: 200, json: {
+    type: 'no_results',
+    message: "Je n'ai trouvé aucune pièce compatible pour Yamaha XT500 (1976).",
+    interpreted: { manufacturer: 'yamaha', model: 'XT500', year: 1976, part_type: 'carburateur' },
+    suggestions: ["Vérifier l'année du véhicule", 'Élargir le type de pièce recherché'],
+    meta: { took_ms: 812, logged_for_analytics: true },
+  } };
+  $('#ep-input').value = 'carburateur xt500';
+  $('#ep-send-btn').click();
+  await until(() => shadow.querySelector('.ep-pr-btn-yes'));
+
+  shadow.querySelector('.ep-pr-btn-yes').click();
+  await until(() => $('#ep-pr-backdrop').classList.contains('ep-visible'));
+  calls.length = 0;                       // on ne garde que les appels de la fiche
+}
+
+function fill(email, consent) {
+  const e = $('#ep-pr-email');
+  e.value = email;
+  e.dispatchEvent(new Event('input', { bubbles: true }));
+  const c = $('#ep-pr-consent-input');
+  if (c.checked !== consent) { c.checked = consent; c.dispatchEvent(new Event('change', { bubbles: true })); }
+}
+function submit() { $('#ep-pr-sheet').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); }
+
+async function run() {
+  shadow = document.querySelector('#ep-root, [data-ep-root]')?.shadowRoot
+        || [...document.querySelectorAll('*')].find(e => e.shadowRoot)?.shadowRoot;
+  if (!shadow) { check('widget monté', false, 'aucun shadow root'); return done(); }
+
+  $('#ep-fab').click();
+  await sleep(30);
+
+  // ── 1. La proposition n'apparaît que sur no_results, et n'ouvre rien seule ──
+  await openSheet();
+  check('la fiche ne s\'ouvre pas toute seule — il faut cliquer « Oui »', true);
+  eq('aucun appel réseau à la seule ouverture de la fiche', calls.length, 0);
+
+  // ── 2. Bouton désactivé tant qu'email ET consentement ne sont pas fournis ──
+  check('envoi désactivé au départ', $('#ep-pr-submit').disabled);
+  fill('a@b.com', false);
+  check('envoi désactivé sans consentement', $('#ep-pr-submit').disabled);
+  fill('', true);
+  check('envoi désactivé sans email', $('#ep-pr-submit').disabled);
+  fill('a@b.com', true);
+  check('envoi actif avec email + consentement', !$('#ep-pr-submit').disabled);
+
+  // ── 2b. Le rappel de pièce est pré-rempli, éditable, et borné à 5000 ──
+  await openSheet();
+  const msg = $('#ep-pr-message');
+  eq('rappel pré-rempli avec la PIÈCE interprétée + le véhicule', msg.value, 'Carburateur — Yamaha XT500 · 1976');
+  eq('zone de texte modifiable', msg.tagName + ':' + msg.readOnly, 'TEXTAREA:false');
+  eq('borné à 5000 caractères', msg.getAttribute('maxlength'), '5000');
+  check('libellé relié au champ', !!shadow.querySelector('label[for="ep-pr-message"]'));
+
+  // ── 2c. La moto ne doit pas apparaître en double (cas « guidon honda cbr 600 85 ») ──
+  $('#ep-reset-btn').click();
+  await sleep(20);
+  nextResponse = { status: 200, json: {
+    type: 'no_results', message: 'Aucune pièce compatible.',
+    interpreted: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1985, part_type: 'guidon' },
+    suggestions: [], meta: {},
+  } };
+  $('#ep-input').value = 'guidon honda cbr 600 85';
+  $('#ep-send-btn').click();
+  await until(() => shadow.querySelector('.ep-pr-btn-yes'));
+  shadow.querySelector('.ep-pr-btn-yes').click();
+  await until(() => $('#ep-pr-backdrop').classList.contains('ep-visible'));
+  const dup = $('#ep-pr-message').value;
+  eq('pièce interprétée + moto, sans redite', dup, 'Guidon — Honda CBR 600 F · 1985');
+  check('le modèle n\'apparaît qu\'une fois', (dup.match(/CBR 600/gi) || []).length === 1, dup);
+  check('la requête brute n\'est pas reprise telle quelle', !/guidon honda cbr/i.test(dup), dup);
+
+  // ── 2d. Sans part_type, on retombe sur la requête brute (sans y accoler la moto) ──
+  $('#ep-reset-btn').click();
+  await sleep(20);
+  nextResponse = { status: 200, json: {
+    type: 'no_results', message: 'Aucune pièce compatible.',
+    interpreted: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1985 },
+    suggestions: [], meta: {},
+  } };
+  $('#ep-input').value = 'une pièce que le serveur ne sait pas classer';
+  $('#ep-send-btn').click();
+  await until(() => shadow.querySelector('.ep-pr-btn-yes'));
+  shadow.querySelector('.ep-pr-btn-yes').click();
+  await until(() => $('#ep-pr-backdrop').classList.contains('ep-visible'));
+  eq('repli sur la requête brute', $('#ep-pr-message').value, 'une pièce que le serveur ne sait pas classer');
+
+  // ── 2e. Le message de relance ne doit sortir qu'UNE fois ──
+  // Régression : « Oui → Annuler → Oui » en réempilait un à chaque tour, dans le DOM
+  // comme dans le transcript, puisque « Oui » ne fige pas la proposition (à dessein :
+  // annuler doit permettre d'y revenir).
+  await openSheet();
+  const relances = () => [...shadow.querySelectorAll('.ep-bubble')]
+    .filter(b => /Souhaitez-vous faire une autre recherche/.test(b.textContent)).length;
+  eq('« Oui » n\'ajoute aucune relance : elle appartient aux issues terminales', relances(), 0);
+  for (let i = 0; i < 3; i++) {
+    $('#ep-pr-cancel').click();
+    await until(() => !$('#ep-pr-backdrop').classList.contains('ep-visible'));
+    shadow.querySelector('.ep-pr-btn-yes').click();
+    await until(() => $('#ep-pr-backdrop').classList.contains('ep-visible'));
+  }
+  eq('toujours aucune relance après 3 aller-retours Oui/Annuler', relances(), 0);
+  check('« Oui » reste cliquable après annulation', !shadow.querySelector('.ep-pr-btn-yes').disabled);
+  $('#ep-pr-cancel').click();
+  await until(() => !$('#ep-pr-backdrop').classList.contains('ep-visible'));
+  shadow.querySelector('.ep-pr-btn-no').click();
+  await sleep(60);
+  eq('« Non » : une relance, et une seule', relances(), 1);
+
+  // ── 3. Consentement jamais pré-coché ──
+  await openSheet();
+  check('consentement décoché à l\'ouverture', $('#ep-pr-consent-input').checked === false);
+
+  // ── 4. Forme du payload + chemin 201 ──
+  await openSheet();
+  fill('  Client@Exemple.COM  ', true);
+  nextResponse = { status: 201, json: { type: 'parts_request', recorded: true, meta: {} } };
+  submit();
+  await until(() => calls.length > 0);
+
+  const c0 = calls[0];
+  check('POST sur {apiBase}/parts-request (pas de /api/v1 en double)',
+        /\/api\/v1\/parts-request$/.test(c0.url) && !/api\/v1\/api\/v1/.test(c0.url), c0.url);
+  eq('méthode POST', c0.opts.method, 'POST');
+  eq('Authorization: Bearer <token>', c0.opts.headers.Authorization, 'Bearer ' + TOKEN);
+  eq('Content-Type', c0.opts.headers['Content-Type'], 'application/json');
+  eq('Accept', c0.opts.headers.Accept, 'application/json');
+  eq('discriminant type', c0.body.type, 'parts_request');
+  eq('email détouré des espaces', c0.body.email, 'Client@Exemple.COM');
+  eq('consent littéralement true', c0.body.consent, true);
+  check('session_id non vide (satisfait le anyOf)', typeof c0.body.session_id === 'string' && c0.body.session_id.length > 0);
+  eq('aucune propriété hors schéma', Object.keys(c0.body).sort(), ['consent', 'email', 'message', 'session_id', 'type']);
+  check('message = le rappel de la pièce recherchée, pré-rempli puis éditable',
+        c0.body.message === 'Carburateur — Yamaha XT500 · 1976', c0.body.message);
+
+  await until(() => !$('#ep-pr-backdrop').classList.contains('ep-visible'));
+  check('201 → la fiche se referme', !$('#ep-pr-backdrop').classList.contains('ep-visible'));
+  check('201 → confirmation dans le fil',
+        [...shadow.querySelectorAll('.ep-bubble')].some(b => /notre équipe vous recontacte/i.test(b.textContent)));
+  check('201 → « Oui » figé, plus renvoyable', shadow.querySelector('.ep-pr-btn-yes').disabled);
+  eq('201 → un seul appel réseau', calls.length, 1);
+
+  // La relance suit la confirmation, jamais l'inverse.
+  const bulles = [...shadow.querySelectorAll('.ep-bubble')].map(b => b.textContent);
+  const iNote = bulles.findIndex(x => /C'est noté/.test(x));
+  const iRelance = bulles.findIndex(x => /Souhaitez-vous faire une autre recherche/.test(x));
+  check('201 → relance présente', iRelance !== -1);
+  check('201 → « C\'est noté… » AVANT la relance', iNote !== -1 && iNote < iRelance, `noté@${iNote} relance@${iRelance}`);
+  eq('201 → une seule relance', bulles.filter(x => /Souhaitez-vous faire une autre recherche/.test(x)).length, 1);
+
+  // ── 4b. Rappel vidé → `message` absent du payload (minLength 1 côté schéma) ──
+  await openSheet();
+  const m2 = $('#ep-pr-message');
+  m2.value = '   ';                       // blanc = absent des deux côtés
+  m2.dispatchEvent(new Event('input', { bubbles: true }));
+  fill('client@exemple.com', true);
+  nextResponse = { status: 201, json: { type: 'parts_request', recorded: true, meta: {} } };
+  submit();
+  await until(() => calls.length > 0);
+  check('rappel vidé → pas de clé message', !('message' in calls[0].body), JSON.stringify(calls[0].body));
+  check('rappel vidé → session_id porte seul le anyOf', !!calls[0].body.session_id);
+
+  // ── 4c. Rappel modifié → c'est la valeur éditée qui part ──
+  await openSheet();
+  const m3 = $('#ep-pr-message');
+  m3.value = 'Durite de radiateur, référence inconnue';
+  m3.dispatchEvent(new Event('input', { bubbles: true }));
+  fill('client@exemple.com', true);
+  nextResponse = { status: 201, json: { type: 'parts_request', recorded: true, meta: {} } };
+  submit();
+  await until(() => calls.length > 0);
+  eq('la saisie de l\'utilisateur remplace le pré-remplissage', calls[0].body.message, 'Durite de radiateur, référence inconnue');
+
+  // ── 5. Chaque code 422 atterrit sur le bon champ ──
+  const cases = [
+    { code: 'invalid_email',    field: '#ep-pr-email-err',   input: '#ep-pr-email' },
+    { code: 'consent_required', field: '#ep-pr-consent-err', input: '#ep-pr-consent-input' },
+    { code: 'empty_request',    field: '#ep-pr-message-err', input: '#ep-pr-message' },
+    { code: 'message_too_long', field: '#ep-pr-message-err', input: '#ep-pr-message' },
+  ];
+  for (const cs of cases) {
+    await openSheet();
+    fill('client@exemple.com', true);
+    nextResponse = { status: 422, json: {
+      type: 'error', error: { code: cs.code, message: 'Message serveur pour ' + cs.code }, meta: {},
+    } };
+    submit();
+    await until(() => $(cs.field).textContent.length > 0);
+    check(`422 ${cs.code} → message sur le bon champ`,
+          $(cs.field).textContent === 'Message serveur pour ' + cs.code,
+          `"${$(cs.field).textContent}" dans ${cs.field}`);
+    if (cs.input) {
+      check(`422 ${cs.code} → champ marqué invalide`, $(cs.input).getAttribute('aria-invalid') === 'true');
+      check(`422 ${cs.code} → focus sur le champ fautif`, shadow.activeElement === $(cs.input));
+    }
+    check(`422 ${cs.code} → la fiche reste ouverte`, $('#ep-pr-backdrop').classList.contains('ep-visible'));
+    check(`422 ${cs.code} → aucun réessai automatique`, calls.length === 1, `${calls.length} appels`);
+  }
+
+  // ── 6. 429 : on remonte le message, on ne réessaie pas ──
+  await openSheet();
+  fill('client@exemple.com', true);
+  nextResponse = { status: 429, json: {
+    type: 'error', error: { code: 'rate_limited', message: 'Trop de requêtes. Réessayez dans une minute.' }, meta: {},
+  } };
+  submit();
+  await until(() => $('#ep-pr-form-err').textContent.length > 0);
+  eq('429 → message serveur affiché', $('#ep-pr-form-err').textContent, 'Trop de requêtes. Réessayez dans une minute.');
+  eq('429 → aucun réessai', calls.length, 1);
+  check('429 → la fiche reste ouverte pour réessayer à la main', $('#ep-pr-backdrop').classList.contains('ep-visible'));
+
+  // ── 7. Validation côté client : les 422 ne devraient jamais partir ──
+  await openSheet();
+  fill('pas-un-email', true);
+  submit();
+  await sleep(30);
+  eq('email malformé → aucun appel réseau', calls.length, 0);
+  check('email malformé → erreur sur le champ email', $('#ep-pr-email-err').textContent.length > 0);
+
+  await openSheet();
+  const longEmail = 'a'.repeat(250) + '@exemple.com';   // 262 > 255
+  fill(longEmail, true);
+  submit();
+  await sleep(30);
+  eq('email > 255 caractères → aucun appel réseau', calls.length, 0);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length
+    ? `${bad.length} ÉCHEC(S) sur ${results.length}`
+    : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_TEST_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>
