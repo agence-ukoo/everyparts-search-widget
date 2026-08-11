@@ -1687,6 +1687,7 @@
        lire comme le texte en gras du frame, avec un anneau de focus pour signaler
        qu'il se modifie. */
     .ep-pr-recall {
+      position: relative;
       display: flex;
       align-items: center;
       /* Le frame tient sur une ligne ; ici la valeur est éditable, donc elle doit
@@ -1694,13 +1695,20 @@
          côte à côte tant que ça passe, sinon le champ prend la ligne suivante. */
       flex-wrap: wrap;
       gap: 4px 8px;
-      padding: 9px 12px;
+      /* Marge droite réservée au crayon (icône absolue, hors flux) : sans elle un
+         libellé traduit plus long pourrait passer dessous. */
+      padding: 9px 28px 9px 12px;
       background: #F2FCF8;
       border: 1px solid #CDEFE1;
       border-radius: 11px;
     }
     .ep-pr-recall svg { flex: none; }
     .ep-pr-recall-label { flex: none; font-size: 12.5px; line-height: 1.35; color: #5A6B68; }
+    /* Crayon en coin haut-droit : seul indice visuel que le rappel est modifiable
+       (le texte lui-même ressemble à du contenu figé, en gras). Purement décoratif
+       — aria-hidden, hors flux — le focus/anneau sur la zone de texte reste la
+       seule affordance réellement interactive. */
+    .ep-pr-edit-icon { position: absolute; top: 9px; right: 10px; pointer-events: none; }
     #ep-pr-message {
       /* Base 100% : le champ prend TOUJOURS sa propre ligne sous le libellé. Une base
          plus étroite le laisserait tenir à côté (~200px) et tronquer la valeur — or
@@ -4907,6 +4915,7 @@
               <label class="ep-pr-recall-label" for="ep-pr-message">${escHtml(t('pr_part_label'))}</label>
               <textarea id="ep-pr-message" rows="1" maxlength="5000"
                         aria-describedby="ep-pr-message-err"></textarea>
+              <svg class="ep-pr-edit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
             </div>
             <span class="ep-pr-error" id="ep-pr-message-err" role="alert"></span>
           </div>
