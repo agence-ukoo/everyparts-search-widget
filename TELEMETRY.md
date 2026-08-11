@@ -10,8 +10,8 @@ Aucun `fetch` de télémétrie ailleurs dans le widget. Le module vit dans
 
 | Événement | Déclencheur dans le widget | Charge utile envoyée |
 |---|---|---|
-| `session_start` | **La première ouverture du panneau** — jamais au simple chargement de la page. Puis à chaque nouveau `session_id` : `startNewSession()`, « Nouvelle conversation », « Modifier » la moto. Une conversation restaurée **reprend** la sienne, sans réémettre. | `url`, `referrer`, `locale` |
-| `session_end` | Le `session_id` est remplacé : rotation, « Nouvelle conversation », « Modifier » la moto. Et au montage, `reason: "timeout"`, quand `loadState()` écarte un état expiré par le TTL de 30 min — seule clôture constatable, émise même si le visiteur n'ouvre pas le widget puisque la session a réellement existé. **Pas** au départ de la page : la conversation est persistée et reprend au rechargement. | `duration_ms`, `message_count`, `reason` |
+| `session_start` | **La première ouverture du panneau** — jamais au simple chargement de la page. Puis à chaque rotation de `session_id` via `rotateSession()` : fin de recherche (`result_shown`), « Nouvelle conversation » (`new_conversation`), « Modifier » la moto (`model_reset`). Une conversation restaurée **reprend** la sienne, sans réémettre. | `url`, `referrer`, `locale` |
+| `session_end` | Le `session_id` est remplacé par `rotateSession()` — **sauf si la session courante n'a encore reçu aucun message** (voir plus bas) — et au montage avec `reason: "session_expired"`, quand `loadState()` écarte un état expiré par le TTL de 30 min — seule clôture constatable, émise même si le visiteur n'ouvre pas le widget puisque la session a réellement existé. **Pas** au départ de la page : la conversation est persistée et reprend au rechargement. | `duration_ms`, `message_count`, `reason` *(un de `new_conversation`, `model_reset`, `result_shown`, `session_expired`)* |
 | `widget_open` | `toggleWindow(true)` — chaque ouverture du panneau | `url` *(requis)*, `page_title`, `referrer` |
 | `widget_close` | `toggleWindow(false)`, et sur `pagehide` si le panneau était ouvert. **Pas** sur un changement d'onglet. | `open_ms`, `url` |
 | `product_click` | Clic sur une carte produit | `product_ref` *(requis)*, `position`, `page`, `query`, `interpreted`, `model_confirmed`, `result_count` (= `pagination.total`), `price`, `currency`, `name`, `brand`, `url` |
@@ -52,9 +52,19 @@ propres endpoints (`/parts-request`, `/review`) et seraient de toute façon
 Une session ne s'ouvre qu'à la **première ouverture du panneau**. Un visiteur qui
 se rend sur le site sans jamais toucher au widget n'émet donc rien du tout —
 sinon chaque page vue compterait comme une session et faussait les statistiques.
-Sur un `session_end` « timeout », `duration_ms` est **omis** : l'instant de début
-n'a jamais été persisté, et l'inventer serait faux. `message_count` est recompté
-depuis l'historique écarté.
+Sur un `session_end` « session_expired », `duration_ms` est **omis** : l'instant
+de début n'a jamais été persisté, et l'inventer serait faux. `message_count` est
+recompté depuis l'historique écarté.
+
+**`rotateSession(reason)`** est le seul point qui remplace `session_id` (hors
+expiration TTL) : il ne le fait que si la session courante a reçu **au moins un
+message** (`telemetryMessages > 0`). Cliquer 10 fois de suite sur « Nouvelle
+conversation », ou sur « Modifier » juste après une rotation post-recherche, sans
+jamais écrire entre-temps, ne crée donc PAS 10 sessions vides — la session en
+cours, n'ayant servi à rien, garde simplement son `session_id` et aucun
+`session_end`/`session_start` ne part. L'effet visuel de rafraîchissement (fil
+vidé, accueil réaffiché, moto réinitialisée…) tourne dans tous les cas : seule la
+télémétrie de rotation est court-circuitée.
 
 Le `session_id` est capturé **à l'empilement**, pas au vidage : le widget en
 renouvelle un à chaque recherche aboutie, et un événement doit rester rattaché à

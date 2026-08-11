@@ -2178,6 +2178,18 @@
     }, endingId || sessionId);
     telemetrySessionAt = 0;
   }
+  // Fait tourner la session — SAUF si l'actuelle n'a encore reçu aucun message :
+  // cliquer plusieurs fois de suite sur « Nouvelle conversation » (ou « Modifier »)
+  // sans jamais écrire ne doit pas empiler des sessions vides, chacune avec son
+  // couple session_end/session_start. Dans ce cas on garde le même session_id et
+  // on ne journalise rien ; l'effet visuel de rafraîchissement reste géré par
+  // l'appelant (vidage du fil, de l'état…), qui tourne dans tous les cas.
+  function rotateSession(reason) {
+    if (telemetryMessages === 0) return;
+    telemetryEndSession(reason, sessionId);
+    sessionId = generateUUID();
+    telemetryStartSession();
+  }
 
   let lastSearchAttempt = null;
   // Carte d'echec a reutiliser pour l'appel EN COURS (renseignee seulement quand
@@ -2866,9 +2878,7 @@
       activeList = null;
       identifiedVehicle = null;
       identifiedPart = null;
-      telemetryEndSession('new_conversation', sessionId);
-      sessionId = generateUUID();
-      telemetryStartSession();
+      rotateSession('new_conversation');
       clearState();
       renderMotoBar();       // masque la barre « Ma moto »
       messagesEl.innerHTML = '';
@@ -3022,19 +3032,18 @@
     }
 
     // « Modifier » : réinitialise le véhicule et le contexte moto pour que l'utilisateur
-    // redécrive sa moto. Un NOUVEL identifiant de session est généré : le serveur tient
-    // l'état conversationnel par session_id (CDC §8), donc vider `previous_clarifications`
+    // redécrive sa moto. Un NOUVEL identifiant de session est généré (sauf si la session
+    // courante n'a encore servi à rien, cf. rotateSession) : le serveur tient l'état
+    // conversationnel par session_id (CDC §8), donc vider `previous_clarifications`
     // côté widget ne suffit pas — sans nouvelle session, le serveur réutiliserait le
-    // véhicule mémorisé au prochain /search. On repart donc d'une session vierge.
+    // véhicule mémorisé au prochain /search.
     function editMoto() {
-      telemetryEndSession('model_reset', sessionId);
       identifiedVehicle = null;
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
       pendingRefinement = null;
       activeList = null;
-      sessionId = generateUUID();
-      telemetryStartSession();
+      rotateSession('model_reset');
       renderMotoBar();
       saveState();
       inputEl.focus();
@@ -3064,9 +3073,7 @@
     // Les avis et listes paginées déjà affichés gardent l'ancien session_id capturé ;
     // activeList n'est pas remis à zéro pour que « Voir plus » reste fonctionnel.
     function startNewSession() {
-      telemetryEndSession('result_shown', sessionId);   // avant la rotation
-      sessionId = generateUUID();
-      telemetryStartSession();
+      rotateSession('result_shown');   // toujours non-vide ici : un message vient de partir
       lastClarificationField = null;
       pendingRefinement = null;
       if (identifiedVehicle) {

@@ -153,6 +153,36 @@ async function run() {
     check('les événements sont groupés en un lot', false, 'un lot de 2+ attendu');
   }
 
+  // ── 3b. Pas de sessions vides en rafale : « Nouvelle conversation » cliqué
+  // plusieurs fois sans jamais écrire ne doit ni faire tourner le session_id,
+  // ni émettre le moindre couple session_end/session_start — seul l'effet
+  // visuel de rafraîchissement (accueil réaffiché) doit se reproduire.
+  const sidBeforeSpam = evCalls()[0].body.session_id;
+  calls.length = 0;
+  for (let i = 0; i < 5; i++) { $('#ep-reset-btn').click(); await sleep(50); }
+  await sleep(3000);                    // largement au-delà du debounce s'il y avait quoi que ce soit à vider
+  eq('« Nouvelle conversation » en rafale sur une session vide : aucun évènement', calls.length, 0);
+  const savedAfterSpam = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('le session_id est conservé (session vide)', savedAfterSpam.sessionId, sidBeforeSpam);
+  check('le rafraîchissement visuel a quand même eu lieu (accueil réaffiché)',
+        (savedAfterSpam.transcript || []).some(e => e.t === 'welcome'), JSON.stringify(savedAfterSpam.transcript));
+
+  // Dès que la session a servi (un message envoyé), la rotation redevient réelle.
+  // Le clic sur reset arrive volontairement AVANT que la réponse (mockée) ne
+  // revienne, pendant que la session courante compte encore ce message.
+  $('#ep-input').value = 'bougie cbr 600'; $('#ep-send-btn').click();
+  calls.length = 0;
+  $('#ep-reset-btn').click();
+  await until(() => names().includes('session_end') && names().includes('session_start'), 8000);
+  check('session non vide : la rotation émet bien session_end + session_start',
+        names().includes('session_end') && names().includes('session_start'), names().join(','));
+  const se = allEvents().find(e => e.event === 'session_end');
+  eq('motif de fin correct (new_conversation)', se.payload.reason, 'new_conversation');
+  eq('le message envoyé est compté avant la rotation', se.payload.message_count, 1);
+  const savedAfterRealReset = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  check('le session_id change bien quand la session n\'était pas vide',
+        savedAfterRealReset.sessionId !== sidBeforeSpam, savedAfterRealReset.sessionId);
+
   // ── 4. Le parcours produit : product_click sans retarder la navigation ──
   calls.length = 0;
   $('#ep-input').value = 'bougie cbr 600';
@@ -181,6 +211,8 @@ async function run() {
   // La recherche ci-dessus a rendu des produits, ce qui fait tourner la session
   // (startNewSession, appelé après CHAQUE retour de résultats) : le session_end
   // qui en résulte doit porter une raison, pas juste les rotations explicites.
+  // Le vidage est débouncé : on attend qu'il parte plutôt que de vérifier tout de suite.
+  await until(() => allEvents().some(e => e.event === 'session_end'), 8000);
   const rotationEnds = allEvents().filter(e => e.event === 'session_end');
   check('chaque session_end porte une raison (y compris après un retour de résultats)',
         rotationEnds.length > 0 &&
