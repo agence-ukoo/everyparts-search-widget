@@ -100,7 +100,7 @@
       pr_email_ph:     'vous@exemple.com',
       pr_phone_label:  'Numéro de téléphone',
       pr_phone_ph:     'numéro de téléphone - facultatif',
-      pr_consent:      'J\'autorise l\'utilisation de mon email afin de me recontacter au sujet de cette demande.',
+      pr_consent:      'J\'autorise l\'utilisation des coordonnées saisies afin de me recontacter au sujet de cette demande.',
       pr_submit:       'Envoyer ma demande',
       pr_sending:      'Envoi…',
       pr_cancel:       'Annuler',
@@ -190,7 +190,7 @@
       pr_email_ph:     'you@example.com',
       pr_phone_label:  'Phone number',
       pr_phone_ph:     'phone number - optional',
-      pr_consent:      'I authorize the use of my email address to contact me regarding this request.',
+      pr_consent:      'I authorize the use of the contact information I have provided so that I can be contacted regarding this request.',
       pr_submit:       'Send my request',
       pr_sending:      'Sending…',
       pr_cancel:       'Cancel',
@@ -280,7 +280,7 @@
       pr_email_ph:     'you@example.com',
       pr_phone_label:  'Phone number',
       pr_phone_ph:     'phone number - optional',
-      pr_consent:      'I authorize the use of my email address to contact me regarding this request.',
+      pr_consent:      'I authorize the use of the contact information I have provided so that I can be contacted regarding this request.',
       pr_submit:       'Send my request',
       pr_sending:      'Sending…',
       pr_cancel:       'Cancel',
@@ -1954,9 +1954,8 @@
                             brand: str(191), url: url(2048) },
       samples_click:      { '!sample': str(191), position: int(1, 50), sample_count: int(1, 50) },
       // with_comment : second review_submit émis quand le motif d'un avis négatif
-      // est effectivement soumis (canné ou texte libre) — has_comment, lui, ne
-      // décrit que ce qui est déjà connu au moment du vote initial.
-      review_submit:      { '!rating': oneOf(['up', 'down']), has_comment: bool(), with_comment: bool() },
+      // est effectivement soumis (canné ou texte libre)
+      review_submit:      { '!rating': oneOf(['up', 'down']), with_comment: bool() },
       parts_request_open:  { query: str(500), reason: oneOf(['no_results', 'manual']) },
       parts_request_close: { filled: bool() },
       parts_request_submit:{ has_message: bool(), consent: bool() },
@@ -2155,6 +2154,7 @@
   let restoredSession = false;
   let telemetrySessionAt = 0;
   let telemetryMessages = 0;
+  let pendingRotationReason = null;
   // Dernier `meta` de /search, repris tel quel dans les product_click.
   let lastSearchMeta = null;
 
@@ -2178,17 +2178,27 @@
     }, endingId || sessionId);
     telemetrySessionAt = 0;
   }
-  // Fait tourner la session — SAUF si l'actuelle n'a encore reçu aucun message :
-  // cliquer plusieurs fois de suite sur « Nouvelle conversation » (ou « Modifier »)
-  // sans jamais écrire ne doit pas empiler des sessions vides, chacune avec son
-  // couple session_end/session_start. Dans ce cas on garde le même session_id et
-  // on ne journalise rien ; l'effet visuel de rafraîchissement reste géré par
-  // l'appelant (vidage du fil, de l'état…), qui tourne dans tous les cas.
+  // Si la rotation est demandée suite à un affichage de résultat (result_shown), on la met en attente jusqu'au
+  // prochain message utilistateur, sinon on la déclenche immédiatement.
+  // Le but étant de privilégier la cohérence au niveau du timing des events déclenchés si le user intéragit encore avec
+  // la session sur le point d'être terminée (interaction avec le listing produits, review). Et de ne déclencher le
+  // session_end et session_start qu'une fois qu'il entame réelement une nouvelle session en postant un message.
   function rotateSession(reason) {
-    if (telemetryMessages === 0) return;
-    telemetryEndSession(reason, sessionId);
-    sessionId = generateUUID();
-    telemetryStartSession();
+    if (reason !== 'result_shown') {
+      // Un motif explicite (action volontaire de l'utilisateur) remplace toute
+      // rotation encore en attente : elle n'a plus lieu d'être, qu'une rotation
+      // immédiate se déclenche ci-dessous ou non (session déjà vide). Sans ce
+      // reset, un « result_shown » resté en attente survivrait, muet, jusqu'au
+      // prochain message — et déciderait alors à tort si CE message doit
+      // rouvrir une session déjà refermée ici.
+      pendingRotationReason = null;
+      if (telemetryMessages === 0) return;
+      telemetryEndSession(reason, sessionId);
+      sessionId = generateUUID();
+      telemetryStartSession();
+    } else {
+      pendingRotationReason = reason;
+    }
   }
 
   let lastSearchAttempt = null;
@@ -3411,12 +3421,8 @@
           btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
           btn.classList.add('ep-selected');
           if (logEntry) { logEntry.rating = rating; saveState(); }
-          // JAMAIS le texte du commentaire : il part sur /review et n'a rien a
-          // faire ici. has_comment n'est connu que pour un avis positif — pour un
-          // avis negatif le motif est demande APRES, on l'omet donc.
           Telemetry.track('review_submit', {
             rating,
-            has_comment: rating === 'up' ? false : undefined,
           }, reviewSessionId);
           sendReview(rating, reviewSessionId);
           // Avis negatif : on demande pourquoi. Le vote est deja parti, le motif
@@ -4603,7 +4609,20 @@
       div.appendChild(bubble);
       if (beforeEl && beforeEl.parentNode === messagesEl) messagesEl.insertBefore(div, beforeEl);
       else messagesEl.appendChild(div);
-      if (!isRestoring) telemetryMessages = Math.min(1000, telemetryMessages + 1);
+      // Si rotation en attente, on la déclenche (un affichage de résultat
+      // met en attente une rotation de session jusqu'au prochain message utilisateur)
+      if (!isRestoring) {
+        if (pendingRotationReason) {
+          const reason = pendingRotationReason;
+          pendingRotationReason = null;
+          if (telemetryMessages > 0) {
+            telemetryEndSession(reason, sessionId);
+            sessionId = generateUUID();
+            telemetryStartSession();
+          }
+        }
+        telemetryMessages = Math.min(1000, telemetryMessages + 1);
+      }
       scrollBottom();
       if (!isRestoring) { transcript.push({ t: 'user', text }); saveState(); }
     }

@@ -10,13 +10,13 @@ Aucun `fetch` de télémétrie ailleurs dans le widget. Le module vit dans
 
 | Événement | Déclencheur dans le widget | Charge utile envoyée |
 |---|---|---|
-| `session_start` | **La première ouverture du panneau** — jamais au simple chargement de la page. Puis à chaque rotation de `session_id` via `rotateSession()` : fin de recherche (`result_shown`), « Nouvelle conversation » (`new_conversation`), « Modifier » la moto (`model_reset`). Une conversation restaurée **reprend** la sienne, sans réémettre. | `url`, `referrer`, `locale` |
-| `session_end` | Le `session_id` est remplacé par `rotateSession()` — **sauf si la session courante n'a encore reçu aucun message** (voir plus bas) — et au montage avec `reason: "session_expired"`, quand `loadState()` écarte un état expiré par le TTL de 30 min — seule clôture constatable, émise même si le visiteur n'ouvre pas le widget puisque la session a réellement existé. **Pas** au départ de la page : la conversation est persistée et reprend au rechargement. | `duration_ms`, `message_count`, `reason` *(un de `new_conversation`, `model_reset`, `result_shown`, `session_expired`)* |
+| `session_start` | **La première ouverture du panneau** — jamais au simple chargement de la page. Puis à chaque rotation de `session_id` : immédiatement pour « Nouvelle conversation »/« Modifier » (actions volontaires), au premier vrai message envoyé pour la rotation automatique de fin de recherche (`result_shown`) — voir *Rotation paresseuse* plus bas. Une conversation restaurée **reprend** la sienne, sans réémettre. | `url`, `referrer`, `locale` |
+| `session_end` | Symétrique de `session_start` : émis au même moment, pour la session qui vient de se terminer — **sauf si la session courante n'a encore reçu aucun message**, auquel cas rien ne part (voir plus bas). Et au montage avec `reason: "session_expired"`, quand `loadState()` écarte un état expiré par le TTL de 30 min — seule clôture constatable sans ouverture du widget, la session ayant réellement existé. **Pas** au départ de la page : la conversation est persistée et reprend au rechargement. | `duration_ms`, `message_count`, `reason` *(un de `new_conversation`, `model_reset`, `result_shown`, `session_expired`)* |
 | `widget_open` | `toggleWindow(true)` — chaque ouverture du panneau | `url` *(requis)*, `page_title`, `referrer` |
 | `widget_close` | `toggleWindow(false)`, et sur `pagehide` si le panneau était ouvert. **Pas** sur un changement d'onglet. | `open_ms`, `url` |
 | `product_click` | Clic sur une carte produit | `product_ref` *(requis)*, `position`, `page`, `query`, `interpreted`, `model_confirmed`, `result_count` (= `pagination.total`), `price`, `currency`, `name`, `brand`, `url` |
 | `samples_click` | Clic sur une suggestion « Essayez » de l'accueil | `sample` *(requis)*, `position`, `sample_count` |
-| `review_submit` | Clic sur un pouce (haut ou bas). **Repart une seconde fois**, sans `has_comment`, avec `with_comment: true`, quand le motif d'un avis négatif est réellement soumis (canné ou texte libre) — le premier envoi ne le sait pas encore. Jamais le libellé ni le texte du motif. | `rating` *(requis)*, `has_comment`, `with_comment` |
+| `review_submit` | Clic sur un pouce (haut ou bas). **Repart une seconde fois**, avec `with_comment: true`, quand le motif d'un avis négatif est réellement soumis (canné ou texte libre) — le premier envoi ne le sait pas encore. Jamais le libellé ni le texte du motif. | `rating` *(requis)*, `with_comment` |
 | `parts_request_open` | Ouverture de la fiche de demande de pièce | `query`, `reason` |
 | `parts_request_close` | Fermeture **sans** avoir soumis | `filled` |
 | `parts_request_submit` | 201 de `/parts-request` | `has_message`, `consent` |
@@ -56,20 +56,51 @@ Sur un `session_end` « session_expired », `duration_ms` est **omis** : l'insta
 de début n'a jamais été persisté, et l'inventer serait faux. `message_count` est
 recompté depuis l'historique écarté.
 
-**`rotateSession(reason)`** est le seul point qui remplace `session_id` (hors
-expiration TTL) : il ne le fait que si la session courante a reçu **au moins un
-message** (`telemetryMessages > 0`). Cliquer 10 fois de suite sur « Nouvelle
-conversation », ou sur « Modifier » juste après une rotation post-recherche, sans
-jamais écrire entre-temps, ne crée donc PAS 10 sessions vides — la session en
-cours, n'ayant servi à rien, garde simplement son `session_id` et aucun
-`session_end`/`session_start` ne part. L'effet visuel de rafraîchissement (fil
-vidé, accueil réaffiché, moto réinitialisée…) tourne dans tous les cas : seule la
-télémétrie de rotation est court-circuitée.
+### Rotation paresseuse (`rotateSession` / `appendUserMessage`)
 
-Le `session_id` est capturé **à l'empilement**, pas au vidage : le widget en
-renouvelle un à chaque recherche aboutie, et un événement doit rester rattaché à
-la recherche qui l'a produit. Le `session_id` de tête du lot sert de défaut ; une
-entrée d'une autre session porte le sien.
+`sessionId` ne tourne **pas** dès qu'un résultat est affiché — c'est le seul
+cas différé. `rotateSession('result_shown')` se contente de mémoriser le motif
+de la **prochaine** rotation (`pendingRotationReason`) sans rien changer
+d'autre. Rien, entre l'affichage d'un résultat et le message suivant, n'a
+besoin du nouvel identifiant : un `product_click` ou un `review_submit`
+déclenché sur ces résultats capture son propre `session_id` à sa création
+(`list.sessionId`, `reviewSessionId`) et reste donc, à raison, rattaché à la
+session encore en cours. Le seul consommateur du `sessionId` courant est
+`callSearch()`, au moment de composer le **prochain** `/search` (le serveur
+tient l'état conversationnel par `session_id`, CDC §8) — c'est pourquoi cette
+rotation-là n'a besoin d'exister qu'à cet instant, pas avant :
+
+```
+résultat affiché → rotateSession('result_shown') note juste le motif
+  ↳ clic sur un produit / avis laissé → toujours sous l'ancienne session (cohérent)
+  ↳ … puis un nouveau message est envoyé → SEULEMENT LÀ : sessionId tourne,
+    session_end(ancienne) + session_start(nouvelle) partent
+```
+
+`appendUserMessage()` est l'endroit qui concrétise cette rotation en attente,
+juste avant de compter le message qui la déclenche : si la session en cours a
+reçu **au moins un message** (`telemetryMessages > 0`), elle se clôt avec le
+motif mémorisé et une nouvelle s'ouvre ; sinon (jamais utilisée), rien ne se
+passe et `sessionId` ne change même pas — pas de session vide en rafale sur
+des clics répétés sans jamais écrire.
+
+**« Nouvelle conversation » et « Modifier » restent immédiats**, sans
+attendre le prochain message — ce sont des actions volontaires de
+l'utilisateur, pas une rotation automatique dont l'à-propos est encore
+incertain. `rotateSession(reason)` avec un `reason` autre que `result_shown`
+efface d'abord tout `pendingRotationReason` en attente (il n'a plus lieu
+d'être, qu'une rotation immédiate se déclenche ci-dessous ou non — session
+déjà vide), puis clôt/rouvre tout de suite si la session en cours a servi.
+Sans cet effacement, un `result_shown` resté en attente survivrait, muet,
+jusqu'au message suivant, et déciderait alors à tort si CE message doit
+rouvrir une session déjà refermée par l'action explicite entre-temps.
+
+Le `session_id` d'un `product_click`/`review_submit` est capturé **à
+l'empilement**, pas au vidage : le widget en renouvelle un à chaque recherche
+aboutie, et un événement doit rester rattaché à la recherche qui l'a produit.
+Le `session_id` de tête du lot sert de défaut ; une entrée d'une autre session
+(le `session_start` d'une rotation, dont l'id diffère du `session_end` qui le
+précède dans le même lot) porte le sien.
 
 ## Comportement en cas d'erreur
 
@@ -109,14 +140,18 @@ Les traces sont en anglais, comme le reste du code. Ce qui est tracé :
 | `telemetry disabled for this visit` | 429 ou 5xx |
 | `network failure, events lost` | `fetch` en échec |
 
-La rotation de session se lit directement dans le journal : un `event.session_end`
-suivi d'un `event.session_start` portant un identifiant différent. `session_end`
-porte **toujours** un `reason` (`close` | `timeout` | `navigation`) — le champ est
-marqué requis dans le schéma local, donc un appelant qui l'omettrait verrait
-l'événement abandonné plutôt que parti incomplet. Une rotation implicite (comme
-celle qui suit chaque retour de résultats produits, avant la recherche suivante)
-compte comme `close` au même titre qu'une rotation explicite (« Nouvelle
-conversation », « Modifier »).
+La rotation de session se lit directement dans le journal, mais **décalée par
+rapport au moment où elle a été demandée uniquement pour un résultat affiché**
+(`result_shown`) : `event.session_end` suivi d'un `event.session_start`
+portant un identifiant différent n'apparaissent alors qu'au prochain message
+envoyé. Entre les deux, un `product_click` ou un `review_submit` peut très
+bien apparaître, encore rattaché à l'ancienne session : c'est le comportement
+voulu (voir *Rotation paresseuse* plus haut), pas un événement mal ordonné.
+« Nouvelle conversation » et « Modifier », eux, restent immédiats dans le
+journal. `session_end` porte **toujours** un `reason` (`new_conversation` |
+`model_reset` | `result_shown` | `session_expired`) — le champ est marqué
+requis dans le schéma local, donc un appelant qui l'omettrait verrait
+l'événement abandonné plutôt que parti incomplet.
 
 ## Coût
 
@@ -128,10 +163,15 @@ réponse, pour ne pas retarder l'ouverture du lien).
 
 ## Tests
 
-`tests/telemetry.test.html` — 48 assertions : groupage, `age_ms` calculé au
-vidage, forme du corps, `reason` toujours présent sur `session_end` (y compris
-après un retour de résultats), `review_submit` reparti avec `with_comment` au
-moment où le motif d'un avis négatif est soumis (canné ou texte libre) sans
-jamais transporter son libellé ni son texte, 4xx non réessayé, 429 qui fait
-taire le module, absence de données personnelles, et le fait qu'une panne de
-télémétrie ne casse ni la recherche ni la navigation.
+`tests/telemetry.test.html` — 63 assertions : groupage, `age_ms` calculé au
+vidage, forme du corps, sessions vides non créées en rafale, rotation
+paresseuse de bout en bout (résultat affiché → `sessionId` inchangé →
+« Nouvelle conversation » pendant l'attente déclenche la rotation tout de
+suite avec le motif le plus récent, pas le `result_shown` en attente → aucune
+rotation fantôme au message suivant), `product_click` toujours rattaché à la
+session courante tant qu'elle n'a pas tourné,
+`review_submit` reparti avec `with_comment` au moment où le motif d'un avis
+négatif est soumis (canné ou texte libre) sans jamais transporter son libellé
+ni son texte, 4xx non réessayé, 429 qui fait taire le module, absence de
+données personnelles, et le fait qu'une panne de télémétrie ne casse ni la
+recherche ni la navigation.

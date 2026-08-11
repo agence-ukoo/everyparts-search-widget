@@ -157,38 +157,79 @@ async function run() {
   // plusieurs fois sans jamais écrire ne doit ni faire tourner le session_id,
   // ni émettre le moindre couple session_end/session_start — seul l'effet
   // visuel de rafraîchissement (accueil réaffiché) doit se reproduire.
-  const sidBeforeSpam = evCalls()[0].body.session_id;
+  const sidX = evCalls()[0].body.session_id;
   calls.length = 0;
   for (let i = 0; i < 5; i++) { $('#ep-reset-btn').click(); await sleep(50); }
   await sleep(3000);                    // largement au-delà du debounce s'il y avait quoi que ce soit à vider
   eq('« Nouvelle conversation » en rafale sur une session vide : aucun évènement', calls.length, 0);
-  const savedAfterSpam = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
-  eq('le session_id est conservé (session vide)', savedAfterSpam.sessionId, sidBeforeSpam);
+  let saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('le session_id est conservé (session vide)', saved.sessionId, sidX);
   check('le rafraîchissement visuel a quand même eu lieu (accueil réaffiché)',
-        (savedAfterSpam.transcript || []).some(e => e.t === 'welcome'), JSON.stringify(savedAfterSpam.transcript));
+        (saved.transcript || []).some(e => e.t === 'welcome'), JSON.stringify(saved.transcript));
 
-  // Dès que la session a servi (un message envoyé), la rotation redevient réelle.
-  // Le clic sur reset arrive volontairement AVANT que la réponse (mockée) ne
-  // revienne, pendant que la session courante compte encore ce message.
+  // ── 3c. Rotation paresseuse — UNIQUEMENT pour un résultat affiché : sessionId
+  // ne tourne pas tant qu'aucun message n'a été envoyé. Une action EXPLICITE de
+  // l'utilisateur (« Nouvelle conversation », « Modifier ») reste en revanche
+  // immédiate, comme avant la rotation paresseuse : seul le résultat automatique
+  // après une recherche est différé, pas un choix volontaire de l'utilisateur.
+  calls.length = 0;
   $('#ep-input').value = 'bougie cbr 600'; $('#ep-send-btn').click();
+  await until(() => shadow.querySelector('.ep-card'), 3000);
+  await sleep(1000);   // laisse le temps à un envoi qu'on ne veut PAS voir de partir
+  eq('résultat affiché : toujours aucun session_end/session_start',
+     names().filter(n => n === 'session_end' || n === 'session_start').length, 0);
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('sessionId n\'a pas bougé : la rotation attend un vrai message', saved.sessionId, sidX);
+
+  // « Nouvelle conversation » cliqué PENDANT cette attente reste immédiat : le
+  // motif "result_shown" en attente est remplacé, pas cumulé — un seul couple
+  // part, avec le motif le plus récent.
   calls.length = 0;
   $('#ep-reset-btn').click();
   await until(() => names().includes('session_end') && names().includes('session_start'), 8000);
-  check('session non vide : la rotation émet bien session_end + session_start',
-        names().includes('session_end') && names().includes('session_start'), names().join(','));
-  const se = allEvents().find(e => e.event === 'session_end');
-  eq('motif de fin correct (new_conversation)', se.payload.reason, 'new_conversation');
-  eq('le message envoyé est compté avant la rotation', se.payload.message_count, 1);
-  const savedAfterRealReset = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
-  check('le session_id change bien quand la session n\'était pas vide',
-        savedAfterRealReset.sessionId !== sidBeforeSpam, savedAfterRealReset.sessionId);
+  const rotationCall = evCalls().find(c => c.body.events.some(e => e.event === 'session_end')
+                                         && c.body.events.some(e => e.event === 'session_start'));
+  check('« Nouvelle conversation » pendant l\'attente déclenche la rotation tout de suite', !!rotationCall);
+  eq('le lot est mené par l\'ancienne session, qui se clôt', rotationCall.body.session_id, sidX);
+  const seEntry = rotationCall.body.events.find(e => e.event === 'session_end');
+  const ssEntry = rotationCall.body.events.find(e => e.event === 'session_start');
+  eq('motif de clôture correct (le plus récent, pas le "result_shown" en attente)', seEntry.payload.reason, 'new_conversation');
+  eq('un seul message compté avant la rotation', seEntry.payload.message_count, 1);
+  check('session_start porte un nouvel id (diffère du meneur du lot)',
+        !!ssEntry.session_id && ssEntry.session_id !== sidX, ssEntry.session_id);
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  const sidY = saved.sessionId;
+  check('sessionId a bien tourné', sidY === ssEntry.session_id, sidY);
 
-  // ── 4. Le parcours produit : product_click sans retarder la navigation ──
+  // Le motif "result_shown" resté en attente ne doit pas ressurgir plus tard :
+  // rotateSession() l'efface dès qu'un motif explicite le remplace. Le message
+  // suivant (première utilisation de la session Y) ne doit donc déclencher
+  // AUCUNE rotation fantôme.
   calls.length = 0;
+  $('#ep-input').value = 'plaquettes'; $('#ep-send-btn').click();
+  await sleep(6000);   // largement au-delà du debounce
+  eq('le motif en attente périmé ne ressurgit pas : aucune rotation fantôme',
+     names().filter(n => n === 'session_end' || n === 'session_start').length, 0);
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('sessionId toujours Y : pas de rotation fantôme', saved.sessionId, sidY);
+
+  // ── 4. Le parcours produit : product_click sans retarder la navigation, et
+  // rattaché à la BONNE session malgré une rotation restée en attente.
+  const cardsBefore = shadow.querySelectorAll('.ep-card').length;
   $('#ep-input').value = 'bougie cbr 600';
   $('#ep-send-btn').click();
-  await until(() => shadow.querySelector('.ep-card'), 3000);
-  const card = shadow.querySelector('.ep-card');
+  // Le fil accumule les cartes d'une recherche à l'autre : on attend une carte
+  // EN PLUS (pas juste « une carte », qui pourrait déjà être là depuis avant).
+  await until(() => shadow.querySelectorAll('.ep-card').length > cardsBefore, 3000);
+  // L'ENVOI de ce message a pu concrétiser une rotation laissée en attente par la
+  // recherche précédente (comportement voulu). On laisse son vidage débouncé
+  // partir avant d'ouvrir la fenêtre d'observation propre à CETTE recherche-ci.
+  await sleep(6000);
+  calls.length = 0;
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  const sidBeforeClick = saved.sessionId;
+  const cardsNow = shadow.querySelectorAll('.ep-card');
+  const card = cardsNow[cardsNow.length - 1];   // la plus récente
   card.addEventListener('click', e => e.preventDefault(), { once: true });
   const t0 = performance.now();
   card.click();
@@ -208,16 +249,16 @@ async function run() {
   eq('echo model_confirmed', pc.payload.model_confirmed, true);
   eq('devise sur 3 caractères', pc.payload.currency, 'EUR');
 
-  // La recherche ci-dessus a rendu des produits, ce qui fait tourner la session
-  // (startNewSession, appelé après CHAQUE retour de résultats) : le session_end
-  // qui en résulte doit porter une raison, pas juste les rotations explicites.
-  // Le vidage est débouncé : on attend qu'il parte plutôt que de vérifier tout de suite.
-  await until(() => allEvents().some(e => e.event === 'session_end'), 8000);
-  const rotationEnds = allEvents().filter(e => e.event === 'session_end');
-  check('chaque session_end porte une raison (y compris après un retour de résultats)',
-        rotationEnds.length > 0 &&
-        rotationEnds.every(e => typeof e.payload.reason === 'string' && e.payload.reason.length > 0),
-        JSON.stringify(rotationEnds));
+  // Cohérence de la chronologie (raison d'être de la rotation paresseuse) :
+  // sessionId N'A PAS bougé pour ce résultat tout juste affiché, product_click
+  // reste donc naturellement rattaché à la MÊME session, sans qu'aucun couple
+  // session_end/session_start n'ait eu besoin de partir entre les deux.
+  eq('aucun session_end/session_start avant le product_click sur un résultat tout juste affiché',
+     names().filter(n => n === 'session_end' || n === 'session_start').length, 0);
+  const pcCall = evCalls().find(c => c.body.events.some(e => e.event === 'product_click'));
+  eq('product_click reste rattaché à la session courante, jamais tournée', pcCall.body.session_id, sidBeforeClick);
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('sessionId toujours inchangé après le clic', saved.sessionId, sidBeforeClick);
 
   // ── 4a. Motif d'un avis négatif : review_submit repart au moment où le motif
   // est réellement soumis (with_comment: true), en plus de celui du vote — le
