@@ -58,7 +58,7 @@
       products_count:  '{n} / {total} produits',
       products_load_more: 'Voir plus de produits',
       products_expired: 'Cette liste a expiré — relancez votre recherche pour voir la suite.',
-      after_result:    'Souhaitez-vous affiner le résultat ou faire une autre recherche ?',
+      after_result:    'Souhaitez-vous faire une autre recherche ?',
       refine_dont_know:'Ignorer',
       sort_label:      'Trier les produits',
       sort_relevance:  'Pertinence',
@@ -112,7 +112,6 @@
       pr_err_empty_request:    'Merci de préciser votre demande.',
       pr_err_message_too_long: 'Votre message dépasse la longueur autorisée.',
       pr_err_unexpected:       'L\'envoi a échoué. Merci de réessayer dans quelques instants.',
-      after_parts_request:     'Souhaitez-vous faire une autre recherche ?',
       brand_url:       'https://www.every-parts.com/fr/',
     },
     'en-US': {
@@ -148,7 +147,7 @@
       products_count:  '{n} / {total} products',
       products_load_more: 'Show more products',
       products_expired: 'This list has expired — run the search again to see more.',
-      after_result:    'Would you like to refine the results or perform another search?',
+      after_result:    'Would you like to perform another search?',
       refine_dont_know:'Skip',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
@@ -202,7 +201,6 @@
       pr_err_empty_request:    'Please describe your request.',
       pr_err_message_too_long: 'Your message exceeds the allowed length.',
       pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
-      after_parts_request:     'Would you like to perform another search?',
       brand_url:       'https://www.every-parts.com/en/',
     },
     'en-GB': {
@@ -238,7 +236,7 @@
       products_count:  '{n} / {total} products',
       products_load_more: 'Show more products',
       products_expired: 'This list has expired — run the search again to see more.',
-      after_result:    'Would you like to refine the results or perform another search?',
+      after_result:    'Would you like to perform another search?',
       refine_dont_know:'Skip',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
@@ -292,7 +290,6 @@
       pr_err_empty_request:    'Please describe your request.',
       pr_err_message_too_long: 'Your message exceeds the allowed length.',
       pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
-      after_parts_request:     'Would you like to perform another search?',
       brand_url:       'https://www.every-parts.com/en/',
     },
   };
@@ -1189,6 +1186,26 @@
       font-style: italic;
       text-align: center;
     }
+    /* Avis de satisfaction greffé au bas de la liste de produits (pas une bulle
+       assistant séparée) : une carte à soi, cohérente avec « Voir plus de produits »
+       juste au-dessus plutôt qu'une nouvelle annonce avec avatar. */
+    .ep-products-review {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      padding: 12px 16px;
+      border: 1.5px solid var(--ep-grey-200);
+      border-radius: 16px;
+      background: var(--ep-white);
+    }
+    .ep-products-review-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ep-grey-800);
+    }
+    .ep-products-review .ep-review-btns { margin-top: 0; }
     .ep-cards { display: flex; flex-direction: column; gap: 8px; width: 100%; }
     .ep-card {
       background: var(--ep-white);
@@ -3459,8 +3476,10 @@
       const reviewSessionId = (logEntry && logEntry.sessionId) || sessionId;
 
       const content = document.createElement('div');
+      content.className = 'ep-products-review';
 
       const txt = document.createElement('div');
+      txt.className = 'ep-products-review-text';
       txt.textContent = t('review_question');
       content.appendChild(txt);
 
@@ -3508,7 +3527,18 @@
         else if (restoreRating === 'down') downBtn.classList.add('ep-selected');
       }
 
-      appendAssistantMessageEl(content);
+      // Pas une bulle assistant à part : greffée au bas de la liste de produits
+      // qui vient d'être affichée (cf. renderProductList), comme « Voir plus de
+      // produits » juste au-dessus. renderReviewPrompt n'est appelé qu'avec des
+      // produits déjà rendus, donc activeList.containerEl est toujours la bonne
+      // cible — sauf s'il a été perdu, auquel cas on retombe sur l'ancien comportement
+      // plutôt que de faire disparaître l'avis.
+      if (activeList && activeList.containerEl) {
+        activeList.containerEl.appendChild(content);
+        scrollBottom();
+      } else {
+        appendAssistantMessageEl(content);
+      }
 
       // Rejeu d'un avis negatif : les motifs reviennent avec lui — figes sur celui
       // qui avait ete choisi, ou encore cliquables si l'utilisateur n'avait pas
@@ -3837,14 +3867,21 @@
         answers: [],
         freezeCurrent: null,
       };
-      appendAssistantMessage(data.refinement.message || data.message);
+
+      let message = data.refinement.message || data.message;
+      if (data.refinement.questions.length) {
+        message += '\n\n' + data.refinement.questions[0].question;
+      }
+      appendAssistantMessage(message);
       askRefinementQuestion();
     }
 
     function askRefinementQuestion() {
       const p = pendingRefinement;
       const question = p.questions[p.answers.length];
-      appendAssistantMessage(question.question);
+
+      // first question has already been included in assistant refinement message
+      if (p.answers.length > 0) appendAssistantMessage(question.question);
 
       const options = (question.options || []).map(o => ({ label: o, value: o }));
       options.push({ label: t('refine_dont_know'), value: null });
@@ -4318,7 +4355,7 @@
     function showAfterPartsRequest(entry) {
       if (entry && entry.afterShown) return;
       if (entry) entry.afterShown = true;   // saveState() suit, via appendAssistantMessage
-      appendAssistantMessage(t('after_parts_request'));
+      appendAssistantMessage(t('after_result'));
     }
 
     // ── Fiche modale de demande de pièce (frame 2a) ─────────────────────────
