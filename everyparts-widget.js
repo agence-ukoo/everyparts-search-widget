@@ -3433,13 +3433,21 @@
     // de session logique. Factorisé car appelé à la fois par renderResults()
     // (pas d'affinage à poser) et par finishRefinement() (affinage posé mais
     // entièrement répondu par « je ne sais pas », donc rien à réafficher).
-    function finalizeResults() {
-      // si au bout de 10s l'utilisateur n'a pas réécrit et que le message de relance n'a pas déjà été affiché, on l'affiche
-      setTimeout(() => {
-        if (transcript[transcript.length - 1].t !== 'user' && transcript[transcript.length - 1].text !== t('after_result')) {
-          appendAssistantMessage(t('after_result'));
-        }
-      }, 10000);
+    // immediate : l'utilisateur vient d'ignorer explicitement la dernière question
+    // d'affinage — la relance n'a pas à attendre 10s d'inactivité, elle répond
+    // directement à ce geste (même délai que les autres relances post-action,
+    // cf. renderReviewPrompt).
+    function finalizeResults(immediate) {
+      if (immediate) {
+        appendAssistantMessageWithDelay(t('after_result'), 1000);
+      } else {
+        // si au bout de 10s l'utilisateur n'a pas réécrit et que le message de relance n'a pas déjà été affiché, on l'affiche
+        setTimeout(() => {
+          if (transcript[transcript.length - 1].t !== 'user' && transcript[transcript.length - 1].text !== t('after_result')) {
+            appendAssistantMessage(t('after_result'));
+          }
+        }, 10000);
+      }
 
       // Nouvelle session logique dès l'after_result : la recherche suivante démarre
       // sur un nouvel identifiant MAIS hérite du contexte (moto identifiée). L'avis
@@ -3894,7 +3902,16 @@
       };
 
       const group = appendOptionsGroup(options, (value, label) => {
-        appendUserMessage(label);
+        // Dernière question ET tout ce qui précède était déjà « je ne sais pas » :
+        // ce clic ne va déclencher aucun nouvel appel /search (cf. finishRefinement),
+        // donc rien à écrire dans le fil au nom de l'utilisateur — seule la relance
+        // finale (after_result) doit apparaître. Un « je ne sais pas » qui laisse
+        // encore une question ouverte, ou qui suit une vraie réponse, reste un choix
+        // normal et s'affiche comme tel.
+        const isLastQuestion = p.answers.length + 1 === p.questions.length;
+        const allIgnoredSoFar = p.answers.every(a => a.answer === null);
+        const willResolveWithoutAnswer = value === null && isLastQuestion && allIgnoredSoFar;
+        if (!willResolveWithoutAnswer) appendUserMessage(label);
         recordRefinementAnswer(value);
       }, { logExtra });
       p.freezeCurrent = group ? group.freeze : null;
@@ -3922,7 +3939,7 @@
       // nouvel appel, pas de second rendu. On referme juste le tour.
       const answered = p.answers.filter(a => a.answer !== null);
       if (answered.length === 0) {
-        finalizeResults();
+        finalizeResults(true);
         return;
       }
 
