@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — motif d'avis négatif restauré au rechargement</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Rejeu d'un avis négatif — la feuille des motifs ne s'auto-ouvre jamais</h1>
+<p class="sub">
+  Un rechargement ne doit jamais faire apparaître une modale surprise : le pouce
+  bas restauré reste simplement figé. Si un motif avait été recueilli, la
+  confirmation « merci » l'accompagne ; sinon, rien de plus (cas abandonné).
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const TOKEN = 'ep_live_REVIEW_RESTORE_TOKEN';
+try { localStorage.clear(); } catch (e) {}
+localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
+  v: 3, token: TOKEN, sessionId: 'sess-1', isOpen: true, lastActive: Date.now(),
+  conversationContext: { previous_clarifications: [] },
+  identifiedVehicle: null, identifiedPart: null,
+  transcript: [
+    { t: 'user', text: 'bougie cbr 600' },
+    { t: 'products', sessionId: 'sess-1', pagination: { page: 1, total: 1 }, products: [
+      { product_ref: 'NGK-CR8E', name: 'Bougie NGK CR8E', brand: 'NGK', price: 5.9,
+        compatibility: { compatible: true, n_sources: 1, label: 'Compatible' } },
+    ] },
+    { t: 'review', rating: 'down', reason: 'Temps de réponse', sessionId: 'sess-1' },
+  ],
+}));
+window.fetch = async () => ({ status: 404, ok: false, headers: new Headers(), json: async () => ({}) });
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $ = s => shadow.querySelector(s);
+
+  await sleep(400);
+
+  check('le pouce bas restauré est figé', $('.ep-review-down').disabled);
+  check('le pouce bas restauré est marqué sélectionné', $('.ep-review-down').classList.contains('ep-selected'));
+  check('la feuille des motifs ne s\'ouvre jamais toute seule au chargement',
+        !$('#ep-rvr-backdrop').classList.contains('ep-visible'));
+  check('la feuille « Autre » non plus', !$('#ep-rv-backdrop').classList.contains('ep-visible'));
+  const reviewCard = shadow.querySelector('.ep-products-review');
+  check('la carte d\'avis est bien affichée', !!reviewCard);
+  check('la confirmation "merci" est rejouée À L\'INTÉRIEUR de la carte d\'avis (motif déjà connu), pas ailleurs dans .ep-products',
+        reviewCard && reviewCard.querySelector('.ep-review-thx') && reviewCard.lastElementChild.className === 'ep-review-thx');
+  check('un seul ".ep-review-thx" au total (pas de doublon en dehors de la carte)',
+        shadow.querySelectorAll('.ep-review-thx').length === 1);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_REVIEW_RESTORE_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>

@@ -66,7 +66,7 @@
       sort_price_desc: 'Prix décroissant',
       sort_name_asc:   'Nom A–Z',
       sort_name_desc:  'Nom Z–A',
-      review_question: 'Êtes-vous satisfait de ces résultats ?',
+      review_question: 'Satisfait de ces résultats ?',
       review_yes:      'Oui, satisfait',
       review_no:       'Non, pas satisfait',
       review_reason_prompt:  'Qu\'est-ce qui n\'a pas fonctionné ?',
@@ -155,7 +155,7 @@
       sort_price_desc: 'Price: high to low',
       sort_name_asc:   'Name A–Z',
       sort_name_desc:  'Name Z–A',
-      review_question: 'Are you satisfied with these results?',
+      review_question: 'Satisfied with these results?',
       review_yes:      'Yes, satisfied',
       review_no:       'No, not satisfied',
       review_reason_prompt:  'What went wrong?',
@@ -244,7 +244,7 @@
       sort_price_desc: 'Price: high to low',
       sort_name_asc:   'Name A–Z',
       sort_name_desc:  'Name Z–A',
-      review_question: 'Are you satisfied with these results?',
+      review_question: 'Satisfied with these results?',
       review_yes:      'Yes, satisfied',
       review_no:       'No, not satisfied',
       review_reason_prompt:  'What went wrong?',
@@ -1193,7 +1193,11 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      /* flex-wrap : laisse la confirmation "merci" (.ep-review-thx) — ajoutée
+         après coup comme troisième enfant — se rabattre sur sa propre ligne
+         pleine largeur plutôt que de se serrer à côté des pouces. */
+      flex-wrap: wrap;
+      column-gap: 12px;
       margin-top: 10px;
       padding: 12px 16px;
       border: 1.5px solid var(--ep-grey-200);
@@ -1206,6 +1210,9 @@
       color: var(--ep-grey-800);
     }
     .ep-products-review .ep-review-btns { margin-top: 0; }
+    /* Une fois l'avis envoyé, la confirmation vient toujours ici — jamais comme
+       enfant à part de .ep-products (cf. appendReviewThank). */
+    .ep-products-review .ep-review-thx { width: 100%; }
     .ep-cards { display: flex; flex-direction: column; gap: 8px; width: 100%; }
     .ep-card {
       background: var(--ep-white);
@@ -1612,37 +1619,31 @@
     #ep-footer-brand:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
 
     /* ── Motif d'un avis négatif ───────────────────────────────────────────────
-       Quatre options sous le pouce bas. Les trois premières renvoient /review
-       directement ; « Autre » ouvre une feuille modale (même habillage que la
-       demande de pièce, cf. .ep-sheet-*). */
-    .ep-review-reasons { display: flex; flex-direction: column; gap: 9px; }
-    .ep-review-reason-prompt { font-size: 13px; line-height: 1.45; color: #5A6B68; }
-    .ep-review-reason-list { display: flex; flex-wrap: wrap; gap: 7px; }
+       Feuille modale ouverte juste après le pouce bas (#ep-rvr-backdrop, même
+       habillage .ep-sheet-* que la demande de pièce et le texte libre juste en
+       dessous). Les trois premières options renvoient /review directement ;
+       « Autre » ferme cette feuille et enchaîne sur celle du texte libre. */
+    .ep-review-reason-list { display: flex; flex-direction: column; gap: 8px; }
     .ep-review-reason {
+      width: 100%;
       border: 1px solid #DCE6E1;
       background: var(--ep-white);
       color: #12312D;
-      border-radius: 10px;
-      padding: 8px 12px;
+      border-radius: 12px;
+      padding: 12px 14px;
       font-family: var(--ep-font-title);
-      font-size: 12.5px;
+      font-size: 13.5px;
       font-weight: 600;
       line-height: 1.3;
       text-align: left;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-    .ep-review-reason:hover:not(:disabled) { border-color: var(--ep-primary); color: var(--ep-dark); }
+    .ep-review-reason:hover:not(:disabled) { border-color: var(--ep-primary); background: #F2FCF8; }
     .ep-review-reason:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
-    .ep-review-reason:disabled { cursor: default; opacity: .45; }
-    /* Motif retenu : reste lisible alors que les autres s'estompent. */
-    .ep-review-reason.ep-selected:disabled {
-      opacity: 1;
-      border-color: var(--ep-dark);
-      background: #F2FCF8;
-      color: var(--ep-dark);
-    }
-    .ep-review-thx {color: #00A76F; font-size: 13px;}
+    /* Confirmation « merci » — greffée dans le même conteneur que la carte
+       d'avis (cf. appendReviewThank), pas une bulle assistant à part. */
+    .ep-review-thx { color: #00A76F; font-size: 13px; }
 
     /* Zone de texte de la feuille « Autre » — 16px sur mobile contre le zoom iOS,
        valeur resserrée seulement au-dessus de 641px (cf. #ep-input, #ep-pr-email, #ep-pr-phone). */
@@ -2454,6 +2455,11 @@
     const motoValue  = win.querySelector('#ep-moto-value');
     const motoEdit   = win.querySelector('#ep-moto-edit');
     // Fiche « demander cette pièce » (frame 2a)
+    // Feuille des motifs d'un avis négatif
+    const rvrBackdrop = win.querySelector('#ep-rvr-backdrop');
+    const rvrButtons  = [...win.querySelectorAll('#ep-rvr-list .ep-review-reason')];
+    const rvrOtherBtn = win.querySelector('#ep-rvr-other');
+    const rvrCancel   = win.querySelector('#ep-rvr-cancel');
     // Feuille « préciser votre retour » (motif Autre)
     const rvBackdrop = win.querySelector('#ep-rv-backdrop');
     const rvSheet    = win.querySelector('#ep-rv-sheet');
@@ -2501,6 +2507,7 @@
     shadow.addEventListener('keydown', e => {
       if (e.key !== 'Escape' || !isOpen) return;
       // La fiche de demande passe avant : Échap la referme sans fermer le chat.
+      if (isReviewReasonsOpen()) { closeReviewReasons(); return; }
       if (isReviewOtherOpen()) { closeReviewOther(); return; }
       if (isPartsRequestOpen()) { closePartsRequest(); return; }
       toggleWindow(false);
@@ -2655,7 +2662,7 @@
       const preview = lastAssistantPreview();
       if (preview) {
         showBadge(preview.count);
-        if (!teaserDismissed()) showTeaser(truncateText(preview.text, 100));
+        if (!teaserDismissed()) showTeaser(truncateText(preview.text, 70));
       } else if (!hasUserInteraction()) {
         expandTimer = setTimeout(function () {
           if (isOpen) return;
@@ -2943,6 +2950,7 @@
     // l'accueil. Permet à l'utilisateur de contourner la persistance de sa conversation
     // s'il souhaite recommencer
     function newConversation() {
+      closeReviewReasons({ silent: true }); // silent : une conversation neuve n'a pas à hériter d'une relance
       closeReviewOther();
       closePartsRequest();   // la fiche est rattachée à une proposition qui disparaît
       transcript = [];
@@ -3496,6 +3504,11 @@
       btns.setAttribute('role', 'group');
       btns.setAttribute('aria-label', t('review_question'));
 
+      // Conteneur de la liste associé À CETTE recherche (pas l'activeList courante
+      // au moment du clic — une autre recherche a pu démarrer entre-temps) : c'est
+      // là que la carte d'avis (content, ci-dessous) doit être insérée.
+      const reviewContainerEl = (activeList && activeList.containerEl) || null;
+
       const makeBtn = (rating, label, svg) => {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -3504,16 +3517,36 @@
         btn.title = label;
         btn.innerHTML = svg;
         btn.addEventListener('click', () => {
-          btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
+          // Un « down » déjà voté reste cliquable : la feuille de motifs peut être
+          // annulée sans perdre la main, ce second clic la rouvre simplement.
+          if (btn.classList.contains('ep-selected')) {
+            if (rating === 'down') openReviewReasons(logEntry, reviewSessionId, btn, content);
+            return;
+          }
+          if (rating === 'up') {
+            btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
+          } else {
+            // Vote verrouillé sur « down » : lui seul reste cliquable, pour
+            // pouvoir rouvrir la feuille de motifs tant qu'aucun n'est retenu.
+            upBtn.disabled = true;
+          }
           btn.classList.add('ep-selected');
           if (logEntry) { logEntry.rating = rating; saveState(); }
           Telemetry.track('review_submit', {
             rating,
           }, reviewSessionId);
           sendReview(rating, reviewSessionId);
-          // Avis negatif : on demande pourquoi. Le vote est deja parti, le motif
-          // suivra dans un second appel.
-          if (rating === 'down') renderReviewReasons(logEntry, reviewSessionId); else appendAssistantMessageWithDelay(t('after_result'), 1000);
+          // Avis negatif : on demande pourquoi, dans une feuille modale (comme la
+          // fiche de demande de pièce). Le vote est deja parti, le motif suivra
+          // dans un second appel. La carte d'avis elle-même (content) — pas le
+          // conteneur .ep-products — est passée en aval : c'est là, à l'intérieur
+          // d'elle, que la confirmation finale doit atterrir (cf. appendReviewThank).
+          if (rating === 'down') {
+            openReviewReasons(logEntry, reviewSessionId, btn, content);
+          } else {
+            appendReviewThank(content);
+            appendAssistantMessageWithDelay(t('after_result'), 1000);
+          }
         });
         return btn;
       };
@@ -3541,90 +3574,113 @@
       // produits déjà rendus, donc activeList.containerEl est toujours la bonne
       // cible — sauf s'il a été perdu, auquel cas on retombe sur l'ancien comportement
       // plutôt que de faire disparaître l'avis.
-      if (activeList && activeList.containerEl) {
-        activeList.containerEl.appendChild(content);
+      if (reviewContainerEl) {
+        reviewContainerEl.appendChild(content);
         scrollBottom();
       } else {
         appendAssistantMessageEl(content);
       }
 
-      // Rejeu d'un avis negatif : les motifs reviennent avec lui — figes sur celui
-      // qui avait ete choisi, ou encore cliquables si l'utilisateur n'avait pas
-      // repondu (meme regle que l'avis lui-meme, qui reste ouvert ou qu'il soit).
-      if (isReplay && restoreRating === 'down') {
-        renderReviewReasons(logEntry, reviewSessionId);
+      // Rejeu d'un avis déjà résolu : un « up » est toujours résolu dès le clic, la
+      // confirmation revient donc avec lui à l'identique. Un « down » ne l'est que
+      // s'il a un motif — la feuille de motifs, elle, ne s'ouvre jamais toute seule
+      // au chargement (ce serait une modale surprise) ; si le motif n'a jamais été
+      // recueilli (feuille fermée avant d'aboutir, session interrompue), le pouce
+      // reste figé « down » sans confirmation — seul un nouveau clic EN DIRECT
+      // (donc hors rejeu) rouvre la feuille.
+      if (isReplay && (restoreRating === 'up' || (restoreRating === 'down' && logEntry && logEntry.reason))) {
+        appendReviewThank(content);
       }
     }
 
     // ── Motif d'un avis négatif ─────────────────────────────────────────────
-    // Quatre options sous le pouce bas. Les trois premières repartent aussitôt en
-    // /review avec `comment` ; « Autre » ouvre la feuille de saisie. Le motif est
-    // journalisé sur l'entrée d'avis, donc il survit au rechargement et n'est pas
-    // redemandé. reviewSessionId : la session notée, pas forcément la courante.
-    function renderReviewReasons(entry, reviewSessionId) {
-      const OTHER = t('review_reason_other');
-      const labels = [t('review_reason_1'), t('review_reason_2'), t('review_reason_3'), OTHER];
+    // Feuille modale (même habillage que la fiche de demande de pièce) ouverte
+    // juste après le pouce bas — le vote lui-même est déjà parti. Les trois
+    // premières options repartent aussitôt en /review avec `comment` ; « Autre »
+    // ferme cette feuille et enchaîne sur celle du texte libre (openReviewOther).
+    // Le motif est journalisé sur l'entrée d'avis, donc il survit au rechargement
+    // et n'est jamais redemandé. reviewSessionId : la session notée, pas forcément
+    // la courante. reviewCardEl : la carte d'avis elle-même (.ep-products-review,
+    // cf. renderReviewPrompt) — c'est à l'intérieur d'elle qu'atterrit le
+    // remerciement final, jamais comme enfant à part de .ep-products.
+    let rvrOpenFor = null; // { entry, sessionId, trigger, reviewCardEl }
 
-      const box = document.createElement('div');
-      box.className = 'ep-review-reasons';
-
-      const prompt = document.createElement('div');
-      prompt.className = 'ep-review-reason-prompt';
-      prompt.textContent = t('review_reason_prompt');
-      box.appendChild(prompt);
-
-      const list = document.createElement('div');
-      list.className = 'ep-review-reason-list';
-      box.appendChild(list);
-
-      const buttons = [];
-      // Fige le groupe en marquant l'option retenue. `chosen` est le LIBELLE, pas le
-      // texte libre : pour « Autre », c'est le libelle qui identifie le bouton.
-      function freeze(chosen) {
-        buttons.forEach(b => {
-          b.disabled = true;
-          if (b.dataset.label === chosen) b.classList.add('ep-selected');
-        });
-      }
-
-      labels.forEach(label => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'ep-review-reason';
-        b.dataset.label = label;
-        b.textContent = label;
-        list.appendChild(b);
-        buttons.push(b);
-        b.addEventListener('click', () => {
-          if (b.disabled) return;
-          if (label === OTHER) {
-            openReviewOther(entry, reviewSessionId, freeze, OTHER, b);
-            return;
-          }
-          if (entry) { entry.reason = label; if (!isRestoring) saveState(); }
-          freeze(label);
-          Telemetry.track('review_submit', { rating: 'down', with_comment: true }, reviewSessionId);
-          sendReview('down', reviewSessionId, label);
-          appendAssistantMessageWithDelay(t('after_result'), 1000);
-
-          appendReviewThank();
-        });
-      });
-
-      if (entry && entry.reason) freeze(entry.reason);
-      appendAssistantMessageEl(box);
+    function openReviewReasons(entry, reviewSessionId, trigger, reviewCardEl) {
+      rvrOpenFor = { entry, sessionId: reviewSessionId, trigger, reviewCardEl };
+      rvrBackdrop.classList.add('ep-visible');
+      rvrBackdrop.setAttribute('aria-hidden', 'false');
+      // Aucun champ texte ici (que des boutons) : pas de clavier mobile à éviter,
+      // le focus peut toujours entrer directement dans la feuille.
+      rvrButtons[0].focus({ preventScroll: true });
     }
 
-    function appendReviewThank() {
+    // opts.silent : n'affiche pas la relance after_result — utilisé quand la
+    // fermeture n'est pas un abandon mais une bascule vers une autre feuille
+    // (« Autre, préciser » enchaîne immédiatement sur openReviewOther).
+    function closeReviewReasons(opts) {
+      if (!rvrBackdrop.classList.contains('ep-visible')) return;
+      rvrBackdrop.classList.remove('ep-visible');
+      rvrBackdrop.setAttribute('aria-hidden', 'true');
+      win.scrollTop = 0;
+      const trigger = rvrOpenFor && rvrOpenFor.trigger;
+      rvrOpenFor = null;
+      // Annulation : le pouce bas reste cliquable (jamais désactivé pour cette
+      // feuille, cf. renderReviewPrompt) — l'utilisateur peut rouvrir plus tard.
+      if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
+      else if (!isMobile()) inputEl.focus({ preventScroll: true });
+      if (!opts || !opts.silent) appendAssistantMessageWithDelay(t('after_result'), 1000);
+    }
+
+    function isReviewReasonsOpen() {
+      return rvrBackdrop.classList.contains('ep-visible');
+    }
+
+    rvrCancel.addEventListener('click', () => closeReviewReasons());
+    rvrBackdrop.addEventListener('click', e => { if (e.target === rvrBackdrop) closeReviewReasons(); });
+
+    rvrButtons.filter(b => b !== rvrOtherBtn).forEach(b => {
+      b.addEventListener('click', () => {
+        const ctx = rvrOpenFor;
+        if (!ctx) return;
+        const label = b.dataset.label;
+        if (ctx.entry) { ctx.entry.reason = label; if (!isRestoring) saveState(); }
+        Telemetry.track('review_submit', { rating: 'down', with_comment: true }, ctx.sessionId);
+        sendReview('down', ctx.sessionId, label);
+        // Motif recueilli : plus rien à rouvrir, le pouce se fige pour de bon.
+        if (ctx.trigger) ctx.trigger.disabled = true;
+        closeReviewReasons({ silent: true });
+        appendAssistantMessageWithDelay(t('after_result'), 1000);
+        appendReviewThank(ctx.reviewCardEl);
+      });
+    });
+
+    rvrOtherBtn.addEventListener('click', () => {
+      const ctx = rvrOpenFor;
+      if (!ctx) return;
+      const label = t('review_reason_other');
+      closeReviewReasons({ silent: true });
+      openReviewOther(ctx.entry, ctx.sessionId, () => { if (ctx.trigger) ctx.trigger.disabled = true; }, label, ctx.trigger, ctx.reviewCardEl);
+    });
+
+    // Confirmation « merci » après un avis négatif motivé — toujours À L'INTÉRIEUR
+    // de la carte d'avis (reviewCardEl, l'élément .ep-products-review lui-même,
+    // capturé à la création par renderReviewPrompt), jamais comme enfant à part de
+    // .ep-products. Filet vers une bulle assistant si cette carte n'existe plus
+    // (ne devrait pas arriver, cf. renderReviewPrompt).
+    function appendReviewThank(reviewCardEl) {
       const reviewThanks = document.createElement('div');
       reviewThanks.className = 'ep-review-thx';
-      reviewThanks.innerHTML = `<div>${t('review_reason_thx')}</div>`;
-      win.querySelector('.ep-review-reasons').appendChild(reviewThanks);
-      pinToBottom();
+      reviewThanks.textContent = t('review_reason_thx');
+      if (reviewCardEl) {
+        reviewCardEl.appendChild(reviewThanks);
+        scrollBottom();
+      } else {
+        appendAssistantMessageEl(reviewThanks);
+      }
     }
 
     // ── Feuille « préciser votre retour » ───────────────────────────────────
-    let rvOpenFor = null;   // { entry, sessionId, freeze, label, trigger }
+    let rvOpenFor = null;   // { entry, sessionId, freeze, label, trigger, reviewCardEl }
 
     function rvSyncSubmit() {
       const n = rvText.value.length;
@@ -3632,8 +3688,8 @@
       rvSubmit.disabled = !rvText.value.trim();
     }
 
-    function openReviewOther(entry, reviewSessionId, freeze, label, trigger) {
-      rvOpenFor = { entry, sessionId: reviewSessionId, freeze, label, trigger };
+    function openReviewOther(entry, reviewSessionId, freeze, label, trigger, reviewCardEl) {
+      rvOpenFor = { entry, sessionId: reviewSessionId, freeze, label, trigger, reviewCardEl };
       rvText.value = '';
       rvSyncSubmit();
       rvBackdrop.classList.add('ep-visible');
@@ -3651,7 +3707,8 @@
       win.scrollTop = 0;
       const trigger = rvOpenFor && rvOpenFor.trigger;
       rvOpenFor = null;
-      // Annulation : les motifs restent cliquables, l'utilisateur peut changer d'avis.
+      // Annulation : le pouce bas reste cliquable (jamais désactivé pour cette
+      // feuille), l'utilisateur peut rouvrir la feuille des motifs plus tard.
       if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
       else if (!isMobile()) inputEl.focus({ preventScroll: true });
 
@@ -3670,7 +3727,7 @@
       const ctx = rvOpenFor;
       const comment = rvText.value.trim();
       if (!ctx || !comment) return;
-      // Le libelle identifie le bouton a marquer ; le texte libre est ce qui part.
+      // Le libelle identifie le motif ; le texte libre est ce qui part en commentaire.
       if (ctx.entry) {
         ctx.entry.reason = ctx.label;
         ctx.entry.reasonText = comment;
@@ -3680,7 +3737,7 @@
       Telemetry.track('review_submit', { rating: 'down', with_comment: true }, ctx.sessionId);
       sendReview('down', ctx.sessionId, comment);
       closeReviewOther();
-      appendReviewThank();
+      appendReviewThank(ctx.reviewCardEl);
     });
 
     // Envoi de l'avis — silencieux en cas d'échec (ne bloque pas l'UX).
@@ -4991,6 +5048,26 @@
         <div id="ep-footer">
           <span id="ep-footer-text">${t('powered_by')}</span>
           <a id="ep-footer-brand" href="${escHtml(t('brand_url'))}" target="_blank" rel="noopener noreferrer" aria-label="EveryParts">${LOGO_GREEN_SVG}</a>
+        </div>
+      </div>
+
+      <!-- Feuille des motifs d'un avis négatif — s'ouvre juste après le pouce bas
+           (le vote lui-même est déjà parti). Même habillage .ep-sheet-* que les
+           deux autres. « Autre, préciser » y ferme cette feuille et enchaîne sur
+           #ep-rv-backdrop juste en dessous, qui recueille le texte libre. -->
+      <div id="ep-rvr-backdrop" class="ep-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="ep-rvr-title" aria-hidden="true">
+        <div class="ep-sheet">
+          <span class="ep-sheet-handle" aria-hidden="true"></span>
+          <div class="ep-sheet-head">
+            <span id="ep-rvr-title" class="ep-sheet-title">${escHtml(t('review_reason_prompt'))}</span>
+          </div>
+          <div class="ep-review-reason-list" id="ep-rvr-list">
+            <button type="button" class="ep-review-reason" data-label="${escHtml(t('review_reason_1'))}">${escHtml(t('review_reason_1'))}</button>
+            <button type="button" class="ep-review-reason" data-label="${escHtml(t('review_reason_2'))}">${escHtml(t('review_reason_2'))}</button>
+            <button type="button" class="ep-review-reason" data-label="${escHtml(t('review_reason_3'))}">${escHtml(t('review_reason_3'))}</button>
+            <button type="button" class="ep-review-reason" id="ep-rvr-other" data-label="${escHtml(t('review_reason_other'))}">${escHtml(t('review_reason_other'))}</button>
+          </div>
+          <button type="button" id="ep-rvr-cancel" class="ep-sheet-cancel">${escHtml(t('review_other_cancel'))}</button>
         </div>
       </div>
 
