@@ -59,7 +59,7 @@
       products_load_more: 'Voir plus de produits',
       products_expired: 'Cette liste a expiré — relancez votre recherche pour voir la suite.',
       after_result:    'Souhaitez-vous affiner le résultat ou faire une autre recherche ?',
-      refine_dont_know:'Je ne sais pas',
+      refine_dont_know:'Ignorer',
       sort_label:      'Trier les produits',
       sort_relevance:  'Pertinence',
       sort_price_asc:  'Prix croissant',
@@ -149,7 +149,7 @@
       products_load_more: 'Show more products',
       products_expired: 'This list has expired — run the search again to see more.',
       after_result:    'Would you like to refine the results or perform another search?',
-      refine_dont_know:'I don\'t know',
+      refine_dont_know:'Skip',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
       sort_price_asc:  'Price: low to high',
@@ -239,7 +239,7 @@
       products_load_more: 'Show more products',
       products_expired: 'This list has expired — run the search again to see more.',
       after_result:    'Would you like to refine the results or perform another search?',
-      refine_dont_know:'I don\'t know',
+      refine_dont_know:'Skip',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
       sort_price_asc:  'Price: low to high',
@@ -846,7 +846,7 @@
     }
     /* Cas titre boutique : le badge est en ligne dans le titre → petit décalage + centrage. */
     #ep-header-title .ep-beta { margin-left: 6px; vertical-align: middle; }
-    #ep-header-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+    #ep-header-actions { display: flex; align-items: center; gap: 12px; flex: none; }
     .ep-header-btn {
       background: rgba(255,255,255,.10);
       border: none;
@@ -863,6 +863,24 @@
     }
     .ep-header-btn:hover { background: rgba(255,255,255,.20); }
     .ep-header-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
+
+    /* Cibles tactiles ≥44×44 (Apple HIG / WCAG 2.5.5) sans agrandir la taille VISUELLE
+       de ces contrôles compacts : une zone invisible centrée sur chacun, via ::after,
+       étend la surface cliquable dans la (ou les) dimension(s) où le rendu est plus
+       petit que 44px — max(100%, 44px) ne change rien à ce qui dépasse déjà 44px.
+       Pour les icônes du header (34×34, cf. #ep-header-actions), les zones des deux
+       boutons se chevauchent légèrement au milieu du gap : compromis accepté plutôt
+       que d'agrandir visuellement des icônes pensées pour rester discrètes. */
+    #ep-moto-edit, .ep-pr-btn, .ep-clari-btn, .ep-header-btn { position: relative; }
+    #ep-moto-edit::after, .ep-pr-btn::after, .ep-clari-btn::after, .ep-header-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+    }
 
     /* ── Zone messages ── */
     #ep-messages {
