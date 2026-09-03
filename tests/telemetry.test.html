@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — télémétrie (/events)</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Télémétrie — file, lots, age_ms, coupure</h1>
+<p class="sub">
+  <code>fetch</code> bouchonné. Vérifie que la file groupe, que <code>age_ms</code> est
+  calculé au vidage, qu'un 4xx n'est jamais réessayé, qu'un 429 fait taire le module,
+  qu'aucune donnée personnelle ne part, et qu'une panne de télémétrie ne casse rien.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+function eq(name, a, e) { check(name, JSON.stringify(a) === JSON.stringify(e), `attendu ${JSON.stringify(e)}, reçu ${JSON.stringify(a)}`); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+// Sans data-debug, la console d'une boutique doit rester vierge : on l'espionne
+// des le depart pour le verifier.
+const logged = [];
+for (const m of ['log', 'warn', 'error', 'info', 'debug']) {
+  const orig = console[m] ? console[m].bind(console) : null;
+  console[m] = (...a) => { logged.push(String(a[0])); if (orig) orig(...a); };
+}
+
+const TOKEN = 'ep_live_TELEMETRY_TOKEN';
+// Purge AVANT le montage (le widget est en defer) : sans ça, la conversation
+// persistée d'une exécution précédente est restaurée, et session_start n'est
+// alors volontairement pas émis — le scénario devient dépendant de l'ordre.
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+// Journal de TOUS les appels réseau, y compris /search : c'est ainsi qu'on
+// vérifie qu'une panne de télémétrie ne perturbe pas la recherche.
+const calls = [];
+let eventsResponse = { status: 201, json: { type: 'events', recorded: true, meta: {} } };
+let eventsThrows = false;
+
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  const entry = { url: u, opts, body: opts.body ? JSON.parse(opts.body) : null };
+  calls.push(entry);
+  if (/\/events$/.test(u)) {
+    if (eventsThrows) throw new TypeError('Failed to fetch');
+    const r = eventsResponse;
+    return { status: r.status, ok: r.status < 300, json: async () => r.json, headers: new Headers() };
+  }
+  await sleep(30);
+  return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+    type: 'results', message: 'Voici les pièces.',
+    interpreted: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1996, part_type: 'bougie' },
+    results: [{ product_ref: 'NGK-CR8E', name: 'Bougie NGK CR8E', brand: 'NGK',
+                price: '5.90',                       // l'API peut renvoyer une chaine
+                url: 'https://boutique.test/p/ngk',
+                compatibility: { compatible: true, n_sources: 5, label: 'OK' } }],
+    pagination: { page: 1, total: 37, has_more: true },
+    meta: { result_count: 1, model_confirmed: true },
+  }) };
+};
+
+const evCalls = () => calls.filter(c => /\/events$/.test(c.url));
+const searchCalls = () => calls.filter(c => /\/search$/.test(c.url));
+const allEvents = () => evCalls().flatMap(c => (c.body && c.body.events) || []);
+const names = () => allEvents().map(e => e.event);
+
+let shadow;
+const $ = s => shadow.querySelector(s);
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  shadow = host.shadowRoot;
+
+  // ── 1. Aucune session au seul chargement : elle s'ouvre a la 1re ouverture ──
+  // Un visiteur qui ne touche jamais au widget ne doit pas compter comme une
+  // session, sinon chaque page vue en creerait une et faussait les statistiques.
+  await sleep(4000);                        // au-dela du debounce
+  eq('chargement sans ouverture : aucun evenement', evCalls().length, 0);
+
+  $('#ep-fab').click();
+  await sleep(60);
+  await until(() => names().includes('widget_open'), 15000);
+  check('session_start émis à la première ouverture', names().includes('session_start'));
+  check('widget_open émis à l\'ouverture', names().includes('widget_open'));
+  check('session_start précède widget_open',
+        names().indexOf('session_start') < names().indexOf('widget_open'), names().join(','));
+
+  // Refermer puis rouvrir ne rouvre pas une session.
+  const nbStart = names().filter(n => n === 'session_start').length;
+  $('#ep-fab').click(); await sleep(40);
+  $('#ep-fab').click();
+  await until(() => names().filter(n => n === 'widget_open').length >= 2, 15000);
+  eq('rouvrir le panneau ne cree pas une seconde session',
+     names().filter(n => n === 'session_start').length, nbStart);
+
+  const wo = allEvents().find(e => e.event === 'widget_open');
+  check('widget_open porte url (requis)', typeof wo.payload.url === 'string' && /^https?:/.test(wo.payload.url), JSON.stringify(wo.payload));
+  const ss = allEvents().find(e => e.event === 'session_start');
+  eq('locale en BCP-47 complet, jamais tronquée', ss.payload.locale, 'fr-FR');
+
+  // ── 2. Forme du corps : lot, session_id de tête, en-têtes ──
+  const c0 = evCalls()[0];
+  check('POST sur {apiBase}/events', /\/api\/v1\/events$/.test(c0.url) && !/api\/v1\/api\/v1/.test(c0.url), c0.url);
+  eq('méthode POST', c0.opts.method, 'POST');
+  check('keepalive (et non sendBeacon, qui ne peut pas authentifier)', c0.opts.keepalive === true);
+  eq('Authorization', c0.opts.headers.Authorization, 'Bearer ' + TOKEN);
+  check('session_id en tête du lot', typeof c0.body.session_id === 'string' && c0.body.session_id.length > 0);
+  check('events est une liste', Array.isArray(c0.body.events));
+  check('pas de `type` au niveau racine (ignoré par le serveur)', !('type' in c0.body));
+  check('au plus 20 entrées par lot', evCalls().every(c => c.body.events.length <= 20));
+  check('corps sous 10 000 octets',
+        evCalls().every(c => new TextEncoder().encode(JSON.stringify(c.body)).length <= 10000));
+
+  // ── 3. age_ms calculé AU VIDAGE, pas à l'empilement ──
+  const withAge = allEvents().filter(e => 'age_ms' in e);
+  check('chaque entrée porte age_ms', withAge.length === allEvents().length);
+  check('age_ms entier positif dans la plage',
+        withAge.every(e => Number.isInteger(e.age_ms) && e.age_ms >= 0 && e.age_ms <= 86400000));
+  // session_start précède widget_open : son age_ms doit être PLUS GRAND (il attend
+  // depuis plus longtemps). Preuve que l'âge est mesuré au vidage.
+  const lot = evCalls().find(c => c.body.events.length >= 2 &&
+        c.body.events.some(e => e.event === 'session_start') &&
+        c.body.events.some(e => e.event === 'widget_open'));
+  if (lot) {
+    const a = lot.body.events.find(e => e.event === 'session_start').age_ms;
+    const b = lot.body.events.find(e => e.event === 'widget_open').age_ms;
+    check('age_ms décroît dans l\'ordre d\'arrivée (calculé au vidage)', a >= b, `session_start=${a} widget_open=${b}`);
+    check('les deux événements sont partis dans UN SEUL appel (groupage)', true);
+  } else {
+    check('les événements sont groupés en un lot', false, 'un lot de 2+ attendu');
+  }
+
+  // ── 3b. Pas de sessions vides en rafale : « Nouvelle conversation » cliqué
+  // plusieurs fois sans jamais écrire ne doit ni faire tourner le session_id,
+  // ni émettre le moindre couple session_end/session_start — seul l'effet
+  // visuel de rafraîchissement (accueil réaffiché) doit se reproduire.
+  const sidX = evCalls()[0].body.session_id;
+  calls.length = 0;
+  for (let i = 0; i < 5; i++) { $('#ep-reset-btn').click(); await sleep(50); }
+  await sleep(3000);                    // largement au-delà du debounce s'il y avait quoi que ce soit à vider
+  eq('« Nouvelle conversation » en rafale sur une session vide : aucun évènement', calls.length, 0);
+  let saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('le session_id est conservé (session vide)', saved.sessionId, sidX);
+  check('le rafraîchissement visuel a quand même eu lieu (accueil réaffiché)',
+        (saved.transcript || []).some(e => e.t === 'welcome'), JSON.stringify(saved.transcript));
+
+  // ── 3c. Rotation paresseuse — UNIQUEMENT pour un résultat affiché : sessionId
+  // ne tourne pas tant qu'aucun message n'a été envoyé. Une action EXPLICITE de
+  // l'utilisateur (« Nouvelle conversation », « Modifier ») reste en revanche
+  // immédiate, comme avant la rotation paresseuse : seul le résultat automatique
+  // après une recherche est différé, pas un choix volontaire de l'utilisateur.
+  calls.length = 0;
+  $('#ep-input').value = 'bougie cbr 600'; $('#ep-send-btn').click();
+  await until(() => shadow.querySelector('.ep-card'), 3000);
+  await sleep(1000);   // laisse le temps à un envoi qu'on ne veut PAS voir de partir
+  eq('résultat affiché : toujours aucun session_end/session_start',
+     names().filter(n => n === 'session_end' || n === 'session_start').length, 0);
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('sessionId n\'a pas bougé : la rotation attend un vrai message', saved.sessionId, sidX);
+
+  // « Nouvelle conversation » cliqué PENDANT cette attente reste immédiat : le
+  // motif "result_shown" en attente est remplacé, pas cumulé — un seul couple
+  // part, avec le motif le plus récent.
+  calls.length = 0;
+  $('#ep-reset-btn').click();
+  await until(() => names().includes('session_end') && names().includes('session_start'), 8000);
+  const rotationCall = evCalls().find(c => c.body.events.some(e => e.event === 'session_end')
+                                         && c.body.events.some(e => e.event === 'session_start'));
+  check('« Nouvelle conversation » pendant l\'attente déclenche la rotation tout de suite', !!rotationCall);
+  eq('le lot est mené par l\'ancienne session, qui se clôt', rotationCall.body.session_id, sidX);
+  const seEntry = rotationCall.body.events.find(e => e.event === 'session_end');
+  const ssEntry = rotationCall.body.events.find(e => e.event === 'session_start');
+  eq('motif de clôture correct (le plus récent, pas le "result_shown" en attente)', seEntry.payload.reason, 'new_conversation');
+  eq('un seul message compté avant la rotation', seEntry.payload.message_count, 1);
+  check('session_start porte un nouvel id (diffère du meneur du lot)',
+        !!ssEntry.session_id && ssEntry.session_id !== sidX, ssEntry.session_id);
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  const sidY = saved.sessionId;
+  check('sessionId a bien tourné', sidY === ssEntry.session_id, sidY);
+
+  // Le motif "result_shown" resté en attente ne doit pas ressurgir plus tard :
+  // rotateSession() l'efface dès qu'un motif explicite le remplace. Le message
+  // suivant (première utilisation de la session Y) ne doit donc déclencher
+  // AUCUNE rotation fantôme.
+  calls.length = 0;
+  $('#ep-input').value = 'plaquettes'; $('#ep-send-btn').click();
+  await sleep(6000);   // largement au-delà du debounce
+  eq('le motif en attente périmé ne ressurgit pas : aucune rotation fantôme',
+     names().filter(n => n === 'session_end' || n === 'session_start').length, 0);
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('sessionId toujours Y : pas de rotation fantôme', saved.sessionId, sidY);
+
+  // ── 4. Le parcours produit : product_click sans retarder la navigation, et
+  // rattaché à la BONNE session malgré une rotation restée en attente.
+  const cardsBefore = shadow.querySelectorAll('.ep-card').length;
+  $('#ep-input').value = 'bougie cbr 600';
+  $('#ep-send-btn').click();
+  // Le fil accumule les cartes d'une recherche à l'autre : on attend une carte
+  // EN PLUS (pas juste « une carte », qui pourrait déjà être là depuis avant).
+  await until(() => shadow.querySelectorAll('.ep-card').length > cardsBefore, 3000);
+  // L'ENVOI de ce message a pu concrétiser une rotation laissée en attente par la
+  // recherche précédente (comportement voulu). On laisse son vidage débouncé
+  // partir avant d'ouvrir la fenêtre d'observation propre à CETTE recherche-ci.
+  await sleep(6000);
+  calls.length = 0;
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  const sidBeforeClick = saved.sessionId;
+  const cardsNow = shadow.querySelectorAll('.ep-card');
+  const card = cardsNow[cardsNow.length - 1];   // la plus récente
+  card.addEventListener('click', e => e.preventDefault(), { once: true });
+  const t0 = performance.now();
+  card.click();
+  const dt = performance.now() - t0;
+  check('le clic produit rend la main immédiatement (< 50 ms)', dt < 50, dt + ' ms');
+  await until(() => names().includes('product_click'), 2000);
+  const pc = allEvents().find(e => e.event === 'product_click');
+  eq('product_ref transmis', pc.payload.product_ref, 'NGK-CR8E');
+  eq('rang dans la liste', pc.payload.position, 1);
+  eq('echo interpreted', pc.payload.interpreted,
+     { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1996, part_type: 'bougie' });
+  // result_count = le TOTAL de la recherche (pagination.total), pas le compte de
+  // la page servie (meta.result_count vaut 1 ici).
+  eq('result_count reflete pagination.total', pc.payload.result_count, 37);
+  // Le prix arrive en chaine « 5.90 » : un test de type strict le faisait disparaitre.
+  eq('prix transmis, meme fourni en chaine', pc.payload.price, 5.9);
+  eq('echo model_confirmed', pc.payload.model_confirmed, true);
+  eq('devise sur 3 caractères', pc.payload.currency, 'EUR');
+
+  // Cohérence de la chronologie (raison d'être de la rotation paresseuse) :
+  // sessionId N'A PAS bougé pour ce résultat tout juste affiché, product_click
+  // reste donc naturellement rattaché à la MÊME session, sans qu'aucun couple
+  // session_end/session_start n'ait eu besoin de partir entre les deux.
+  eq('aucun session_end/session_start avant le product_click sur un résultat tout juste affiché',
+     names().filter(n => n === 'session_end' || n === 'session_start').length, 0);
+  const pcCall = evCalls().find(c => c.body.events.some(e => e.event === 'product_click'));
+  eq('product_click reste rattaché à la session courante, jamais tournée', pcCall.body.session_id, sidBeforeClick);
+  saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('sessionId toujours inchangé après le clic', saved.sessionId, sidBeforeClick);
+
+  // ── 4a. Motif d'un avis négatif : review_submit repart au moment où le motif
+  // est réellement soumis (with_comment: true), en plus de celui du vote — le
+  // premier ne le sait pas encore. Jamais le texte du motif lui-même.
+  calls.length = 0;
+  shadow.querySelector('.ep-review-down').click();
+  await until(() => shadow.querySelectorAll('.ep-review-reason').length === 4, 2000);
+  shadow.querySelectorAll('.ep-review-reason')[0].click();
+  await until(() => allEvents().filter(e => e.event === 'review_submit').length >= 2, 8000);
+  const rsCanned = allEvents().filter(e => e.event === 'review_submit');
+  eq('motif canné : review_submit part deux fois (vote + motif)', rsCanned.length, 2);
+  check('un des deux porte with_comment true (motif canné)',
+        rsCanned.some(e => e.payload.with_comment === true), JSON.stringify(rsCanned));
+  check('review_submit ne transporte jamais le libellé du motif',
+        rsCanned.every(e => !('reason' in e.payload)), JSON.stringify(rsCanned));
+
+  // Même vérification par le chemin « Autre, préciser » (texte libre).
+  calls.length = 0;
+  $('#ep-reset-btn').click(); await sleep(30);
+  $('#ep-input').value = 'bougie cbr 600'; $('#ep-send-btn').click();
+  await until(() => shadow.querySelector('.ep-review-down'), 3000);
+  shadow.querySelector('.ep-review-down').click();
+  await until(() => shadow.querySelectorAll('.ep-review-reason').length === 4, 2000);
+  shadow.querySelectorAll('.ep-review-reason')[3].click();
+  await until(() => $('#ep-rv-backdrop').classList.contains('ep-visible'), 2000);
+  const ta = $('#ep-rv-text');
+  ta.value = 'Un motif détaillé et personnel.';
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  await sleep(40);
+  $('#ep-rv-sheet').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  await until(() => allEvents().filter(e => e.event === 'review_submit').length >= 2, 8000);
+  const rsFree = allEvents().filter(e => e.event === 'review_submit');
+  eq('texte libre : review_submit part deux fois (vote + motif)', rsFree.length, 2);
+  check('un des deux porte with_comment true (texte libre)',
+        rsFree.some(e => e.payload.with_comment === true), JSON.stringify(rsFree));
+  check('jamais le texte libre du motif dans le payload telemetry',
+        !/motif détaillé/i.test(JSON.stringify(rsFree)));
+
+  // ── 4b. Cycle de vie : onglet, rafraichissement, session ──
+  const hide = v => Object.defineProperty(document, 'visibilityState', { value: v, configurable: true });
+  const evNames = () => calls.filter(c => /\/events$/.test(c.url)).flatMap(c => (c.body.events || [])).map(e => e.event);
+
+  // Changer d'onglet avec le panneau OUVERT ne ferme rien et ne termine rien.
+  await sleep(8000);                       // vide ce qui attend
+  calls.length = 0;
+  hide('hidden'); document.dispatchEvent(new Event('visibilitychange'));
+  await sleep(300);
+  eq('changer d\'onglet n\'emet pas widget_close', evNames().filter(n => n === 'widget_close').length, 0);
+  eq('changer d\'onglet n\'emet pas session_end', evNames().filter(n => n === 'session_end').length, 0);
+  hide('visible');
+
+  // Depart de page : widget_close UNE seule fois malgre pagehide + visibilitychange,
+  // et AUCUN session_end — la conversation est persistee, elle reprend au rechargement.
+  calls.length = 0;
+  window.dispatchEvent(new Event('pagehide'));
+  window.dispatchEvent(new Event('pagehide'));
+  hide('hidden'); document.dispatchEvent(new Event('visibilitychange'));
+  await sleep(300);
+  eq('depart de page : un seul widget_close', evNames().filter(n => n === 'widget_close').length, 1);
+  eq('depart de page : aucun session_end', evNames().filter(n => n === 'session_end').length, 0);
+  hide('visible');
+
+  // ── 4c. data-debug absent : silence complet en console ──
+  eq('aucune trace [PartsMind] sans data-debug',
+     logged.filter(l => l.indexOf('[PartsMind]') !== -1).length, 0);
+
+  // ── 5. Aucune donnée personnelle, jamais ──
+  const brut = JSON.stringify(calls.filter(c => /\/events$/.test(c.url)).map(c => c.body));
+  check('aucune adresse e-mail dans les payloads', !/@/.test(brut), brut.slice(0, 200));
+  check('aucun champ email/phone/message/comment',
+        !/"(email|phone|message|comment)"/.test(brut), brut.slice(0, 200));
+
+  // ── 6. Un 4xx n'est JAMAIS réessayé ──
+  calls.length = 0;
+  eventsResponse = { status: 422, json: { type: 'error', error: { code: 'invalid_payload' }, meta: {} } };
+  $('#ep-fab').click(); await sleep(40);          // widget_close
+  $('#ep-fab').click(); await sleep(40);          // widget_open
+  await until(() => evCalls().length > 0, 6000);
+  await sleep(6000);           // laisse le temps à un flush scindé en deux d'arriver avant de fixer la base
+  const apres422 = evCalls().length;
+  await sleep(6000);                               // au-delà du debounce
+  eq('un 422 n\'est pas réessayé', evCalls().length, apres422);
+
+  // ── 7. Un 429 fait taire le module pour le reste de la visite ──
+  calls.length = 0;
+  eventsResponse = { status: 429, json: { type: 'error', error: { code: 'rate_limited' }, meta: {} } };
+  $('#ep-fab').click(); await sleep(40);
+  await until(() => evCalls().length > 0, 6000);
+  await sleep(6000);           // laisse le temps à un flush scindé en deux d'arriver avant de fixer la base
+  const apres429 = evCalls().length;
+  calls.length = 0;
+  for (let i = 0; i < 6; i++) { $('#ep-fab').click(); await sleep(30); }
+  await sleep(6000);
+  check('429 reçu', apres429 > 0);
+  eq('plus aucun envoi après un 429', evCalls().length, 0);
+
+  // ── 8. La recherche continue de fonctionner, télémétrie muette ──
+  const avant = searchCalls().length;
+  $('#ep-input').value = 'plaquettes'; $('#ep-send-btn').click();
+  await until(() => searchCalls().length > avant, 3000);
+  check('la recherche fonctionne alors que la télémétrie est coupée', searchCalls().length > avant);
+
+  // ── 9. Une panne réseau de télémétrie ne casse rien ──
+  eventsThrows = true;
+  eventsResponse = { status: 201, json: { type: 'events', recorded: true, meta: {} } };
+  let boom = null;
+  const onErr = e => { boom = e.message; };
+  window.addEventListener('error', onErr);
+  try {
+    $('#ep-fab').click(); await sleep(60);
+    $('#ep-input').value = 'kit chaine'; $('#ep-send-btn').click();
+    await until(() => searchCalls().length > avant + 1, 3000);
+    check('un fetch de télémétrie qui jette ne casse pas le widget', boom === null, String(boom));
+    check('la recherche aboutit malgré la panne de télémétrie', searchCalls().length > avant + 1);
+  } finally {
+    window.removeEventListener('error', onErr);
+  }
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_TELEMETRY_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>

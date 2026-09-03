@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — data-enable-parts-request="false"</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>data-enable-parts-request="false" — extinction</h1>
+<p class="sub">
+  Page distincte du harnais principal : l'attribut est lu une seule fois, au chargement
+  du script. Vérifie qu'aucune demande n'est proposée, ni sur une recherche vivante,
+  ni au rejeu d'une conversation journalisée quand la fonctionnalité était active.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+function eq(name, a, e) { check(name, JSON.stringify(a) === JSON.stringify(e), `attendu ${JSON.stringify(e)}, reçu ${JSON.stringify(a)}`); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 2000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_DISABLED_TOKEN';
+
+// Conversation persistée AVANT extinction : elle contient une proposition restée
+// en attente. Semée avant que le widget (defer) ne monte, pour tester le rejeu.
+localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
+  v: 3, token: TOKEN, sessionId: 'sess-avant-extinction', lastActive: Date.now(),
+  conversationContext: { previous_clarifications: [] },
+  identifiedVehicle: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1985 },
+  identifiedPart: 'guidon',
+  transcript: [
+    { t: 'user', text: 'guidon cbr' },
+    { t: 'no_results', message: 'Aucune pièce compatible.', suggestions: [] },
+    { t: 'pr_offer', status: 'pending', sessionId: 'sess-avant-extinction',
+      vehicle: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1985 },
+      part: 'guidon', query: 'guidon cbr' },
+  ],
+}));
+
+const calls = [];
+let nextResponse = null;
+window.fetch = async (url, opts = {}) => {
+  calls.push({ url: String(url), body: opts.body ? JSON.parse(opts.body) : null });
+  const r = nextResponse || { status: 500, json: {} };
+  return { status: r.status, ok: r.status >= 200 && r.status < 300,
+           json: async () => r.json, headers: new Headers() };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $ = s => shadow.querySelector(s);
+
+  $('#ep-fab').click();
+  await sleep(60);
+
+  // ── 1. Rejeu : la proposition journalisée ne ressuscite pas ──
+  check('conversation restaurée', [...shadow.querySelectorAll('.ep-bubble')]
+        .some(b => /Aucune pièce compatible/.test(b.textContent)));
+  eq('aucune proposition rejouée', shadow.querySelectorAll('.ep-pr-btn-yes').length, 0);
+  check('aucun bouton « Non, merci » non plus', !shadow.querySelector('.ep-pr-btn-no'));
+
+  // ── 2. Recherche vivante sans résultat : réponse + avis, mais pas de proposition ──
+  $('#ep-reset-btn').click();
+  await sleep(20);
+  nextResponse = { status: 200, json: {
+    type: 'no_results', message: 'Aucune pièce compatible pour ce modèle.',
+    interpreted: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1985, part_type: 'guidon' },
+    suggestions: ['Vérifier l\'année'], meta: {},
+  } };
+  $('#ep-input').value = 'guidon cbr';
+  $('#ep-send-btn').click();
+  await until(() => [...shadow.querySelectorAll('.ep-bubble')].some(b => /ce modèle/.test(b.textContent)));
+  await sleep(120);
+
+  const bulles = [...shadow.querySelectorAll('.ep-bubble')].map(b => b.textContent);
+  check('la réponse no_results est bien rendue', bulles.some(x => /ce modèle/.test(x)));
+  check('les suggestions restent affichées', bulles.some(x => /Vérifier l'année/.test(x)));
+  eq('aucune proposition de demande', shadow.querySelectorAll('.ep-pr-btn-yes').length, 0);
+  check('aucune invite « transmette une demande »',
+        !bulles.some(x => /transmette une demande/.test(x)), bulles.join(' | '));
+
+  // La relance sort quand même : sinon la conversation resterait suspendue sur l'échec.
+  const relances = bulles.filter(x => /Souhaitez-vous faire une autre recherche/.test(x));
+  eq('la relance est injectée malgré l\'extinction', relances.length, 1);
+  const iRep = bulles.findIndex(x => /ce modèle/.test(x));
+  const iRel = bulles.findIndex(x => /Souhaitez-vous faire une autre recherche/.test(x));
+  check('relance APRÈS la réponse', iRep !== -1 && iRep < iRel, `réponse@${iRep} relance@${iRel}`);
+  check('la relance est journalisée', (JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}').transcript || [])
+        .some(e => e.t === 'assistant' && /autre recherche/.test(e.text || '')));
+
+  // ── 3. Rien n'est journalisé, et la fiche reste close ──
+  const saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('aucune entrée pr_offer journalisée',
+     (saved.transcript || []).filter(e => e.t === 'pr_offer').length, 0);
+  check('la feuille modale n\'est jamais visible',
+        !$('#ep-pr-backdrop') || !$('#ep-pr-backdrop').classList.contains('ep-visible'));
+  eq('aucun appel /parts-request', calls.filter(c => /parts-request/.test(c.url)).length, 0);
+
+  // ── 4. Le reste du widget est intact ──
+  check('la saisie reste utilisable', !!$('#ep-input') && !$('#ep-input').disabled);
+  check('la barre « Ma moto » fonctionne toujours',
+        $('#ep-moto-bar').classList.contains('ep-visible'));
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_DISABLED_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  data-enable-parts-request="false"
+  defer></script>
+</body>
+</html>

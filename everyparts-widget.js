@@ -34,12 +34,17 @@
     'fr-FR': {
       placeholder:     'Rechercher une pièce compatible…',
       send:            'Envoyer',
-      welcome_p1:      'Bonjour 👋 Je suis {brand}, l\'assistant de recherche EveryParts.',
-      welcome_p2:      'Dites-moi votre moto et la pièce recherchée et je vous aiderai du mieux possible.',
+      welcome_p1:      'Bonjour 👋 Je suis l\'assistant IA de recherche EveryParts.',
+      welcome_p2:      'Décrivez-moi votre moto (marque, modèle, cylindrée et année) et la pièce recherchée, et je vous aiderai à la trouver.',
       typing:          'En train de répondre',
-      error_token:     'Configuration invalide : token absent.',
       error_unknown:   'Erreur inconnue.',
       error_unexpected:'La recherche est momentanément indisponible. Merci de réessayer dans quelques instants.',
+      // Échec de recherche (carte de réessai) — remplace l'affichage brut d'error_unexpected.
+      retry_title:     'Aucun résultat trouvé pour le moment.',
+      retry_sub:       'Cela peut être temporaire ou lié à une information manquante.',
+      retry_hint:      'Essayez à nouveau dans quelques instants, ou reformulez votre demande avec d\'autres mots.',
+      retry_action:    'Réessayer maintenant',
+      retry_exhausted: 'Plusieurs tentatives ont échoué. Réessayez plus tard, ou reformulez votre demande avec d\'autres mots.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmée par {n} sources',
       suggestions:     'Suggestions :',
@@ -59,34 +64,76 @@
       products_count:  '{n} / {total} produits',
       products_load_more: 'Voir plus de produits',
       products_expired: 'Cette liste a expiré — relancez votre recherche pour voir la suite.',
-      after_result:    'Souhaitez-vous affiner le résultat ou faire une autre recherche ?',
-      refine_dont_know:'Je ne sais pas',
+      after_result:    'Souhaitez-vous faire une autre recherche ?',
+      refine_dont_know:'Ignorer',
       sort_label:      'Trier les produits',
       sort_relevance:  'Pertinence',
       sort_price_asc:  'Prix croissant',
       sort_price_desc: 'Prix décroissant',
       sort_name_asc:   'Nom A–Z',
       sort_name_desc:  'Nom Z–A',
-      review_question: 'Êtes-vous satisfait de ces résultats ?',
+      review_question: 'Satisfait de ces résultats ?',
       review_yes:      'Oui, satisfait',
       review_no:       'Non, pas satisfait',
+      review_reason_prompt:  'Qu\'est-ce qui n\'a pas fonctionné ?',
+      review_reason_1:       'Résultat incohérent',
+      review_reason_2:       'Véhicule ou pièce non identifié',
+      review_reason_3:       'Temps de réponse',
+      review_reason_other:   'Autre, préciser',
+      review_other_title:    'Préciser votre retour',
+      review_other_sub:      'Votre remarque nous aide à améliorer les prochaines recherches.',
+      review_other_label:    'Votre remarque',
+      review_other_ph:       'Dites-nous ce qui n\'a pas fonctionné…',
+      review_other_submit:   'Envoyer',
+      review_other_cancel:   'Annuler',
+      review_reason_thx:     'Merci pour votre avis !',
       try_label:       'Essayez',
       my_moto:         'Ma moto',
       edit_moto:       'Modifier',
-      try_chips:       ['Bougie CBR 600 • 96', 'Plaquettes de frein', 'Filtre à huile', 'Kit chaîne'],
-      teaser:          'Vous cherchez une pièce ? Je la trouve pour vous !',
+      try_chips:       ['Cache culbuteur gasgas fse 450 enduro (2006)', 'Demarreur kawasaki zzr 1100 (1991)', 'Cache lateral yamaha xp 500 t-max (2004)'],
+      launcher_examples: ['Cache culbuteur gasgas fse 450 enduro (2006)', 'Demarreur kawasaki zzr 1100 (1991)', 'Cache lateral yamaha xp 500 t-max (2004)'],
+      teaser:          "Vous cherchez une pièce ?\rJe la trouve pour vous !",
       teaser_dismiss:  'Masquer',
+      // ── Demande de pièce (frame 2a) ──
+      pr_offer:        'Souhaitez-vous que je transmette une demande de recherche à notre équipe pièces ?',
+      pr_offer_yes:    'Oui, me contacter',
+      pr_offer_no:     'Non, merci',
+      pr_part_label:   'Pièce recherchée : ',
+      pr_title:        'Demander cette pièce',
+      pr_subtitle:     'Notre équipe recherche la référence pour {vehicle} et vous recontacte par email.',
+      pr_subtitle_novehicle: 'Notre équipe recherche la référence et vous recontacte par email.',
+      pr_email_label:  'Adresse e-mail',
+      pr_email_ph:     'vous@exemple.com',
+      pr_phone_label:  'Numéro de téléphone',
+      pr_phone_ph:     'numéro de téléphone - facultatif',
+      pr_consent:      'J\'autorise l\'utilisation des coordonnées saisies afin de me recontacter au sujet de cette demande.',
+      pr_submit:       'Envoyer ma demande',
+      pr_sending:      'Envoi…',
+      pr_cancel:       'Annuler',
+      pr_close:        'Fermer la demande',
+      pr_success:      'C\'est noté : notre équipe vous recontactera par email au sujet de cette pièce.',
+      pr_err_invalid_email:    'Merci d\'indiquer une adresse e-mail valide.',
+      pr_err_invalid_phone:    'Merci d\'indiquer un numéro de téléphone valide.',
+      pr_err_consent_required: 'Merci de cocher cette case pour continuer.',
+      pr_err_empty_request:    'Merci de préciser votre demande.',
+      pr_err_message_too_long: 'Votre message dépasse la longueur autorisée.',
+      pr_err_unexpected:       'L\'envoi a échoué. Merci de réessayer dans quelques instants.',
       brand_url:       'https://www.every-parts.com/fr/',
     },
     'en-US': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      'Hi 👋 I\'m {brand}, the EveryParts search assistant.',
-      welcome_p2:      'Tell me your bike and the part you need and I\'ll help you the best I can.',
+      welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
+      welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
       typing:          'Typing',
-      error_token:     'Invalid configuration: missing token.',
       error_unknown:   'Unknown error.',
       error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
+      // Search failure (retry card) — replaces the plain error_unexpected bubble.
+      retry_title:     'No result found for now.',
+      retry_sub:       'This may be temporary, or due to missing information.',
+      retry_hint:      'Try again in a few moments, or rephrase your request using different words.',
+      retry_action:    'Try again now',
+      retry_exhausted: 'Several attempts have failed. Please try again later, or rephrase your request using different words.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmed by {n} sources',
       suggestions:     'Suggestions:',
@@ -106,34 +153,76 @@
       products_count:  '{n} / {total} products',
       products_load_more: 'Show more products',
       products_expired: 'This list has expired — run the search again to see more.',
-      after_result:    'Would you like to refine the results or perform another search?',
-      refine_dont_know:'I don\'t know',
+      after_result:    'Would you like to perform another search?',
+      refine_dont_know:'Skip',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
       sort_price_asc:  'Price: low to high',
       sort_price_desc: 'Price: high to low',
       sort_name_asc:   'Name A–Z',
       sort_name_desc:  'Name Z–A',
-      review_question: 'Are you satisfied with these results?',
+      review_question: 'Satisfied with these results?',
       review_yes:      'Yes, satisfied',
       review_no:       'No, not satisfied',
+      review_reason_prompt:  'What went wrong?',
+      review_reason_1:       'Inconsistent result',
+      review_reason_2:       'Vehicle or part not identified',
+      review_reason_3:       'Response time',
+      review_reason_other:   'Other, please specify',
+      review_other_title:    'Tell us more',
+      review_other_sub:      'Your feedback helps us improve future searches.',
+      review_other_label:    'Your feedback',
+      review_other_ph:       'Tell us what went wrong…',
+      review_other_submit:   'Send',
+      review_other_cancel:   'Cancel',
+      review_reason_thx:     'Thank you for your feedback!',
       try_label:       'Try',
       my_moto:         'My bike',
       edit_moto:       'Edit',
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
-      teaser:          'Looking for a part? I\'ll find it for you!',
+      launcher_examples: ['Galfer brake pads…', 'Spark plug for a 1996 CBR 600…', 'Chain kit for a Yamaha MT…'],
+      teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
+      // ── Part request (frame 2a) ──
+      pr_offer:        'Would you like me to pass a search request to our parts team?',
+      pr_offer_yes:    'Yes, contact me',
+      pr_offer_no:     'No, thanks',
+      pr_part_label:   'Searched part: ',
+      pr_title:        'Request this part',
+      pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you by email.',
+      pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
+      pr_email_label:  'Email address',
+      pr_email_ph:     'you@example.com',
+      pr_phone_label:  'Phone number',
+      pr_phone_ph:     'phone number - optional',
+      pr_consent:      'I authorize the use of the contact information I have provided so that I can be contacted regarding this request.',
+      pr_submit:       'Send my request',
+      pr_sending:      'Sending…',
+      pr_cancel:       'Cancel',
+      pr_close:        'Close the request',
+      pr_success:      'Noted — our team will get back to you by email about this part.',
+      pr_err_invalid_email:    'Please enter a valid email address.',
+      pr_err_invalid_phone:    'Please enter a valid phone number.',
+      pr_err_consent_required: 'Please tick this box to continue.',
+      pr_err_empty_request:    'Please describe your request.',
+      pr_err_message_too_long: 'Your message exceeds the allowed length.',
+      pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
       brand_url:       'https://www.every-parts.com/en/',
     },
     'en-GB': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      'Hello 👋 I\'m {brand}, the EveryParts search assistant.',
-      welcome_p2:      'Tell me your bike and the part you need and I\'ll help you the best I can.',
+      welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
+      welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
       typing:          'Typing',
-      error_token:     'Invalid configuration: missing token.',
       error_unknown:   'Unknown error.',
       error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
+      // Search failure (retry card) — replaces the plain error_unexpected bubble.
+      retry_title:     'No result found for now.',
+      retry_sub:       'This may be temporary, or due to missing information.',
+      retry_hint:      'Try again in a few moments, or rephrase your request using different words.',
+      retry_action:    'Try again now',
+      retry_exhausted: 'Several attempts have failed. Please try again later, or rephrase your request using different words.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmed by {n} sources',
       suggestions:     'Suggestions:',
@@ -153,23 +242,60 @@
       products_count:  '{n} / {total} products',
       products_load_more: 'Show more products',
       products_expired: 'This list has expired — run the search again to see more.',
-      after_result:    'Would you like to refine the results or perform another search?',
-      refine_dont_know:'I don\'t know',
+      after_result:    'Would you like to perform another search?',
+      refine_dont_know:'Skip',
       sort_label:      'Sort products',
       sort_relevance:  'Relevance',
       sort_price_asc:  'Price: low to high',
       sort_price_desc: 'Price: high to low',
       sort_name_asc:   'Name A–Z',
       sort_name_desc:  'Name Z–A',
-      review_question: 'Are you satisfied with these results?',
+      review_question: 'Satisfied with these results?',
       review_yes:      'Yes, satisfied',
       review_no:       'No, not satisfied',
+      review_reason_prompt:  'What went wrong?',
+      review_reason_1:       'Inconsistent result',
+      review_reason_2:       'Vehicle or part not identified',
+      review_reason_3:       'Response time',
+      review_reason_other:   'Other, please specify',
+      review_other_title:    'Tell us more',
+      review_other_sub:      'Your feedback helps us improve future searches.',
+      review_other_label:    'Your feedback',
+      review_other_ph:       'Tell us what went wrong…',
+      review_other_submit:   'Send',
+      review_other_cancel:   'Cancel',
+      review_reason_thx:     'Thank you for your feedback!',
       try_label:       'Try',
       my_moto:         'My bike',
       edit_moto:       'Edit',
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
-      teaser:          'Looking for a part? I\'ll find it for you!',
+      launcher_examples: ['Galfer brake pads…', 'Spark plug for a 1996 CBR 600…', 'Chain kit for a Yamaha MT…'],
+      teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
+      // ── Part request (frame 2a) ──
+      pr_offer:        'Would you like me to pass a search request to our parts team?',
+      pr_offer_yes:    'Yes, contact me',
+      pr_offer_no:     'No, thanks',
+      pr_part_label:   'Searched part: ',
+      pr_title:        'Request this part',
+      pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you by email.',
+      pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
+      pr_email_label:  'Email address',
+      pr_email_ph:     'you@example.com',
+      pr_phone_label:  'Phone number',
+      pr_phone_ph:     'phone number - optional',
+      pr_consent:      'I authorize the use of the contact information I have provided so that I can be contacted regarding this request.',
+      pr_submit:       'Send my request',
+      pr_sending:      'Sending…',
+      pr_cancel:       'Cancel',
+      pr_close:        'Close the request',
+      pr_success:      'Noted — our team will get back to you by email about this part.',
+      pr_err_invalid_email:    'Please enter a valid email address.',
+      pr_err_invalid_phone:    'Please enter a valid phone number.',
+      pr_err_consent_required: 'Please tick this box to continue.',
+      pr_err_empty_request:    'Please describe your request.',
+      pr_err_message_too_long: 'Your message exceeds the allowed length.',
+      pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
       brand_url:       'https://www.every-parts.com/en/',
     },
   };
@@ -209,6 +335,23 @@
     return DEFAULT_LOCALE;
   }
 
+  /**
+   * Attribut booléen de snippet. Absent → `fallback` (l'attribut est un interrupteur
+   * d'extinction, pas un opt-in : les intégrations existantes ne changent pas de
+   * comportement). Présent nu (`data-x`) → true, comme les booléens HTML natifs.
+   * Seuls « false » et « 0 » désactivent ; toute autre valeur est ignorée au profit
+   * du défaut plutôt que traitée comme false — une faute de frappe ne doit pas
+   * éteindre une fonctionnalité en silence.
+   */
+  function boolAttr(name, fallback) {
+    const raw = SCRIPT_EL?.getAttribute(name);
+    if (raw == null) return fallback;
+    const v = raw.trim().toLowerCase();
+    if (v === '' || v === 'true' || v === '1') return true;
+    if (v === 'false' || v === '0') return false;
+    return fallback;
+  }
+
   const CONFIG = {
     token:    SCRIPT_EL?.getAttribute('data-token') || '',
     // data-locale remplace data-lang (rétro-compatibilité conservée en repli).
@@ -219,6 +362,13 @@
     logo:     SCRIPT_EL?.getAttribute('data-logo')  || '',
     title:    SCRIPT_EL?.getAttribute('data-title') || '',
     subtitle: SCRIPT_EL?.getAttribute('data-subtitle') || '',
+    // Demande de pièce sur recherche infructueuse (frame 2a). Activée sauf
+    // data-enable-parts-request="false" : une boutique qui n'a personne pour traiter
+    // ces demandes peut l'éteindre sans toucher au reste de l'intégration.
+    partsRequest: boolAttr('data-enable-parts-request', true),
+    // Journalise meta.ignored des events : c'est ainsi qu'on attrape un nom de
+    // champ mal orthographie. A laisser eteint en production.
+    debug: boolAttr('data-debug', false),
   };
 
   function t(key, vars = {}) {
@@ -255,15 +405,25 @@
     return priceFormatter ? priceFormatter.format(num) : `${num.toFixed(2)} €`;
   }
 
+  // Prix numerique ou rien : l'API le renvoie tantot en nombre, tantot en chaine.
+  function toPrice(value) {
+    const n = typeof value === 'number' ? value : parseFloat(value);
+    return (typeof n === 'number' && isFinite(n) && n >= 0) ? n : undefined;
+  }
+
   // Normalisation pour le filtre d'options (insensible aux accents/casse)
   function normStr(s) {
     return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
-  // ── Icotype SVG placeholder ────────────────────────────────────────────────
-  const ICOTYPE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 271 281" width="32" height="32" aria-hidden="true">
-    <path d="M 126 17.5 C 106.9 28.1, 60.8 53.1, 40 65.5 C 19.2 77.9, 34.5 69.5, 31.5 74 C 28.5 78.5, 27.6 61.6, 26.5 86 C 25.4 110.4, 25.4 160.6, 26.5 185 C 27.6 209.4, 27.4 191.8, 31.5 197 C 35.6 202.2, 24.2 196.1, 45 208.5 C 65.8 220.9, 104.2 243.8, 126 253.5 C 147.8 263.2, 122.7 262.6, 144 252.5 C 165.3 242.4, 202.9 219.9, 223 207.5 C 243.1 195.1, 231.7 202.1, 235.5 196 C 239.3 189.9, 239.4 187.9, 240.5 180 L 240.5 160 L 223 157.5 C 215.4 157.4, 215.7 154.4, 206 159.5 C 196.3 164.6, 188.7 174.3, 179 180.5 C 169.3 186.7, 174.1 186.2, 162 187.5 C 149.9 188.8, 135.7 188.0, 124 186.5 C 112.3 185.0, 114.0 183.5, 109 180.5 C 104.0 177.5, 103.3 175.6, 101.5 173 L 101 168.5 L 146 159.5 C 157.8 155.2, 152.8 156.8, 154.5 149 C 156.2 141.2, 154.8 132.1, 153.5 124 C 152.2 115.9, 150.8 115.8, 148.5 112 C 146.2 108.2, 146.4 107.9, 143 106.5 C 139.6 105.1, 144.2 104.0, 133 105.5 C 121.8 107.0, 101.7 111.7, 92 113.5 L 89 113.5 L 87.5 110 C 87.6 107.5, 87.2 105.6, 89.5 102 C 91.8 98.4, 89.1 99.5, 98 93.5 C 106.9 87.5, 119.9 79.6, 130 74.5 C 140.1 69.4, 137.6 71.2, 144 70.5 C 150.4 69.8, 153.1 70.0, 159 71.5 C 164.9 73.0, 164.2 72.2, 171 77.5 C 177.8 82.8, 182.1 89.1, 190 95.5 C 197.9 101.9, 197.8 103.4, 207 106.5 C 216.2 109.6, 224.6 109.2, 232 109.5 L 240.5 108 L 238.5 81 C 236.0 72.1, 249.8 81.3, 229 67.5 C 208.2 53.8, 166.4 29.5, 144 18.5 C 121.6 7.5, 131.0 17.7, 127 17.5 C 123.0 17.3, 145.1 6.9, 126 17.5 Z" fill="white"/>
-  </svg>`;
+  // ── Monogramme « e » everyparts ─────────────────────────────────────────────
+  // Asset de marque du projet design (everyparts-mark.svg). Les frames l'utilisent
+  // en masque à deux tailles : 22×25 blanc (bulle fermée) et 17×19 teal (pastille
+  // blanche de la façade déployée) — d'où le helper paramétré plutôt qu'une constante.
+  const MARK_PATH = 'M87.48 0.3C89.05 0.07 90.65 0.01 92.25 0C93.72 -0.01 95.21 -0.03 96.65 0.26C98.86 0.7 101.15 1.1 103.13 2.2C126.51 15.12 149.62 28.55 172.56 42.24C174.28 43.26 175.59 44.87 177.02 46.27C177.7 46.94 178.31 47.68 178.87 48.46C179.57 49.43 180.23 50.44 180.78 51.51C181.54 52.95 182.24 54.44 182.8 55.98C183.25 57.24 183.57 58.55 183.82 59.87C184 60.83 184.05 61.82 184.06 62.8C184.13 67.97 184.23 73.14 184.06 78.3C184.04 78.83 183.68 79.29 183.49 79.78C176.33 79.45 169.14 79.52 162.01 78.79C159.72 78.56 157.51 77.74 155.36 76.91C153.28 76.11 151.35 74.98 149.4 73.9C148.36 73.31 147.35 72.64 146.41 71.9C143.41 69.55 140.43 67.17 137.58 64.64C133.81 61.28 130.34 57.59 126.55 54.24C124.96 52.83 123.27 51.49 121.46 50.37C120.06 49.51 118.53 48.88 116.99 48.33C115.69 47.86 114.34 47.51 112.97 47.32C110.08 46.93 107.17 46.6 104.25 46.58C102.27 46.57 100.3 46.92 98.35 47.25C97.02 47.48 95.7 47.84 94.41 48.26C92.57 48.86 90.75 49.53 88.96 50.28C86.75 51.21 84.54 52.13 82.45 53.27C78.39 55.48 74.41 57.86 70.5 60.33C68.08 61.87 65.76 63.56 63.47 65.29C61.76 66.57 60.08 67.9 58.53 69.37C57.34 70.5 56.28 71.77 55.28 73.07C54.84 73.65 54.44 74.3 54.22 75C53.79 76.4 53.44 77.84 53.35 79.3C53.3 80.19 53.61 81.07 53.81 81.93C53.87 82.19 53.94 82.46 54.12 82.65C54.28 82.81 54.53 82.93 54.75 82.9C67.43 80.78 80.07 78.36 92.75 76.19C93.74 76.02 94.74 75.88 95.75 75.89C96.71 75.9 97.71 75.9 98.61 76.23C99.86 76.69 100.99 77.44 102.07 78.22C102.74 78.71 103.31 79.34 103.81 80.01C104.89 81.44 105.95 82.91 106.78 84.5C107.61 86.09 108.27 87.77 108.78 89.49C109.61 92.22 110.31 95.01 110.82 97.82C111.21 99.96 111.35 102.14 111.47 104.3C111.54 105.47 111.48 106.64 111.39 107.8C111.26 109.29 111.13 110.78 110.82 112.23C110.61 113.25 110.27 114.24 109.83 115.17C109.26 116.38 108.59 117.54 107.81 118.62C107.27 119.38 106.63 120.07 105.91 120.65C104.86 121.49 103.73 122.21 102.55 122.84C101.74 123.27 100.87 123.6 99.98 123.79C88.98 126.08 77.88 127.92 66.89 130.25C65.91 130.46 65.05 131.03 64.14 131.42C64.16 131.65 64.1 131.9 64.2 132.11C64.8 133.31 65.42 134.51 66.23 135.58C67.07 136.7 68.04 137.74 69.13 138.62C70.63 139.84 72.27 140.89 73.96 141.83C75.4 142.63 76.92 143.29 78.49 143.8C81.06 144.64 83.69 145.37 86.36 145.86C89.62 146.45 92.93 146.89 96.25 147.03C101.58 147.26 106.92 147.22 112.25 146.95C114.42 146.84 116.59 146.47 118.69 145.89C121.55 145.1 124.34 144.06 127.05 142.84C128.82 142.04 130.44 140.94 132.06 139.87C133.95 138.62 135.83 137.34 137.57 135.89C141.3 132.8 144.75 129.38 148.46 126.28C149.38 125.51 150.4 124.85 151.47 124.29C152.92 123.52 154.43 122.85 155.98 122.3C157.25 121.85 158.57 121.48 159.91 121.27C161.34 121.04 162.8 120.95 164.25 120.99C170.38 121.12 176.52 121.33 182.64 121.77C183.12 121.8 183.5 122.18 183.93 122.39C183.97 128.53 184.12 134.67 184.07 140.8C184.06 142.06 183.96 143.33 183.75 144.57C183.54 145.79 183.22 146.99 182.8 148.16C182.25 149.7 181.6 151.2 180.84 152.65C180.28 153.71 179.62 154.72 178.87 155.65C177.68 157.13 176.42 158.56 175.03 159.84C173.8 160.96 172.42 161.91 171.02 162.81C168.25 164.58 165.37 166.18 162.53 167.82C144.04 178.51 125.61 189.3 107.02 199.81C104.95 200.98 102.84 202.11 100.58 202.85C98.54 203.53 96.39 203.87 94.25 204.03C91.99 204.19 89.72 204.06 87.47 203.81C86.11 203.65 84.77 203.26 83.48 202.81C81.92 202.27 80.39 201.64 78.96 200.83C56.89 188.29 34.95 175.52 13.02 162.76C12.1 162.22 11.22 161.6 10.4 160.93C9.56 160.25 8.75 159.51 8.03 158.71C6.7 157.22 5.29 155.77 4.24 154.08C3 152.06 2.02 149.87 1.2 147.64C0.67 146.2 0.46 144.66 0.21 143.15C0.06 142.21 0 141.26 0 140.3C-0.06 114.64 -0.06 88.97 0.02 63.3C0.02 62.38 0.08 61.44 0.24 60.53C0.48 59.16 0.82 57.82 1.21 56.48C1.46 55.61 1.75 54.74 2.14 53.92C2.77 52.59 3.49 51.31 4.26 50.05C4.81 49.14 5.42 48.27 6.1 47.45C6.79 46.61 7.57 45.85 8.34 45.09C9.01 44.43 9.67 43.76 10.4 43.18C11.34 42.44 12.32 41.75 13.35 41.15C35.17 28.45 57 15.76 78.95 3.27C80.38 2.46 81.89 1.81 83.44 1.27C84.75 0.82 86.11 0.5 87.48 0.3Z';
+  function markSvg(w, h, color) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184.07 204.03" width="${w}" height="${h}" fill="none" aria-hidden="true"><path fill="${color}" fill-rule="evenodd" clip-rule="evenodd" d="${MARK_PATH}"></path></svg>`;
+  }
 
   // Icône affichée sur le lanceur quand le chat est OUVERT (chevron bas = réduire).
   const FAB_CLOSE_ICON = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>`;
@@ -271,60 +431,35 @@
   // Petite croix du bandeau d'amorce (fermer/masquer).
   const TEASER_CLOSE_ICON = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>`;
 
-  const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1080 208" width="140" height="27" style="enable-background:new 0 0 1080 208;" xml:space="preserve" aria-hidden="true">
-    <style type="text/css">.st0{fill:#FFFFFF;}</style>
-    <g>
-      <path class="st0" d="M752.18,79.73c-3.5-7.08-8.42-12.67-14.76-16.75c-6.34-4.08-13.78-6.12-22.33-6.12c-8.49,0-15.63,2.07-21.42,6.2c-0.54,0.39-1.06,0.8-1.57,1.21v-4.93h-19.85v129.02h22.66v-42.82c5.8,3.73,12.91,5.6,21.34,5.6c8.22,0,15.41-2.07,21.59-6.2c6.17-4.14,10.99-9.76,14.43-16.87c3.45-7.11,5.17-15.13,5.17-24.07C757.43,94.9,755.68,86.81,752.18,79.73z M731.38,117.69c-1.49,4.11-3.78,7.37-6.86,9.8c-3.09,2.43-7.06,3.64-11.91,3.64c-5.02,0-9.03-1.13-12.03-3.39c-3.01-2.26-5.17-5.43-6.49-9.51c-1.32-4.08-1.98-8.82-1.98-14.23c0-5.4,0.66-10.14,1.98-14.23c1.32-4.08,3.43-7.25,6.33-9.51c2.89-2.26,6.69-3.39,11.37-3.39c5.02,0,9.14,1.23,12.36,3.68c3.23,2.45,5.61,5.74,7.15,9.84c1.54,4.11,2.32,8.64,2.32,13.6C733.61,109.02,732.86,113.58,731.38,117.69z"/>
-      <path class="st0" d="M846.93,82.99c-0.33-3.31-1.38-6.62-3.14-9.92c-3.14-5.96-7.77-10.14-13.89-12.57c-6.12-2.43-13.12-3.64-21.01-3.64c-10.75,0-19.24,2.32-25.47,6.95c-6.23,4.63-10.48,10.64-12.74,18.03l20.35,6.45c1.43-4.08,3.94-6.92,7.53-8.52c3.58-1.6,7.03-2.4,10.34-2.4c5.95,0,10.2,1.24,12.74,3.72c1.99,1.95,3.19,4.77,3.62,8.44c-3.8,0.57-7.41,1.11-10.81,1.61c-5.79,0.86-10.97,1.75-15.55,2.69c-4.58,0.94-8.52,2.01-11.83,3.23c-4.8,1.77-8.62,3.96-11.45,6.58c-2.84,2.62-4.89,5.64-6.16,9.06c-1.27,3.42-1.9,7.2-1.9,11.33c0,4.96,1.14,9.5,3.43,13.6c2.29,4.11,5.65,7.39,10.09,9.84c4.44,2.45,9.86,3.68,16.25,3.68c7.72,0,14.1-1.34,19.15-4.01c3.98-2.11,7.74-5.27,11.29-9.46v10.99h19.68V94.08C847.43,90,847.26,86.3,846.93,82.99z M822.78,121.53c-0.61,1.27-1.75,2.84-3.43,4.71c-1.68,1.88-3.94,3.54-6.78,5c-2.84,1.46-6.33,2.19-10.46,2.19c-2.59,0-4.83-0.39-6.7-1.16c-1.88-0.77-3.32-1.89-4.34-3.35c-1.02-1.46-1.53-3.21-1.53-5.25c0-1.49,0.32-2.84,0.95-4.05c0.63-1.21,1.63-2.33,2.98-3.35c1.35-1.02,3.13-1.97,5.33-2.85c1.93-0.72,4.16-1.38,6.7-1.98c2.54-0.61,5.87-1.28,10.01-2.03c2.66-0.48,5.84-1.03,9.55-1.66c-0.05,1.57-0.13,3.33-0.24,5.3C824.62,116.28,823.94,119.11,822.78,121.53z"/>
-      <path class="st0" d="M907.8,59.13c-2.7,0.19-5.32,0.66-7.86,1.41c-2.54,0.74-4.88,1.78-7.03,3.1c-2.81,1.65-5.18,3.75-7.11,6.29c-0.92,1.2-1.74,2.47-2.48,3.8V59.34h-19.85v89.32h22.66v-45.65c0-3.42,0.47-6.49,1.41-9.22c0.94-2.73,2.32-5.1,4.14-7.11c1.82-2.01,4.05-3.62,6.7-4.84c2.65-1.27,5.61-2.03,8.89-2.27c3.28-0.25,6.16,0.01,8.64,0.79V59.34C913.2,59.01,910.5,58.94,907.8,59.13z"/>
-      <path class="st0" d="M987.55,76.71V59.34h-25.8V34.53h-22.5v24.81h-15.22v17.37h15.22v34.08c0,5.35,0.05,10.13,0.17,14.35c0.11,4.22,1.27,8.37,3.47,12.45c2.43,4.36,5.97,7.51,10.63,9.47c4.66,1.96,9.95,3,15.88,3.14c5.93,0.14,11.98-0.37,18.15-1.53v-18.69c-5.29,0.72-10.12,0.94-14.47,0.66c-4.36-0.28-7.53-1.98-9.51-5.13c-1.05-1.65-1.61-3.87-1.7-6.66c-0.08-2.78-0.12-5.91-0.12-9.39V76.71H987.55z"/>
-      <path class="st0" d="M1072.19,109.83c-1.88-3.28-4.87-6.09-8.97-8.44c-4.11-2.34-9.55-4.4-16.33-6.16c-6.95-1.76-12.12-3.2-15.51-4.3c-3.39-1.1-5.62-2.18-6.7-3.23c-1.08-1.05-1.61-2.34-1.61-3.89c0-2.59,1.25-4.58,3.76-5.95c2.51-1.38,5.83-1.93,9.97-1.65c4.25,0.33,7.61,1.46,10.09,3.39c2.48,1.93,3.91,4.55,4.3,7.86l22.99-4.14c-0.77-5.4-2.83-10.09-6.16-14.06c-3.34-3.97-7.71-7.03-13.11-9.18c-5.4-2.15-11.61-3.23-18.61-3.23c-7.22,0-13.49,1.15-18.82,3.43c-5.32,2.29-9.44,5.54-12.36,9.76c-2.92,4.22-4.38,9.19-4.38,14.93c0,4.58,0.96,8.48,2.89,11.7c1.93,3.23,5.07,6,9.43,8.31c4.36,2.32,10.17,4.41,17.45,6.29c6.45,1.71,11.21,3.09,14.27,4.14c3.06,1.05,5.03,2.11,5.91,3.18c0.88,1.08,1.32,2.5,1.32,4.26c0,2.81-1.1,5-3.31,6.57c-2.21,1.57-5.35,2.36-9.43,2.36c-4.96,0-9.06-1.18-12.28-3.56c-3.23-2.37-5.31-5.65-6.24-9.84l-22.99,3.47c1.49,9.32,5.69,16.53,12.61,21.63c6.92,5.1,16,7.65,27.25,7.65c11.69,0,20.84-2.62,27.46-7.86c6.62-5.24,9.93-12.43,9.93-21.59C1075,117.07,1074.06,113.11,1072.19,109.83z"/>
-      <path class="st0" d="M315.1,110.28c0.93-10.81-0.18-20.19-3.31-28.19c-3.15-8-8-14.2-14.56-18.61s-14.52-6.62-23.91-6.62c-8.82,0-16.62,2.01-23.4,5.99c-6.78,4-12.11,9.61-15.97,16.84c-3.86,7.21-5.79,15.7-5.79,25.47c0,8.94,1.97,16.86,5.91,23.77c3.96,6.93,9.4,12.35,16.39,16.29c6.97,3.96,15.03,5.93,24.19,5.93c8.59,0,16.51-2.28,23.77-6.78c7.25-4.53,12.55-10.87,15.93-19.03l-22.51-6.44c-1.65,3.64-4.04,6.42-7.19,8.35c-3.13,1.93-6.91,2.88-11.33,2.88c-6.99,0-12.31-2.28-15.9-6.8c-2.64-3.33-4.31-7.68-5.02-13.04H315.1z M252.99,93.58c0.87-4.14,2.36-7.54,4.43-10.22c3.6-4.65,9.24-6.99,16.9-6.99c6.56,0,11.29,1.99,14.2,5.99c1.89,2.64,3.17,6.38,3.82,11.21H252.99z"/>
-      <polygon class="st0" points="381.46,59.34 360.29,121.2 339.11,59.34 316.62,59.34 349.04,148.66 371.53,148.66 403.95,59.34"/>
-      <path class="st0" d="M481.24,110.29h10.83c0.94-10.81-0.17-20.21-3.31-28.2c-3.14-7.99-8-14.2-14.56-18.61c-6.56-4.41-14.53-6.62-23.9-6.62c-8.82,0-16.62,2-23.41,6c-6.78,4-12.1,9.61-15.96,16.83c-3.86,7.22-5.79,15.71-5.79,25.47c0,8.93,1.97,16.86,5.91,23.78c3.94,6.92,9.4,12.35,16.38,16.29c6.97,3.94,15.04,5.91,24.19,5.91c8.6,0,16.53-2.26,23.78-6.78c7.25-4.52,12.56-10.86,15.92-19.02l-22.5-6.45c-1.65,3.64-4.05,6.42-7.2,8.35c-3.14,1.93-6.92,2.89-11.33,2.89c-7,0-12.31-2.27-15.92-6.82c-2.64-3.33-4.31-7.68-5.02-13.03h40.46H481.24z M451.3,76.38c6.56,0,11.29,2,14.18,6c1.9,2.63,3.18,6.37,3.83,11.21h-39.36c0.88-4.13,2.36-7.54,4.43-10.21C438,78.71,443.64,76.38,451.3,76.38z"/>
-      <path class="st0" d="M551.11,59.13c-2.7,0.19-5.32,0.66-7.86,1.41c-2.54,0.74-4.88,1.78-7.03,3.1c-2.81,1.65-5.18,3.75-7.11,6.29c-0.92,1.2-1.74,2.47-2.48,3.8V59.34h-19.85v89.32h22.66v-45.65c0-3.42,0.47-6.49,1.41-9.22c0.94-2.73,2.32-5.1,4.14-7.11c1.82-2.01,4.05-3.62,6.7-4.84c2.65-1.27,5.61-2.03,8.89-2.27c3.28-0.25,6.16,0.01,8.64,0.79V59.34C556.52,59.01,553.81,58.94,551.11,59.13z"/>
-      <polygon class="st0" points="634.17,59.34 610.84,120.12 587.36,59.34 564.04,59.34 600.07,147.96 585.38,188.36 606.22,188.36 656.67,59.34"/>
-      <path class="st0" d="M170.24,122.95c0,0-10.12-1.02-19.05,7.2c-8.93,8.23-20.59,19.47-38.53,18.73c0,0-36.86,3.25-43.88-15.96l36.24-7.27c0,0,15.47-2.49,10.49-27.18C110.53,73.79,98.9,78.01,98.9,78.01l-39.87,6.96c0,0-2.85-6.63,3.65-12.87c6.51-6.24,31.73-24.22,47.85-23.56c16.12,0.66,18.55,5.75,27.34,13.66c8.79,7.92,18.76,18.19,32.02,18.73c5.89,0.24,13.1,0.54,19.29,0.79l0-15.01c0-9.82-5.24-18.9-13.75-23.81L110.84,5.61c-8.51-4.91-18.99-4.91-27.49,0l-64.6,37.28C10.24,47.81,5,56.89,5,66.71l0.01,74.58c0,9.82,5.24,18.9,13.75,23.81l64.58,37.28c8.51,4.91,18.99,4.91,27.49,0l64.6-37.28c8.51-4.91,13.75-13.99,13.75-23.82l0-17.56L170.24,122.95z"/>
-    </g>
-  </svg>`;
-
-  // Avatar « assistant » de l'en-tête (refonte 1a) : carré arrondi dégradé
-  // avec monogramme « e » et pastille de statut « en ligne ». Masqué lorsqu'un
-  // logo boutique personnalisé (data-logo) est fourni, pour ne pas doubler la marque.
-  const AVATAR_HTML = `<div id="ep-avatar" aria-hidden="true"><span id="ep-avatar-mark">e</span><span id="ep-avatar-status"></span></div>`;
-
   // Icône moto pour la barre de contexte « Ma moto ».
   const MOTO_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M11.8 3.9C16.3 3.9 20 7.5 20 12c0 1.2-.3 2-.9 2.9-.4.6-.5 1-.5 1.7 1.6.3 2.4 1 2.4 2 0 .9-.7 1.5-1.6 1.5H10.6C6.9 20.1 4 17.2 4 13.5V12C4 7.5 7.4 3.9 11.8 3.9zM13.4 9.2c-1.5 0-2.7 1-2.7 2.3s1.2 2.3 2.7 2.3h8V9.2z"></path></svg>`;
 
-  // Logo « everyparts » officiel, version verte #064C4C (lockup, viewBox 1080×208) —
-  // vectorisé, inline pour rester autonome (aucune requête réseau). Footer « Propulsé par ».
+  // Icône générique affichée à la place de la photo produit : absente,
+  // en échec de chargement (onerror retire le <img>, révélant l'icône
+  // placée derrière dans le DOM), ou en attendant son chargement.
+  // Déclarée hors de mount() : restoreConversation() (appelé tôt dans mount())
+  // peut rejouer des cartes produit avant qu'une const locale plus tardive
+  // dans le corps de la fonction n'ait été initialisée (TDZ).
+  const PRODUCT_PLACEHOLDER_ICON = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 8.6c0-.85.7-1.55 1.55-1.55h1.8l1.05-1.9h6.2l1.05 1.9h1.8c.85 0 1.55.7 1.55 1.55v7.7c0 .85-.7 1.55-1.55 1.55H6.05c-.85 0-1.55-.7-1.55-1.55V8.6Z"></path><circle cx="12" cy="12.4" r="2.9"></circle></svg>`;
+
   const LOGO_GREEN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 208" fill="none" role="img" aria-label="everyparts"><path fill="#064C4C" fill-rule="evenodd" clip-rule="evenodd" d="M92.48 2.25C94.06 2.02 95.66 1.95 97.25 1.95C98.72 1.94 100.21 1.91 101.65 2.2C103.86 2.65 106.16 3.05 108.13 4.14C131.51 17.07 154.62 30.49 177.57 44.18C179.29 45.21 180.59 46.81 182.02 48.22C182.7 48.89 183.31 49.63 183.87 50.4C184.57 51.37 185.23 52.39 185.78 53.45C186.54 54.9 187.24 56.39 187.8 57.92C188.26 59.18 188.58 60.5 188.82 61.81C189 62.78 189.05 63.77 189.07 64.75C189.13 69.92 189.24 75.09 189.06 80.25C189.04 80.78 188.68 81.23 188.49 81.72C181.33 81.39 174.15 81.46 167.02 80.74C164.72 80.5 162.51 79.69 160.36 78.86C158.29 78.05 156.35 76.93 154.41 75.84C153.36 75.26 152.35 74.59 151.41 73.85C148.41 71.5 145.43 69.11 142.59 66.58C138.81 63.22 135.34 59.53 131.56 56.19C129.96 54.77 128.28 53.44 126.46 52.31C125.07 51.45 123.53 50.82 121.99 50.27C120.69 49.8 119.34 49.46 117.97 49.27C115.08 48.87 112.17 48.54 109.25 48.53C107.27 48.52 105.31 48.87 103.36 49.2C102.02 49.43 100.7 49.79 99.41 50.21C97.57 50.8 95.75 51.48 93.96 52.23C91.76 53.15 89.55 54.07 87.45 55.22C83.39 57.43 79.41 59.8 75.51 62.28C73.08 63.81 70.76 65.5 68.47 67.23C66.77 68.52 65.08 69.85 63.53 71.32C62.34 72.45 61.28 73.71 60.29 75.01C59.84 75.6 59.44 76.24 59.22 76.95C58.79 78.34 58.44 79.79 58.36 81.25C58.3 82.14 58.62 83.01 58.81 83.88C58.87 84.13 58.94 84.41 59.12 84.6C59.28 84.76 59.53 84.88 59.75 84.84C72.44 82.72 85.07 80.3 97.75 78.13C98.74 77.97 99.75 77.83 100.75 77.83C101.71 77.84 102.71 77.84 103.61 78.18C104.86 78.64 105.99 79.38 107.07 80.16C107.74 80.65 108.31 81.29 108.81 81.95C109.89 83.39 110.95 84.86 111.79 86.45C112.62 88.03 113.27 89.72 113.79 91.43C114.62 94.17 115.31 96.95 115.82 99.77C116.21 101.9 116.35 104.08 116.47 106.25C116.54 107.42 116.48 108.59 116.39 109.75C116.27 111.23 116.13 112.72 115.82 114.18C115.61 115.19 115.27 116.18 114.83 117.12C114.26 118.32 113.59 119.48 112.82 120.57C112.28 121.32 111.64 122.02 110.91 122.6C109.87 123.43 108.73 124.16 107.55 124.79C106.74 125.21 105.88 125.55 104.98 125.74C93.98 128.02 82.88 129.86 71.89 132.2C70.92 132.41 70.06 132.97 69.14 133.36C69.16 133.59 69.1 133.85 69.2 134.06C69.81 135.25 70.42 136.46 71.23 137.53C72.07 138.65 73.04 139.69 74.13 140.57C75.63 141.78 77.27 142.84 78.96 143.78C80.4 144.57 81.92 145.24 83.49 145.75C86.07 146.58 88.69 147.32 91.36 147.8C94.63 148.4 97.93 148.84 101.25 148.98C106.58 149.2 111.92 149.16 117.25 148.89C119.42 148.78 121.6 148.42 123.69 147.84C126.55 147.04 129.35 146 132.05 144.78C133.82 143.99 135.44 142.88 137.07 141.81C138.96 140.57 140.83 139.28 142.58 137.84C146.3 134.75 149.75 131.33 153.47 128.22C154.39 127.45 155.41 126.79 156.47 126.23C157.92 125.46 159.43 124.8 160.98 124.25C162.26 123.79 163.57 123.43 164.91 123.22C166.34 122.99 167.8 122.9 169.25 122.93C175.39 123.07 181.52 123.28 187.65 123.72C188.12 123.75 188.5 124.13 188.93 124.33C188.98 130.47 189.12 136.61 189.07 142.75C189.06 144.01 188.96 145.27 188.75 146.51C188.54 147.73 188.22 148.94 187.8 150.1C187.25 151.64 186.6 153.15 185.84 154.59C185.29 155.65 184.62 156.67 183.87 157.6C182.68 159.07 181.43 160.51 180.03 161.78C178.8 162.9 177.42 163.86 176.02 164.75C173.25 166.52 170.38 168.12 167.53 169.77C149.04 180.46 130.61 191.24 112.02 201.75C109.96 202.92 107.84 204.05 105.59 204.8C103.55 205.47 101.39 205.82 99.25 205.98C97 206.14 94.72 206.01 92.48 205.75C91.11 205.6 89.78 205.21 88.48 204.75C86.93 204.21 85.39 203.59 83.96 202.77C61.9 190.23 39.96 177.47 18.02 164.7C17.1 164.17 16.23 163.55 15.4 162.87C14.56 162.19 13.75 161.46 13.03 160.65C11.7 159.17 10.29 157.72 9.25 156.02C8 154 7.02 151.81 6.2 149.59C5.67 148.15 5.46 146.61 5.21 145.1C5.06 144.16 5.01 143.2 5 142.25C4.94 116.58 4.94 90.92 5.02 65.25C5.02 64.32 5.09 63.39 5.25 62.47C5.48 61.11 5.83 59.76 6.21 58.43C6.46 57.56 6.75 56.69 7.14 55.87C7.77 54.54 8.49 53.25 9.26 51.99C9.81 51.09 10.42 50.21 11.1 49.4C11.79 48.56 12.58 47.8 13.35 47.03C14.01 46.37 14.67 45.7 15.4 45.13C16.34 44.39 17.32 43.7 18.35 43.09C40.17 30.39 62.01 17.71 83.95 5.22C85.38 4.41 86.9 3.76 88.44 3.22C89.75 2.76 91.11 2.45 92.48 2.25Z M939.56 34.9C940.12 34.76 940.67 34.51 941.25 34.49C947.42 34.37 953.58 34.37 959.75 34.49C960.33 34.51 960.88 34.76 961.44 34.9C961.57 35.35 961.83 35.78 961.83 36.25C961.95 43.42 961.77 50.58 961.82 57.75C961.83 58.08 961.87 58.41 962.01 58.71C962.11 58.93 962.27 59.23 962.51 59.24C970.26 59.43 978.01 59.08 985.75 59.31C986.3 59.33 986.76 59.75 987.27 59.97C987.35 64.9 987.49 69.82 987.51 74.75C987.51 75.21 987.48 75.67 987.34 76.11C987.27 76.32 987.13 76.6 986.91 76.61C979.03 76.84 971.14 76.69 963.25 76.82C962.93 76.83 962.63 76.95 962.32 77.01C962.16 77.42 961.83 77.81 961.82 78.25C961.67 90.58 961.78 102.92 961.83 115.25C961.84 117.08 961.85 118.92 962.02 120.75C962.09 121.6 962.31 122.43 962.55 123.25C962.72 123.86 962.92 124.48 963.25 125.02C963.8 125.93 964.36 126.87 965.16 127.56C966.27 128.51 967.5 129.36 968.87 129.85C970.59 130.46 972.43 130.69 974.25 130.81C976.58 130.97 978.92 130.81 981.25 130.67C982.76 130.58 984.24 130.16 985.75 130.11C986.28 130.09 986.77 130.34 987.29 130.46C987.36 136.05 987.53 141.65 987.49 147.25C987.49 147.67 987.37 148.09 987.18 148.46C987.07 148.66 986.86 148.81 986.65 148.85C984.36 149.29 982.07 149.7 979.75 149.88C976.43 150.14 973.08 150.18 969.75 150.16C967.61 150.15 965.46 150.14 963.35 149.8C960.65 149.36 957.99 148.66 955.39 147.83C953.84 147.33 952.33 146.65 950.93 145.81C949.38 144.89 947.88 143.84 946.59 142.58C945.34 141.36 944.3 139.91 943.36 138.43C942.49 137.06 941.81 135.58 941.19 134.08C940.74 133 940.36 131.88 940.14 130.73C939.73 128.59 939.36 126.43 939.32 124.25C939.02 108.75 939.34 93.25 939.13 77.75C939.13 77.46 938.92 77.17 938.68 77.01C938.42 76.84 938.07 76.83 937.75 76.82C933.44 76.76 929.13 77.01 924.83 76.81C924.52 76.8 924.24 76.48 924.13 76.19C923.95 75.74 924 75.23 924 74.75C923.96 70.25 923.88 65.75 924 61.25C924.01 60.67 924.26 60.12 924.39 59.55C924.68 59.47 924.95 59.31 925.25 59.31C929.55 59.23 933.86 59.49 938.16 59.3C938.5 59.29 938.72 58.91 939 58.72C939.05 51.23 938.99 43.74 939.17 36.25C939.18 35.78 939.43 35.35 939.56 34.9Z M266.45 57.24C270.04 56.97 273.65 56.81 277.25 56.99C280.06 57.14 282.85 57.58 285.59 58.21C287.5 58.64 289.32 59.39 291.13 60.14C292.62 60.76 294.07 61.49 295.46 62.31C296.9 63.16 298.35 64.03 299.6 65.13C301.82 67.08 303.96 69.14 305.84 71.42C307.37 73.28 308.66 75.34 309.77 77.47C311 79.84 312 82.34 312.83 84.88C313.68 87.5 314.33 90.19 314.78 92.91C315.16 95.17 315.22 97.47 315.31 99.75C315.39 101.92 315.35 104.08 315.31 106.25C315.28 107.25 315.36 108.28 315.09 109.25C314.99 109.64 314.65 110.11 314.25 110.12C294.25 110.42 274.25 110.13 254.25 110.17C253.97 110.17 253.67 110.1 253.42 110.22C253.12 110.36 252.94 110.68 252.7 110.9C252.84 112.02 252.87 113.15 253.12 114.25C253.4 115.52 253.72 116.81 254.27 117.99C255.09 119.76 256.06 121.47 257.19 123.05C257.95 124.11 258.93 125.02 259.92 125.87C260.72 126.57 261.62 127.15 262.54 127.69C263.29 128.13 264.08 128.51 264.9 128.8C266.04 129.21 267.19 129.68 268.39 129.79C271.17 130.06 273.97 130.18 276.75 129.95C278.52 129.8 280.27 129.32 281.9 128.65C283.58 127.95 285.12 126.94 286.6 125.88C287.47 125.25 288.23 124.45 288.91 123.61C289.8 122.48 290.41 121.15 291.29 120.01C291.57 119.66 292 119.45 292.35 119.17C298.43 120.85 304.53 122.45 310.59 124.2C311.7 124.52 312.77 125 313.87 125.4C313.81 125.92 313.93 126.5 313.7 126.98C312.58 129.27 311.3 131.49 309.87 133.6C308.67 135.36 307.3 137.02 305.83 138.57C304.69 139.77 303.39 140.83 302.07 141.84C300.65 142.93 299.16 143.96 297.62 144.88C295.82 145.94 293.97 146.96 292.04 147.77C290.11 148.6 288.09 149.22 286.06 149.78C284.43 150.23 282.77 150.66 281.09 150.78C277.32 151.06 273.52 151.17 269.75 150.97C267.11 150.83 264.47 150.43 261.91 149.78C258.99 149.05 256.15 148.03 253.39 146.83C251.49 146.01 249.71 144.9 247.99 143.74C246.1 142.48 244.31 141.06 242.58 139.58C241.45 138.61 240.41 137.53 239.42 136.41C238.31 135.16 237.2 133.89 236.28 132.5C234.79 130.26 233.4 127.96 232.22 125.55C231.37 123.8 230.77 121.93 230.2 120.08C229.71 118.5 229.37 116.87 229.05 115.25C228.76 113.76 228.52 112.26 228.37 110.75C228.19 108.92 228.09 107.09 228.07 105.25C228.05 103.52 228.11 101.79 228.26 100.07C228.47 97.79 228.69 95.49 229.16 93.25C229.71 90.64 230.36 88.04 231.31 85.55C232.37 82.74 233.7 80.03 235.16 77.41C236.03 75.83 237.15 74.41 238.26 72.99C239.22 71.78 240.29 70.66 241.37 69.56C242.42 68.48 243.49 67.41 244.67 66.46C246.17 65.26 247.73 64.12 249.38 63.12C251.17 62.04 253.06 61.11 254.96 60.23C255.9 59.79 256.9 59.5 257.88 59.18C259.01 58.81 260.15 58.43 261.31 58.16C263.01 57.78 264.71 57.36 266.45 57.24Z M443.45 57.24C447.04 56.97 450.65 56.82 454.25 56.99C456.92 57.13 459.58 57.57 462.18 58.16C464.22 58.62 466.19 59.36 468.13 60.14C469.63 60.75 471.07 61.49 472.46 62.31C473.9 63.17 475.33 64.05 476.59 65.15C478.72 67 480.77 68.96 482.57 71.13C484.18 73.08 485.59 75.23 486.77 77.47C488.02 79.83 489.03 82.33 489.82 84.88C490.72 87.78 491.45 90.76 491.82 93.78C492.29 97.58 492.25 101.42 492.31 105.25C492.33 106.59 492.35 107.94 492.07 109.25C491.98 109.64 491.65 110.11 491.25 110.12C471.25 110.42 451.25 110.09 431.25 110.17C430.85 110.17 430.43 110.2 430.07 110.36C429.87 110.45 429.66 110.65 429.66 110.86C429.68 112.16 429.86 113.46 430.14 114.72C430.39 115.86 430.71 117 431.23 118.04C432.15 119.91 433.15 121.76 434.42 123.41C435.42 124.7 436.65 125.81 437.97 126.77C439.17 127.63 440.53 128.25 441.89 128.82C442.89 129.24 443.94 129.62 445.02 129.73C447.75 130.01 450.51 130.17 453.25 129.98C455.06 129.86 456.87 129.45 458.56 128.78C460.36 128.07 462.01 126.99 463.6 125.88C464.48 125.25 465.23 124.45 465.91 123.61C466.8 122.48 467.41 121.15 468.29 120.01C468.57 119.66 469 119.45 469.35 119.17C475.43 120.84 481.53 122.44 487.59 124.2C488.69 124.52 489.75 125.01 490.83 125.41C490.83 125.81 490.97 126.24 490.82 126.61C489.97 128.67 489 130.69 487.84 132.59C486.98 134.01 485.92 135.32 484.79 136.53C483.11 138.34 481.34 140.07 479.44 141.63C477.94 142.86 476.28 143.89 474.62 144.88C472.81 145.94 470.97 146.96 469.04 147.77C467.11 148.6 465.09 149.22 463.06 149.78C461.43 150.23 459.77 150.66 458.09 150.78C454.32 151.06 450.52 151.17 446.75 150.97C444.11 150.83 441.47 150.43 438.91 149.78C435.99 149.05 433.1 148.1 430.36 146.86C427.93 145.75 425.71 144.22 423.47 142.78C422.45 142.12 421.49 141.38 420.6 140.57C419.14 139.26 417.71 137.89 416.42 136.42C414.92 134.7 413.5 132.92 412.25 131.02C411.09 129.28 410.1 127.44 409.22 125.55C408.4 123.8 407.76 121.96 407.18 120.12C406.73 118.69 406.39 117.22 406.11 115.75C405.75 113.82 405.44 111.88 405.26 109.93C405.09 108.04 405.08 106.14 405.07 104.25C405.07 102.81 405.09 101.37 405.24 99.94C405.47 97.56 405.71 95.17 406.2 92.82C406.68 90.47 407.29 88.12 408.15 85.87C409.28 82.96 410.65 80.14 412.16 77.41C413.03 75.83 414.15 74.41 415.26 72.99C416.28 71.71 417.38 70.49 418.53 69.32C419.52 68.31 420.56 67.34 421.67 66.46C423.18 65.27 424.73 64.12 426.38 63.12C428.17 62.04 430.06 61.11 431.96 60.23C432.9 59.79 433.89 59.49 434.88 59.17C436.01 58.8 437.14 58.43 438.31 58.16C440.01 57.78 441.71 57.36 443.45 57.24Z M708.44 57.23C710.04 57.02 711.64 56.93 713.25 56.93C716.22 56.92 719.19 56.94 722.15 57.21C723.81 57.37 725.44 57.8 727.05 58.22C728.07 58.48 729.05 58.86 730.02 59.25C731.55 59.86 733.11 60.42 734.55 61.22C736.65 62.39 738.76 63.59 740.59 65.15C743.19 67.37 745.54 69.88 747.77 72.47C748.94 73.84 749.87 75.41 750.75 76.98C751.86 78.93 752.89 80.93 753.73 83.01C754.57 85.08 755.22 87.23 755.8 89.39C756.24 91.05 756.57 92.74 756.77 94.44C757.13 97.53 757.45 100.64 757.46 103.75C757.47 106.92 757.21 110.1 756.85 113.25C756.65 115.05 756.2 116.82 755.79 118.59C755.52 119.77 755.21 120.96 754.8 122.1C754.17 123.91 753.56 125.74 752.68 127.44C751.22 130.24 749.58 132.95 747.82 135.57C747.02 136.75 746.03 137.79 745.04 138.81C743.63 140.25 742.17 141.64 740.61 142.91C739.33 143.97 737.94 144.89 736.54 145.78C735.41 146.5 734.25 147.21 733.02 147.75C731.24 148.54 729.4 149.22 727.53 149.76C725.79 150.25 724.02 150.68 722.22 150.82C718.74 151.09 715.24 151.17 711.75 150.97C709.28 150.83 706.83 150.38 704.43 149.79C702.53 149.32 700.69 148.6 698.89 147.83C697.89 147.39 697.05 146.65 696.07 146.17C695.86 146.07 695.59 146.13 695.35 146.1C695.21 146.48 694.92 146.84 694.92 147.25C694.75 160.71 695.02 174.17 694.84 187.63C694.84 187.86 694.56 188.03 694.35 188.12C694.01 188.27 693.62 188.31 693.25 188.31C686.53 188.34 679.8 188.45 673.08 188.21C672.72 188.19 672.43 187.84 672.24 187.54C672.1 187.32 672.16 187.01 672.16 186.75C672.15 144.63 672 102.5 672.21 60.38C672.21 60.03 672.52 59.72 672.81 59.52C673.08 59.34 673.43 59.33 673.75 59.33C679.42 59.26 685.09 59.14 690.75 59.31C691.17 59.32 691.5 59.67 691.88 59.86L692.15 63.2L692.75 63.53C693.99 62.76 695.18 61.91 696.47 61.23C697.91 60.47 699.41 59.81 700.92 59.19C701.89 58.8 702.87 58.44 703.88 58.18C705.38 57.79 706.9 57.44 708.44 57.23Z M801.07 57.26C802.79 57.05 804.52 56.93 806.25 56.93C809.85 56.92 813.46 56.95 817.05 57.24C819.05 57.4 821.04 57.75 822.98 58.27C825.92 59.05 828.85 59.93 831.64 61.14C833.41 61.91 835.03 63.02 836.57 64.18C837.8 65.12 838.89 66.23 839.91 67.4C841 68.64 841.98 69.99 842.88 71.38C843.61 72.52 844.2 73.74 844.78 74.95C845.17 75.75 845.54 76.57 845.79 77.43C846.22 78.85 846.67 80.29 846.82 81.77C847.24 85.91 847.46 90.08 847.51 94.25C847.69 111.75 847.58 129.25 847.51 146.75C847.51 147.18 847.45 147.63 847.27 148.03C847.17 148.25 846.96 148.5 846.72 148.5C840.6 148.65 834.48 148.48 828.36 148.47C828.19 148.06 827.88 147.69 827.85 147.25C827.68 144.47 827.8 141.68 827.78 138.9L827.34 138.65C827.03 138.82 826.68 138.92 826.42 139.15C824.38 140.92 822.52 142.92 820.43 144.64C819.41 145.49 818.26 146.2 817.09 146.84C815.68 147.61 814.21 148.3 812.71 148.89C811.59 149.32 810.42 149.63 809.25 149.88C807.27 150.31 805.27 150.75 803.25 150.93C800.76 151.15 798.25 151.11 795.75 151.07C794 151.04 792.23 151.06 790.51 150.74C788.24 150.32 786 149.72 783.87 148.86C781.94 148.08 780.12 147.03 778.41 145.85C776.85 144.76 775.47 143.42 774.13 142.08C773.37 141.33 772.73 140.48 772.13 139.6C771.45 138.6 770.8 137.56 770.32 136.45C769.49 134.55 768.73 132.61 768.2 130.61C767.86 129.32 767.84 127.96 767.72 126.63C767.63 125.67 767.55 124.71 767.59 123.75C767.71 121.44 767.73 119.1 768.2 116.84C768.64 114.67 769.45 112.58 770.31 110.54C770.78 109.42 771.43 108.38 772.15 107.41C772.99 106.27 773.97 105.23 774.97 104.22C775.73 103.46 776.53 102.75 777.4 102.13C778.87 101.08 780.34 100.02 781.95 99.22C784.36 98.03 786.85 96.98 789.41 96.2C793.49 94.96 797.63 93.95 801.82 93.18C809.2 91.81 816.69 91.08 824.09 89.79C824.43 89.73 824.62 89.36 824.89 89.15C824.87 88.37 825 87.58 824.84 86.82C824.63 85.82 824.31 84.82 823.78 83.95C822.99 82.66 822.1 81.36 820.91 80.41C819.64 79.4 818.1 78.74 816.57 78.21C815.35 77.79 814.04 77.69 812.75 77.59C810.76 77.44 808.75 77.33 806.75 77.45C805.31 77.55 803.87 77.84 802.49 78.25C800.76 78.77 799.04 79.36 797.47 80.23C796.22 80.93 795.04 81.83 794.11 82.92C792.94 84.29 792.36 86.08 791.27 87.51C791.04 87.81 790.61 88.08 790.25 87.99C784.58 86.49 779 84.64 773.43 82.79C772.6 82.52 771.86 82.03 771.07 81.65C771.12 81.08 771.04 80.48 771.22 79.94C771.74 78.38 772.35 76.83 773.16 75.4C774.34 73.31 775.68 71.3 777.16 69.42C778.11 68.2 779.23 67.12 780.42 66.13C782.15 64.69 784 63.37 785.9 62.14C787.03 61.4 788.24 60.77 789.49 60.26C791.44 59.47 793.44 58.77 795.47 58.24C797.31 57.77 799.19 57.49 801.07 57.26Z M1028.58 57.29C1030.46 57.06 1032.36 56.93 1034.25 56.93C1037.52 56.92 1040.79 56.95 1044.05 57.24C1045.89 57.4 1047.73 57.73 1049.51 58.26C1052.25 59.06 1054.95 60.03 1057.56 61.21C1059.33 62.01 1061.05 62.98 1062.59 64.15C1064.47 65.58 1066.13 67.29 1067.78 68.97C1068.53 69.73 1069.18 70.58 1069.77 71.47C1070.52 72.58 1071.26 73.72 1071.78 74.95C1072.61 76.87 1073.25 78.87 1073.8 80.89C1073.96 81.48 1073.98 82.11 1073.91 82.72C1073.89 82.95 1073.72 83.16 1073.54 83.3C1073.32 83.47 1073.03 83.57 1072.75 83.62C1065.76 84.89 1058.75 86.04 1051.75 87.25C1051.54 87.06 1051.24 86.93 1051.12 86.67C1050.57 85.47 1050.4 84.11 1049.78 82.95C1049.22 81.91 1048.46 80.95 1047.6 80.13C1046.83 79.38 1045.9 78.83 1044.97 78.31C1044.2 77.87 1043.37 77.5 1042.52 77.25C1041.06 76.81 1039.57 76.41 1038.05 76.24C1036.3 76.04 1034.51 75.97 1032.75 76.14C1031.12 76.3 1029.48 76.62 1027.96 77.23C1026.85 77.67 1025.83 78.4 1024.99 79.25C1024.23 80.01 1023.55 80.94 1023.24 81.97C1022.93 82.98 1022.99 84.11 1023.17 85.16C1023.3 85.87 1023.71 86.51 1024.16 87.07C1024.68 87.72 1025.35 88.23 1026.03 88.7C1026.64 89.11 1027.33 89.42 1028.03 89.7C1029.96 90.46 1031.9 91.22 1033.89 91.8C1040.44 93.71 1047.12 95.15 1053.63 97.17C1056.18 97.96 1058.62 99.1 1061.05 100.21C1062.28 100.77 1063.5 101.37 1064.59 102.16C1066.42 103.47 1068.17 104.89 1069.78 106.47C1070.63 107.31 1071.29 108.32 1071.91 109.35C1072.61 110.53 1073.29 111.75 1073.71 113.05C1074.3 114.9 1074.77 116.81 1074.93 118.75C1075.13 121.22 1075.02 123.72 1074.79 126.19C1074.65 127.7 1074.3 129.19 1073.83 130.63C1073.29 132.32 1072.58 133.96 1071.77 135.53C1071.16 136.72 1070.45 137.87 1069.57 138.87C1068.02 140.63 1066.31 142.24 1064.53 143.77C1063.62 144.55 1062.57 145.17 1061.53 145.77C1060.24 146.51 1058.93 147.24 1057.55 147.78C1055.45 148.59 1053.31 149.33 1051.11 149.8C1048.36 150.4 1045.56 150.83 1042.75 150.98C1038.59 151.2 1034.41 151.18 1030.25 150.9C1028 150.75 1025.81 150.16 1023.61 149.68C1022.41 149.42 1021.23 149.09 1020.08 148.68C1018.51 148.12 1016.95 147.52 1015.45 146.78C1014.25 146.19 1013.12 145.47 1012.01 144.71C1010.64 143.77 1009.26 142.8 1008.03 141.68C1006.64 140.41 1005.28 139.09 1004.17 137.57C1002.67 135.51 1001.34 133.32 1000.25 131.02C999.35 129.12 998.75 127.07 998.24 125.03C998.02 124.15 998.13 123.22 998.07 122.32C998.35 122.11 998.56 121.76 998.89 121.7C1005.82 120.51 1012.78 119.46 1019.75 118.59C1020.11 118.54 1020.57 118.65 1020.76 118.96C1021.44 120.05 1021.58 121.42 1022.22 122.55C1023.03 123.99 1023.97 125.38 1025.08 126.6C1025.89 127.49 1026.88 128.21 1027.91 128.84C1029.17 129.61 1030.47 130.39 1031.9 130.8C1033.96 131.4 1036.11 131.63 1038.25 131.83C1039.47 131.95 1040.71 131.89 1041.93 131.74C1043.22 131.58 1044.53 131.36 1045.74 130.89C1047.1 130.37 1048.49 129.79 1049.56 128.81C1050.54 127.91 1051.19 126.66 1051.69 125.43C1052.02 124.59 1051.99 123.65 1052 122.75C1052.01 122 1051.98 121.22 1051.73 120.5C1051.49 119.8 1051.05 119.17 1050.57 118.6C1050.14 118.07 1049.64 117.56 1049.03 117.23C1047.49 116.39 1045.87 115.66 1044.19 115.14C1037.81 113.18 1031.28 111.74 1024.89 109.8C1022.17 108.98 1019.49 107.98 1016.87 106.86C1014.83 105.98 1012.83 104.98 1010.93 103.81C1009.52 102.94 1008.2 101.9 1006.98 100.77C1005.94 99.81 1005 98.72 1004.18 97.57C1003.41 96.47 1002.7 95.3 1002.23 94.04C1001.64 92.5 1001.16 90.89 1001.02 89.25C1000.77 86.26 1000.8 83.24 1001.07 80.25C1001.21 78.62 1001.71 77.03 1002.25 75.49C1002.75 74.07 1003.45 72.73 1004.16 71.41C1004.51 70.76 1004.96 70.17 1005.43 69.6C1006.61 68.17 1007.75 66.68 1009.12 65.42C1010.44 64.21 1011.9 63.11 1013.47 62.23C1015.65 61.01 1017.99 60.08 1020.31 59.14C1021.31 58.73 1022.36 58.44 1023.41 58.21C1025.12 57.83 1026.84 57.49 1028.58 57.29Z M549.07 59.26C551.95 59.03 554.86 59.13 557.75 59.12C558.01 59.12 558.29 59.13 558.52 59.25C558.72 59.36 558.95 59.56 558.95 59.79C559.15 66.27 559.35 72.77 559.13 79.25C559.11 79.64 558.64 80.01 558.25 80.03C556.91 80.1 555.59 79.57 554.25 79.52C552.75 79.45 551.25 79.55 549.75 79.67C548.59 79.77 547.44 79.9 546.31 80.16C545.17 80.42 544.04 80.77 542.96 81.23C541.59 81.81 540.25 82.47 538.98 83.25C537.97 83.87 537 84.6 536.15 85.43C535.06 86.5 534.04 87.67 533.19 88.94C532.36 90.16 531.73 91.51 531.14 92.87C530.73 93.82 530.39 94.81 530.18 95.83C529.84 97.45 529.54 99.09 529.51 100.75C529.31 116.08 529.59 131.42 529.51 146.75C529.51 147.18 529.35 147.6 529.27 148.03C528.76 148.25 528.3 148.68 527.75 148.69C520.96 148.82 514.16 148.54 507.36 148.47C507.18 147.9 506.83 147.35 506.83 146.75C506.65 118.25 506.75 89.75 506.83 61.25C506.83 60.77 506.98 60.31 507.06 59.83C507.46 59.66 507.82 59.32 508.25 59.31C513.75 59.15 519.25 59.22 524.75 59.31C525.21 59.32 525.65 59.51 526.11 59.61C526.3 60.16 526.65 60.67 526.69 61.25C526.87 64.67 526.72 68.11 526.74 71.54L527.63 71.99C528.81 70.47 529.81 68.8 531.16 67.43C532.42 66.16 533.87 65.08 535.38 64.12C537.15 63 539.05 62.09 540.96 61.23C541.92 60.79 542.95 60.49 543.97 60.24C545.65 59.84 547.35 59.4 549.07 59.26Z M905.95 59.24C908.71 59 911.48 59.08 914.25 59.11C914.66 59.11 915.09 59.16 915.47 59.33C915.66 59.42 915.83 59.64 915.83 59.86C915.95 66.44 915.83 73.02 915.83 79.61C915.47 79.74 915.13 80.02 914.75 80.01C913.57 79.99 912.43 79.58 911.25 79.52C909.92 79.45 908.58 79.51 907.25 79.61C905.79 79.73 904.33 79.89 902.89 80.2C901.73 80.45 900.59 80.8 899.5 81.26C898.25 81.79 897.04 82.41 895.9 83.14C894.88 83.78 893.92 84.54 893.04 85.36C892.01 86.31 891.03 87.32 890.19 88.43C889.45 89.4 888.85 90.47 888.33 91.56C887.83 92.61 887.41 93.69 887.16 94.82C886.66 97.1 886.13 99.41 886.08 101.75C885.7 117.21 885.94 132.68 885.88 148.14C885.5 148.33 885.17 148.69 884.75 148.69C877.93 148.81 871.1 148.72 864.28 148.5C864.04 148.49 863.83 148.25 863.73 148.03C863.55 147.63 863.49 147.18 863.49 146.75C863.41 118.25 863.41 89.75 863.49 61.25C863.49 60.82 863.65 60.4 863.73 59.97C864.24 59.75 864.7 59.33 865.25 59.31C871.06 59.17 876.87 59.44 882.68 59.51C882.88 59.93 883.27 60.3 883.3 60.77C883.5 64.26 883.28 67.76 883.34 71.25C883.35 71.42 883.44 71.57 883.49 71.73L884.12 71.93C885.88 69.98 887.48 67.88 889.39 66.09C890.61 64.96 892 63.99 893.47 63.23C895.74 62.05 898.13 61.08 900.56 60.3C902.31 59.75 904.13 59.4 905.95 59.24Z M317.13 59.85C317.51 59.67 317.84 59.32 318.25 59.31C324.75 59.14 331.25 59.24 337.75 59.31C338.06 59.31 338.38 59.38 338.65 59.52C338.87 59.64 339.03 59.85 339.18 60.05C339.4 60.34 339.63 60.64 339.75 60.98C341.83 66.78 343.79 72.62 345.77 78.46C350.26 91.67 354.62 104.93 359.17 118.12C359.37 118.69 359.63 119.26 360 119.74C360.14 119.92 360.42 119.93 360.63 120.03C367.52 100.02 374.29 79.97 381.29 60C381.37 59.78 381.61 59.63 381.82 59.55C382.28 59.39 382.77 59.32 383.25 59.31C389.42 59.24 395.59 59.16 401.75 59.31C402.34 59.33 402.88 59.66 403.44 59.83C402.89 61.75 402.47 63.7 401.79 65.57C392.28 92.15 382.56 118.66 372.88 145.18C372.53 146.14 372.18 147.1 371.71 148C371.6 148.2 371.41 148.44 371.18 148.45C364.2 148.67 357.23 148.69 350.25 148.69C349.95 148.69 349.61 148.64 349.37 148.47C349.06 148.25 348.79 147.93 348.66 147.57C338.41 119.77 328.36 91.89 318.23 64.04C317.87 63.06 317.45 62.1 317.19 61.09C317.08 60.69 317.15 60.26 317.13 59.85Z M564.55 59.8C564.95 59.64 565.32 59.33 565.75 59.32C572.41 59.16 579.08 59.26 585.75 59.31C586.09 59.32 586.44 59.35 586.75 59.49C587.06 59.63 587.45 59.79 587.57 60.11C595.35 79.64 602.8 99.29 610.41 118.89C610.61 118.85 610.85 118.92 611.01 118.79C611.37 118.48 611.68 118.08 611.86 117.64C619.39 98.43 626.43 79.02 634.11 59.86C634.27 59.47 634.83 59.32 635.25 59.31C641.75 59.13 648.25 59.15 654.75 59.31C655.2 59.32 655.58 59.65 655.99 59.82C655.95 60.42 656.08 61.07 655.86 61.64C639.67 103.52 623.39 145.38 606.8 187.1C606.59 187.64 606.09 188.22 605.51 188.26C599.44 188.64 593.34 188.33 587.25 188.33C586.99 188.33 586.72 188.37 586.49 188.26C586.27 188.15 586.15 187.9 585.99 187.73C586.09 187.01 586.06 186.25 586.31 185.56C590.67 173.34 595.45 161.28 599.78 149.06C599.98 148.5 600.09 147.84 599.87 147.29C588.55 118.95 576.65 90.85 565.22 62.55C564.87 61.67 564.77 60.72 564.55 59.8Z M269.55 76.76C271.44 76.56 273.34 76.26 275.25 76.32C277.1 76.38 278.94 76.71 280.75 77.12C281.87 77.38 282.95 77.78 283.97 78.3C284.92 78.79 285.82 79.4 286.6 80.13C287.47 80.95 288.21 81.9 288.86 82.9C289.6 84.02 290.28 85.2 290.77 86.46C291.31 87.84 291.67 89.29 291.92 90.75C292.06 91.55 291.93 92.37 291.94 93.17C291.54 93.34 291.18 93.68 290.75 93.69C278.58 93.86 266.42 93.78 254.25 93.69C253.96 93.69 253.69 93.51 253.41 93.41C253.37 92.96 253.17 92.49 253.29 92.05C253.76 90.28 254.31 88.5 255.14 86.87C256.02 85.16 257.19 83.59 258.4 82.09C258.99 81.37 259.74 80.8 260.5 80.27C261.6 79.5 262.75 78.8 263.95 78.22C264.89 77.77 265.89 77.46 266.89 77.2C267.76 76.97 268.66 76.86 269.55 76.76Z M446.08 76.78C447.96 76.57 449.85 76.27 451.75 76.32C453.6 76.36 455.44 76.66 457.25 77.04C458.4 77.28 459.53 77.67 460.6 78.16C461.27 78.46 461.85 78.92 462.43 79.37C463.26 80.02 464.13 80.64 464.81 81.44C465.59 82.35 466.29 83.36 466.79 84.45C467.6 86.24 468.27 88.11 468.73 90.02C468.98 91.04 468.85 92.12 468.91 93.16C468.52 93.34 468.17 93.68 467.75 93.69C455.58 93.86 443.42 93.78 431.25 93.69C430.95 93.69 430.69 93.51 430.41 93.42C430.35 92.94 430.15 92.45 430.24 91.96C430.46 90.8 430.86 89.66 431.33 88.56C431.86 87.32 432.53 86.13 433.24 84.98C433.79 84.07 434.4 83.19 435.1 82.39C435.8 81.59 436.57 80.82 437.43 80.19C438.41 79.47 439.5 78.89 440.59 78.36C441.52 77.91 442.48 77.53 443.47 77.24C444.32 77 445.2 76.88 446.08 76.78Z M706.97 77.24C708.36 76.9 709.82 76.93 711.25 76.93C713.04 76.92 714.84 76.94 716.61 77.21C717.92 77.41 719.21 77.81 720.44 78.32C721.56 78.79 722.62 79.42 723.6 80.13C724.75 80.97 725.84 81.91 726.8 82.97C727.91 84.2 728.91 85.55 729.75 86.98C730.58 88.39 731.22 89.91 731.78 91.44C732.24 92.71 732.57 94.03 732.8 95.36C733.18 97.47 733.43 99.61 733.62 101.75C733.72 102.91 733.76 104.09 733.67 105.25C733.48 107.87 733.3 110.51 732.78 113.09C732.36 115.16 731.68 117.18 730.86 119.13C730.24 120.59 729.47 122 728.5 123.26C727.3 124.84 725.94 126.32 724.41 127.58C723.26 128.52 721.92 129.2 720.56 129.79C719.35 130.31 718.06 130.68 716.75 130.87C715.1 131.11 713.42 131.09 711.75 131.07C710.33 131.05 708.9 130.98 707.49 130.75C706.42 130.57 705.36 130.28 704.36 129.85C703.13 129.33 702 128.62 700.86 127.92C700.24 127.53 699.6 127.13 699.09 126.6C698.05 125.49 697.06 124.31 696.25 123.02C695.45 121.74 694.83 120.35 694.29 118.94C693.78 117.58 693.41 116.17 693.13 114.75C692.7 112.6 692.34 110.43 692.16 108.25C691.99 106.09 691.94 103.91 692.08 101.75C692.28 98.76 692.68 95.78 693.18 92.83C693.38 91.65 693.75 90.5 694.17 89.39C694.76 87.87 695.34 86.33 696.21 84.95C697.1 83.54 698.22 82.27 699.4 81.09C700.14 80.34 701.01 79.69 701.95 79.21C703.55 78.39 705.23 77.67 706.97 77.24Z M821.58 108.3C822.46 108.15 823.36 108.11 824.25 108.01C824.49 108.26 824.94 108.41 824.96 108.75C825.12 110.71 825.01 112.69 824.79 114.65C824.62 116.16 824.21 117.64 823.8 119.11C823.56 119.96 823.26 120.82 822.84 121.6C822.27 122.66 821.64 123.69 820.85 124.59C819.53 126.1 818.15 127.59 816.57 128.82C815.03 130.01 813.29 130.91 811.55 131.78C810.62 132.24 809.61 132.59 808.59 132.79C807 133.11 805.37 133.32 803.75 133.32C801.45 133.33 799.14 133.21 796.88 132.82C795.87 132.65 794.91 132.2 794.06 131.64C792.98 130.93 792.04 130.01 791.16 129.07C790.75 128.64 790.43 128.11 790.22 127.55C789.94 126.77 789.76 125.94 789.71 125.11C789.63 123.97 789.57 122.81 789.81 121.7C790.07 120.55 790.53 119.42 791.19 118.43C791.78 117.56 792.62 116.85 793.47 116.23C794.55 115.44 795.73 114.77 796.95 114.22C798.72 113.42 800.53 112.73 802.39 112.2C805.19 111.39 808.04 110.78 810.89 110.2C814.44 109.48 818.01 108.88 821.58 108.3Z"></path></svg>`;
+  const LOGO_WHITE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 208" fill="none" role="img" aria-label="everyparts"><path fill="#FFFFFF" fill-rule="evenodd" clip-rule="evenodd" d="M92.48 2.25C94.06 2.02 95.66 1.95 97.25 1.95C98.72 1.94 100.21 1.91 101.65 2.2C103.86 2.65 106.16 3.05 108.13 4.14C131.51 17.07 154.62 30.49 177.57 44.18C179.29 45.21 180.59 46.81 182.02 48.22C182.7 48.89 183.31 49.63 183.87 50.4C184.57 51.37 185.23 52.39 185.78 53.45C186.54 54.9 187.24 56.39 187.8 57.92C188.26 59.18 188.58 60.5 188.82 61.81C189 62.78 189.05 63.77 189.07 64.75C189.13 69.92 189.24 75.09 189.06 80.25C189.04 80.78 188.68 81.23 188.49 81.72C181.33 81.39 174.15 81.46 167.02 80.74C164.72 80.5 162.51 79.69 160.36 78.86C158.29 78.05 156.35 76.93 154.41 75.84C153.36 75.26 152.35 74.59 151.41 73.85C148.41 71.5 145.43 69.11 142.59 66.58C138.81 63.22 135.34 59.53 131.56 56.19C129.96 54.77 128.28 53.44 126.46 52.31C125.07 51.45 123.53 50.82 121.99 50.27C120.69 49.8 119.34 49.46 117.97 49.27C115.08 48.87 112.17 48.54 109.25 48.53C107.27 48.52 105.31 48.87 103.36 49.2C102.02 49.43 100.7 49.79 99.41 50.21C97.57 50.8 95.75 51.48 93.96 52.23C91.76 53.15 89.55 54.07 87.45 55.22C83.39 57.43 79.41 59.8 75.51 62.28C73.08 63.81 70.76 65.5 68.47 67.23C66.77 68.52 65.08 69.85 63.53 71.32C62.34 72.45 61.28 73.71 60.29 75.01C59.84 75.6 59.44 76.24 59.22 76.95C58.79 78.34 58.44 79.79 58.36 81.25C58.3 82.14 58.62 83.01 58.81 83.88C58.87 84.13 58.94 84.41 59.12 84.6C59.28 84.76 59.53 84.88 59.75 84.84C72.44 82.72 85.07 80.3 97.75 78.13C98.74 77.97 99.75 77.83 100.75 77.83C101.71 77.84 102.71 77.84 103.61 78.18C104.86 78.64 105.99 79.38 107.07 80.16C107.74 80.65 108.31 81.29 108.81 81.95C109.89 83.39 110.95 84.86 111.79 86.45C112.62 88.03 113.27 89.72 113.79 91.43C114.62 94.17 115.31 96.95 115.82 99.77C116.21 101.9 116.35 104.08 116.47 106.25C116.54 107.42 116.48 108.59 116.39 109.75C116.27 111.23 116.13 112.72 115.82 114.18C115.61 115.19 115.27 116.18 114.83 117.12C114.26 118.32 113.59 119.48 112.82 120.57C112.28 121.32 111.64 122.02 110.91 122.6C109.87 123.43 108.73 124.16 107.55 124.79C106.74 125.21 105.88 125.55 104.98 125.74C93.98 128.02 82.88 129.86 71.89 132.2C70.92 132.41 70.06 132.97 69.14 133.36C69.16 133.59 69.1 133.85 69.2 134.06C69.81 135.25 70.42 136.46 71.23 137.53C72.07 138.65 73.04 139.69 74.13 140.57C75.63 141.78 77.27 142.84 78.96 143.78C80.4 144.57 81.92 145.24 83.49 145.75C86.07 146.58 88.69 147.32 91.36 147.8C94.63 148.4 97.93 148.84 101.25 148.98C106.58 149.2 111.92 149.16 117.25 148.89C119.42 148.78 121.6 148.42 123.69 147.84C126.55 147.04 129.35 146 132.05 144.78C133.82 143.99 135.44 142.88 137.07 141.81C138.96 140.57 140.83 139.28 142.58 137.84C146.3 134.75 149.75 131.33 153.47 128.22C154.39 127.45 155.41 126.79 156.47 126.23C157.92 125.46 159.43 124.8 160.98 124.25C162.26 123.79 163.57 123.43 164.91 123.22C166.34 122.99 167.8 122.9 169.25 122.93C175.39 123.07 181.52 123.28 187.65 123.72C188.12 123.75 188.5 124.13 188.93 124.33C188.98 130.47 189.12 136.61 189.07 142.75C189.06 144.01 188.96 145.27 188.75 146.51C188.54 147.73 188.22 148.94 187.8 150.1C187.25 151.64 186.6 153.15 185.84 154.59C185.29 155.65 184.62 156.67 183.87 157.6C182.68 159.07 181.43 160.51 180.03 161.78C178.8 162.9 177.42 163.86 176.02 164.75C173.25 166.52 170.38 168.12 167.53 169.77C149.04 180.46 130.61 191.24 112.02 201.75C109.96 202.92 107.84 204.05 105.59 204.8C103.55 205.47 101.39 205.82 99.25 205.98C97 206.14 94.72 206.01 92.48 205.75C91.11 205.6 89.78 205.21 88.48 204.75C86.93 204.21 85.39 203.59 83.96 202.77C61.9 190.23 39.96 177.47 18.02 164.7C17.1 164.17 16.23 163.55 15.4 162.87C14.56 162.19 13.75 161.46 13.03 160.65C11.7 159.17 10.29 157.72 9.25 156.02C8 154 7.02 151.81 6.2 149.59C5.67 148.15 5.46 146.61 5.21 145.1C5.06 144.16 5.01 143.2 5 142.25C4.94 116.58 4.94 90.92 5.02 65.25C5.02 64.32 5.09 63.39 5.25 62.47C5.48 61.11 5.83 59.76 6.21 58.43C6.46 57.56 6.75 56.69 7.14 55.87C7.77 54.54 8.49 53.25 9.26 51.99C9.81 51.09 10.42 50.21 11.1 49.4C11.79 48.56 12.58 47.8 13.35 47.03C14.01 46.37 14.67 45.7 15.4 45.13C16.34 44.39 17.32 43.7 18.35 43.09C40.17 30.39 62.01 17.71 83.95 5.22C85.38 4.41 86.9 3.76 88.44 3.22C89.75 2.76 91.11 2.45 92.48 2.25Z M939.56 34.9C940.12 34.76 940.67 34.51 941.25 34.49C947.42 34.37 953.58 34.37 959.75 34.49C960.33 34.51 960.88 34.76 961.44 34.9C961.57 35.35 961.83 35.78 961.83 36.25C961.95 43.42 961.77 50.58 961.82 57.75C961.83 58.08 961.87 58.41 962.01 58.71C962.11 58.93 962.27 59.23 962.51 59.24C970.26 59.43 978.01 59.08 985.75 59.31C986.3 59.33 986.76 59.75 987.27 59.97C987.35 64.9 987.49 69.82 987.51 74.75C987.51 75.21 987.48 75.67 987.34 76.11C987.27 76.32 987.13 76.6 986.91 76.61C979.03 76.84 971.14 76.69 963.25 76.82C962.93 76.83 962.63 76.95 962.32 77.01C962.16 77.42 961.83 77.81 961.82 78.25C961.67 90.58 961.78 102.92 961.83 115.25C961.84 117.08 961.85 118.92 962.02 120.75C962.09 121.6 962.31 122.43 962.55 123.25C962.72 123.86 962.92 124.48 963.25 125.02C963.8 125.93 964.36 126.87 965.16 127.56C966.27 128.51 967.5 129.36 968.87 129.85C970.59 130.46 972.43 130.69 974.25 130.81C976.58 130.97 978.92 130.81 981.25 130.67C982.76 130.58 984.24 130.16 985.75 130.11C986.28 130.09 986.77 130.34 987.29 130.46C987.36 136.05 987.53 141.65 987.49 147.25C987.49 147.67 987.37 148.09 987.18 148.46C987.07 148.66 986.86 148.81 986.65 148.85C984.36 149.29 982.07 149.7 979.75 149.88C976.43 150.14 973.08 150.18 969.75 150.16C967.61 150.15 965.46 150.14 963.35 149.8C960.65 149.36 957.99 148.66 955.39 147.83C953.84 147.33 952.33 146.65 950.93 145.81C949.38 144.89 947.88 143.84 946.59 142.58C945.34 141.36 944.3 139.91 943.36 138.43C942.49 137.06 941.81 135.58 941.19 134.08C940.74 133 940.36 131.88 940.14 130.73C939.73 128.59 939.36 126.43 939.32 124.25C939.02 108.75 939.34 93.25 939.13 77.75C939.13 77.46 938.92 77.17 938.68 77.01C938.42 76.84 938.07 76.83 937.75 76.82C933.44 76.76 929.13 77.01 924.83 76.81C924.52 76.8 924.24 76.48 924.13 76.19C923.95 75.74 924 75.23 924 74.75C923.96 70.25 923.88 65.75 924 61.25C924.01 60.67 924.26 60.12 924.39 59.55C924.68 59.47 924.95 59.31 925.25 59.31C929.55 59.23 933.86 59.49 938.16 59.3C938.5 59.29 938.72 58.91 939 58.72C939.05 51.23 938.99 43.74 939.17 36.25C939.18 35.78 939.43 35.35 939.56 34.9Z M266.45 57.24C270.04 56.97 273.65 56.81 277.25 56.99C280.06 57.14 282.85 57.58 285.59 58.21C287.5 58.64 289.32 59.39 291.13 60.14C292.62 60.76 294.07 61.49 295.46 62.31C296.9 63.16 298.35 64.03 299.6 65.13C301.82 67.08 303.96 69.14 305.84 71.42C307.37 73.28 308.66 75.34 309.77 77.47C311 79.84 312 82.34 312.83 84.88C313.68 87.5 314.33 90.19 314.78 92.91C315.16 95.17 315.22 97.47 315.31 99.75C315.39 101.92 315.35 104.08 315.31 106.25C315.28 107.25 315.36 108.28 315.09 109.25C314.99 109.64 314.65 110.11 314.25 110.12C294.25 110.42 274.25 110.13 254.25 110.17C253.97 110.17 253.67 110.1 253.42 110.22C253.12 110.36 252.94 110.68 252.7 110.9C252.84 112.02 252.87 113.15 253.12 114.25C253.4 115.52 253.72 116.81 254.27 117.99C255.09 119.76 256.06 121.47 257.19 123.05C257.95 124.11 258.93 125.02 259.92 125.87C260.72 126.57 261.62 127.15 262.54 127.69C263.29 128.13 264.08 128.51 264.9 128.8C266.04 129.21 267.19 129.68 268.39 129.79C271.17 130.06 273.97 130.18 276.75 129.95C278.52 129.8 280.27 129.32 281.9 128.65C283.58 127.95 285.12 126.94 286.6 125.88C287.47 125.25 288.23 124.45 288.91 123.61C289.8 122.48 290.41 121.15 291.29 120.01C291.57 119.66 292 119.45 292.35 119.17C298.43 120.85 304.53 122.45 310.59 124.2C311.7 124.52 312.77 125 313.87 125.4C313.81 125.92 313.93 126.5 313.7 126.98C312.58 129.27 311.3 131.49 309.87 133.6C308.67 135.36 307.3 137.02 305.83 138.57C304.69 139.77 303.39 140.83 302.07 141.84C300.65 142.93 299.16 143.96 297.62 144.88C295.82 145.94 293.97 146.96 292.04 147.77C290.11 148.6 288.09 149.22 286.06 149.78C284.43 150.23 282.77 150.66 281.09 150.78C277.32 151.06 273.52 151.17 269.75 150.97C267.11 150.83 264.47 150.43 261.91 149.78C258.99 149.05 256.15 148.03 253.39 146.83C251.49 146.01 249.71 144.9 247.99 143.74C246.1 142.48 244.31 141.06 242.58 139.58C241.45 138.61 240.41 137.53 239.42 136.41C238.31 135.16 237.2 133.89 236.28 132.5C234.79 130.26 233.4 127.96 232.22 125.55C231.37 123.8 230.77 121.93 230.2 120.08C229.71 118.5 229.37 116.87 229.05 115.25C228.76 113.76 228.52 112.26 228.37 110.75C228.19 108.92 228.09 107.09 228.07 105.25C228.05 103.52 228.11 101.79 228.26 100.07C228.47 97.79 228.69 95.49 229.16 93.25C229.71 90.64 230.36 88.04 231.31 85.55C232.37 82.74 233.7 80.03 235.16 77.41C236.03 75.83 237.15 74.41 238.26 72.99C239.22 71.78 240.29 70.66 241.37 69.56C242.42 68.48 243.49 67.41 244.67 66.46C246.17 65.26 247.73 64.12 249.38 63.12C251.17 62.04 253.06 61.11 254.96 60.23C255.9 59.79 256.9 59.5 257.88 59.18C259.01 58.81 260.15 58.43 261.31 58.16C263.01 57.78 264.71 57.36 266.45 57.24Z M443.45 57.24C447.04 56.97 450.65 56.82 454.25 56.99C456.92 57.13 459.58 57.57 462.18 58.16C464.22 58.62 466.19 59.36 468.13 60.14C469.63 60.75 471.07 61.49 472.46 62.31C473.9 63.17 475.33 64.05 476.59 65.15C478.72 67 480.77 68.96 482.57 71.13C484.18 73.08 485.59 75.23 486.77 77.47C488.02 79.83 489.03 82.33 489.82 84.88C490.72 87.78 491.45 90.76 491.82 93.78C492.29 97.58 492.25 101.42 492.31 105.25C492.33 106.59 492.35 107.94 492.07 109.25C491.98 109.64 491.65 110.11 491.25 110.12C471.25 110.42 451.25 110.09 431.25 110.17C430.85 110.17 430.43 110.2 430.07 110.36C429.87 110.45 429.66 110.65 429.66 110.86C429.68 112.16 429.86 113.46 430.14 114.72C430.39 115.86 430.71 117 431.23 118.04C432.15 119.91 433.15 121.76 434.42 123.41C435.42 124.7 436.65 125.81 437.97 126.77C439.17 127.63 440.53 128.25 441.89 128.82C442.89 129.24 443.94 129.62 445.02 129.73C447.75 130.01 450.51 130.17 453.25 129.98C455.06 129.86 456.87 129.45 458.56 128.78C460.36 128.07 462.01 126.99 463.6 125.88C464.48 125.25 465.23 124.45 465.91 123.61C466.8 122.48 467.41 121.15 468.29 120.01C468.57 119.66 469 119.45 469.35 119.17C475.43 120.84 481.53 122.44 487.59 124.2C488.69 124.52 489.75 125.01 490.83 125.41C490.83 125.81 490.97 126.24 490.82 126.61C489.97 128.67 489 130.69 487.84 132.59C486.98 134.01 485.92 135.32 484.79 136.53C483.11 138.34 481.34 140.07 479.44 141.63C477.94 142.86 476.28 143.89 474.62 144.88C472.81 145.94 470.97 146.96 469.04 147.77C467.11 148.6 465.09 149.22 463.06 149.78C461.43 150.23 459.77 150.66 458.09 150.78C454.32 151.06 450.52 151.17 446.75 150.97C444.11 150.83 441.47 150.43 438.91 149.78C435.99 149.05 433.1 148.1 430.36 146.86C427.93 145.75 425.71 144.22 423.47 142.78C422.45 142.12 421.49 141.38 420.6 140.57C419.14 139.26 417.71 137.89 416.42 136.42C414.92 134.7 413.5 132.92 412.25 131.02C411.09 129.28 410.1 127.44 409.22 125.55C408.4 123.8 407.76 121.96 407.18 120.12C406.73 118.69 406.39 117.22 406.11 115.75C405.75 113.82 405.44 111.88 405.26 109.93C405.09 108.04 405.08 106.14 405.07 104.25C405.07 102.81 405.09 101.37 405.24 99.94C405.47 97.56 405.71 95.17 406.2 92.82C406.68 90.47 407.29 88.12 408.15 85.87C409.28 82.96 410.65 80.14 412.16 77.41C413.03 75.83 414.15 74.41 415.26 72.99C416.28 71.71 417.38 70.49 418.53 69.32C419.52 68.31 420.56 67.34 421.67 66.46C423.18 65.27 424.73 64.12 426.38 63.12C428.17 62.04 430.06 61.11 431.96 60.23C432.9 59.79 433.89 59.49 434.88 59.17C436.01 58.8 437.14 58.43 438.31 58.16C440.01 57.78 441.71 57.36 443.45 57.24Z M708.44 57.23C710.04 57.02 711.64 56.93 713.25 56.93C716.22 56.92 719.19 56.94 722.15 57.21C723.81 57.37 725.44 57.8 727.05 58.22C728.07 58.48 729.05 58.86 730.02 59.25C731.55 59.86 733.11 60.42 734.55 61.22C736.65 62.39 738.76 63.59 740.59 65.15C743.19 67.37 745.54 69.88 747.77 72.47C748.94 73.84 749.87 75.41 750.75 76.98C751.86 78.93 752.89 80.93 753.73 83.01C754.57 85.08 755.22 87.23 755.8 89.39C756.24 91.05 756.57 92.74 756.77 94.44C757.13 97.53 757.45 100.64 757.46 103.75C757.47 106.92 757.21 110.1 756.85 113.25C756.65 115.05 756.2 116.82 755.79 118.59C755.52 119.77 755.21 120.96 754.8 122.1C754.17 123.91 753.56 125.74 752.68 127.44C751.22 130.24 749.58 132.95 747.82 135.57C747.02 136.75 746.03 137.79 745.04 138.81C743.63 140.25 742.17 141.64 740.61 142.91C739.33 143.97 737.94 144.89 736.54 145.78C735.41 146.5 734.25 147.21 733.02 147.75C731.24 148.54 729.4 149.22 727.53 149.76C725.79 150.25 724.02 150.68 722.22 150.82C718.74 151.09 715.24 151.17 711.75 150.97C709.28 150.83 706.83 150.38 704.43 149.79C702.53 149.32 700.69 148.6 698.89 147.83C697.89 147.39 697.05 146.65 696.07 146.17C695.86 146.07 695.59 146.13 695.35 146.1C695.21 146.48 694.92 146.84 694.92 147.25C694.75 160.71 695.02 174.17 694.84 187.63C694.84 187.86 694.56 188.03 694.35 188.12C694.01 188.27 693.62 188.31 693.25 188.31C686.53 188.34 679.8 188.45 673.08 188.21C672.72 188.19 672.43 187.84 672.24 187.54C672.1 187.32 672.16 187.01 672.16 186.75C672.15 144.63 672 102.5 672.21 60.38C672.21 60.03 672.52 59.72 672.81 59.52C673.08 59.34 673.43 59.33 673.75 59.33C679.42 59.26 685.09 59.14 690.75 59.31C691.17 59.32 691.5 59.67 691.88 59.86L692.15 63.2L692.75 63.53C693.99 62.76 695.18 61.91 696.47 61.23C697.91 60.47 699.41 59.81 700.92 59.19C701.89 58.8 702.87 58.44 703.88 58.18C705.38 57.79 706.9 57.44 708.44 57.23Z M801.07 57.26C802.79 57.05 804.52 56.93 806.25 56.93C809.85 56.92 813.46 56.95 817.05 57.24C819.05 57.4 821.04 57.75 822.98 58.27C825.92 59.05 828.85 59.93 831.64 61.14C833.41 61.91 835.03 63.02 836.57 64.18C837.8 65.12 838.89 66.23 839.91 67.4C841 68.64 841.98 69.99 842.88 71.38C843.61 72.52 844.2 73.74 844.78 74.95C845.17 75.75 845.54 76.57 845.79 77.43C846.22 78.85 846.67 80.29 846.82 81.77C847.24 85.91 847.46 90.08 847.51 94.25C847.69 111.75 847.58 129.25 847.51 146.75C847.51 147.18 847.45 147.63 847.27 148.03C847.17 148.25 846.96 148.5 846.72 148.5C840.6 148.65 834.48 148.48 828.36 148.47C828.19 148.06 827.88 147.69 827.85 147.25C827.68 144.47 827.8 141.68 827.78 138.9L827.34 138.65C827.03 138.82 826.68 138.92 826.42 139.15C824.38 140.92 822.52 142.92 820.43 144.64C819.41 145.49 818.26 146.2 817.09 146.84C815.68 147.61 814.21 148.3 812.71 148.89C811.59 149.32 810.42 149.63 809.25 149.88C807.27 150.31 805.27 150.75 803.25 150.93C800.76 151.15 798.25 151.11 795.75 151.07C794 151.04 792.23 151.06 790.51 150.74C788.24 150.32 786 149.72 783.87 148.86C781.94 148.08 780.12 147.03 778.41 145.85C776.85 144.76 775.47 143.42 774.13 142.08C773.37 141.33 772.73 140.48 772.13 139.6C771.45 138.6 770.8 137.56 770.32 136.45C769.49 134.55 768.73 132.61 768.2 130.61C767.86 129.32 767.84 127.96 767.72 126.63C767.63 125.67 767.55 124.71 767.59 123.75C767.71 121.44 767.73 119.1 768.2 116.84C768.64 114.67 769.45 112.58 770.31 110.54C770.78 109.42 771.43 108.38 772.15 107.41C772.99 106.27 773.97 105.23 774.97 104.22C775.73 103.46 776.53 102.75 777.4 102.13C778.87 101.08 780.34 100.02 781.95 99.22C784.36 98.03 786.85 96.98 789.41 96.2C793.49 94.96 797.63 93.95 801.82 93.18C809.2 91.81 816.69 91.08 824.09 89.79C824.43 89.73 824.62 89.36 824.89 89.15C824.87 88.37 825 87.58 824.84 86.82C824.63 85.82 824.31 84.82 823.78 83.95C822.99 82.66 822.1 81.36 820.91 80.41C819.64 79.4 818.1 78.74 816.57 78.21C815.35 77.79 814.04 77.69 812.75 77.59C810.76 77.44 808.75 77.33 806.75 77.45C805.31 77.55 803.87 77.84 802.49 78.25C800.76 78.77 799.04 79.36 797.47 80.23C796.22 80.93 795.04 81.83 794.11 82.92C792.94 84.29 792.36 86.08 791.27 87.51C791.04 87.81 790.61 88.08 790.25 87.99C784.58 86.49 779 84.64 773.43 82.79C772.6 82.52 771.86 82.03 771.07 81.65C771.12 81.08 771.04 80.48 771.22 79.94C771.74 78.38 772.35 76.83 773.16 75.4C774.34 73.31 775.68 71.3 777.16 69.42C778.11 68.2 779.23 67.12 780.42 66.13C782.15 64.69 784 63.37 785.9 62.14C787.03 61.4 788.24 60.77 789.49 60.26C791.44 59.47 793.44 58.77 795.47 58.24C797.31 57.77 799.19 57.49 801.07 57.26Z M1028.58 57.29C1030.46 57.06 1032.36 56.93 1034.25 56.93C1037.52 56.92 1040.79 56.95 1044.05 57.24C1045.89 57.4 1047.73 57.73 1049.51 58.26C1052.25 59.06 1054.95 60.03 1057.56 61.21C1059.33 62.01 1061.05 62.98 1062.59 64.15C1064.47 65.58 1066.13 67.29 1067.78 68.97C1068.53 69.73 1069.18 70.58 1069.77 71.47C1070.52 72.58 1071.26 73.72 1071.78 74.95C1072.61 76.87 1073.25 78.87 1073.8 80.89C1073.96 81.48 1073.98 82.11 1073.91 82.72C1073.89 82.95 1073.72 83.16 1073.54 83.3C1073.32 83.47 1073.03 83.57 1072.75 83.62C1065.76 84.89 1058.75 86.04 1051.75 87.25C1051.54 87.06 1051.24 86.93 1051.12 86.67C1050.57 85.47 1050.4 84.11 1049.78 82.95C1049.22 81.91 1048.46 80.95 1047.6 80.13C1046.83 79.38 1045.9 78.83 1044.97 78.31C1044.2 77.87 1043.37 77.5 1042.52 77.25C1041.06 76.81 1039.57 76.41 1038.05 76.24C1036.3 76.04 1034.51 75.97 1032.75 76.14C1031.12 76.3 1029.48 76.62 1027.96 77.23C1026.85 77.67 1025.83 78.4 1024.99 79.25C1024.23 80.01 1023.55 80.94 1023.24 81.97C1022.93 82.98 1022.99 84.11 1023.17 85.16C1023.3 85.87 1023.71 86.51 1024.16 87.07C1024.68 87.72 1025.35 88.23 1026.03 88.7C1026.64 89.11 1027.33 89.42 1028.03 89.7C1029.96 90.46 1031.9 91.22 1033.89 91.8C1040.44 93.71 1047.12 95.15 1053.63 97.17C1056.18 97.96 1058.62 99.1 1061.05 100.21C1062.28 100.77 1063.5 101.37 1064.59 102.16C1066.42 103.47 1068.17 104.89 1069.78 106.47C1070.63 107.31 1071.29 108.32 1071.91 109.35C1072.61 110.53 1073.29 111.75 1073.71 113.05C1074.3 114.9 1074.77 116.81 1074.93 118.75C1075.13 121.22 1075.02 123.72 1074.79 126.19C1074.65 127.7 1074.3 129.19 1073.83 130.63C1073.29 132.32 1072.58 133.96 1071.77 135.53C1071.16 136.72 1070.45 137.87 1069.57 138.87C1068.02 140.63 1066.31 142.24 1064.53 143.77C1063.62 144.55 1062.57 145.17 1061.53 145.77C1060.24 146.51 1058.93 147.24 1057.55 147.78C1055.45 148.59 1053.31 149.33 1051.11 149.8C1048.36 150.4 1045.56 150.83 1042.75 150.98C1038.59 151.2 1034.41 151.18 1030.25 150.9C1028 150.75 1025.81 150.16 1023.61 149.68C1022.41 149.42 1021.23 149.09 1020.08 148.68C1018.51 148.12 1016.95 147.52 1015.45 146.78C1014.25 146.19 1013.12 145.47 1012.01 144.71C1010.64 143.77 1009.26 142.8 1008.03 141.68C1006.64 140.41 1005.28 139.09 1004.17 137.57C1002.67 135.51 1001.34 133.32 1000.25 131.02C999.35 129.12 998.75 127.07 998.24 125.03C998.02 124.15 998.13 123.22 998.07 122.32C998.35 122.11 998.56 121.76 998.89 121.7C1005.82 120.51 1012.78 119.46 1019.75 118.59C1020.11 118.54 1020.57 118.65 1020.76 118.96C1021.44 120.05 1021.58 121.42 1022.22 122.55C1023.03 123.99 1023.97 125.38 1025.08 126.6C1025.89 127.49 1026.88 128.21 1027.91 128.84C1029.17 129.61 1030.47 130.39 1031.9 130.8C1033.96 131.4 1036.11 131.63 1038.25 131.83C1039.47 131.95 1040.71 131.89 1041.93 131.74C1043.22 131.58 1044.53 131.36 1045.74 130.89C1047.1 130.37 1048.49 129.79 1049.56 128.81C1050.54 127.91 1051.19 126.66 1051.69 125.43C1052.02 124.59 1051.99 123.65 1052 122.75C1052.01 122 1051.98 121.22 1051.73 120.5C1051.49 119.8 1051.05 119.17 1050.57 118.6C1050.14 118.07 1049.64 117.56 1049.03 117.23C1047.49 116.39 1045.87 115.66 1044.19 115.14C1037.81 113.18 1031.28 111.74 1024.89 109.8C1022.17 108.98 1019.49 107.98 1016.87 106.86C1014.83 105.98 1012.83 104.98 1010.93 103.81C1009.52 102.94 1008.2 101.9 1006.98 100.77C1005.94 99.81 1005 98.72 1004.18 97.57C1003.41 96.47 1002.7 95.3 1002.23 94.04C1001.64 92.5 1001.16 90.89 1001.02 89.25C1000.77 86.26 1000.8 83.24 1001.07 80.25C1001.21 78.62 1001.71 77.03 1002.25 75.49C1002.75 74.07 1003.45 72.73 1004.16 71.41C1004.51 70.76 1004.96 70.17 1005.43 69.6C1006.61 68.17 1007.75 66.68 1009.12 65.42C1010.44 64.21 1011.9 63.11 1013.47 62.23C1015.65 61.01 1017.99 60.08 1020.31 59.14C1021.31 58.73 1022.36 58.44 1023.41 58.21C1025.12 57.83 1026.84 57.49 1028.58 57.29Z M549.07 59.26C551.95 59.03 554.86 59.13 557.75 59.12C558.01 59.12 558.29 59.13 558.52 59.25C558.72 59.36 558.95 59.56 558.95 59.79C559.15 66.27 559.35 72.77 559.13 79.25C559.11 79.64 558.64 80.01 558.25 80.03C556.91 80.1 555.59 79.57 554.25 79.52C552.75 79.45 551.25 79.55 549.75 79.67C548.59 79.77 547.44 79.9 546.31 80.16C545.17 80.42 544.04 80.77 542.96 81.23C541.59 81.81 540.25 82.47 538.98 83.25C537.97 83.87 537 84.6 536.15 85.43C535.06 86.5 534.04 87.67 533.19 88.94C532.36 90.16 531.73 91.51 531.14 92.87C530.73 93.82 530.39 94.81 530.18 95.83C529.84 97.45 529.54 99.09 529.51 100.75C529.31 116.08 529.59 131.42 529.51 146.75C529.51 147.18 529.35 147.6 529.27 148.03C528.76 148.25 528.3 148.68 527.75 148.69C520.96 148.82 514.16 148.54 507.36 148.47C507.18 147.9 506.83 147.35 506.83 146.75C506.65 118.25 506.75 89.75 506.83 61.25C506.83 60.77 506.98 60.31 507.06 59.83C507.46 59.66 507.82 59.32 508.25 59.31C513.75 59.15 519.25 59.22 524.75 59.31C525.21 59.32 525.65 59.51 526.11 59.61C526.3 60.16 526.65 60.67 526.69 61.25C526.87 64.67 526.72 68.11 526.74 71.54L527.63 71.99C528.81 70.47 529.81 68.8 531.16 67.43C532.42 66.16 533.87 65.08 535.38 64.12C537.15 63 539.05 62.09 540.96 61.23C541.92 60.79 542.95 60.49 543.97 60.24C545.65 59.84 547.35 59.4 549.07 59.26Z M905.95 59.24C908.71 59 911.48 59.08 914.25 59.11C914.66 59.11 915.09 59.16 915.47 59.33C915.66 59.42 915.83 59.64 915.83 59.86C915.95 66.44 915.83 73.02 915.83 79.61C915.47 79.74 915.13 80.02 914.75 80.01C913.57 79.99 912.43 79.58 911.25 79.52C909.92 79.45 908.58 79.51 907.25 79.61C905.79 79.73 904.33 79.89 902.89 80.2C901.73 80.45 900.59 80.8 899.5 81.26C898.25 81.79 897.04 82.41 895.9 83.14C894.88 83.78 893.92 84.54 893.04 85.36C892.01 86.31 891.03 87.32 890.19 88.43C889.45 89.4 888.85 90.47 888.33 91.56C887.83 92.61 887.41 93.69 887.16 94.82C886.66 97.1 886.13 99.41 886.08 101.75C885.7 117.21 885.94 132.68 885.88 148.14C885.5 148.33 885.17 148.69 884.75 148.69C877.93 148.81 871.1 148.72 864.28 148.5C864.04 148.49 863.83 148.25 863.73 148.03C863.55 147.63 863.49 147.18 863.49 146.75C863.41 118.25 863.41 89.75 863.49 61.25C863.49 60.82 863.65 60.4 863.73 59.97C864.24 59.75 864.7 59.33 865.25 59.31C871.06 59.17 876.87 59.44 882.68 59.51C882.88 59.93 883.27 60.3 883.3 60.77C883.5 64.26 883.28 67.76 883.34 71.25C883.35 71.42 883.44 71.57 883.49 71.73L884.12 71.93C885.88 69.98 887.48 67.88 889.39 66.09C890.61 64.96 892 63.99 893.47 63.23C895.74 62.05 898.13 61.08 900.56 60.3C902.31 59.75 904.13 59.4 905.95 59.24Z M317.13 59.85C317.51 59.67 317.84 59.32 318.25 59.31C324.75 59.14 331.25 59.24 337.75 59.31C338.06 59.31 338.38 59.38 338.65 59.52C338.87 59.64 339.03 59.85 339.18 60.05C339.4 60.34 339.63 60.64 339.75 60.98C341.83 66.78 343.79 72.62 345.77 78.46C350.26 91.67 354.62 104.93 359.17 118.12C359.37 118.69 359.63 119.26 360 119.74C360.14 119.92 360.42 119.93 360.63 120.03C367.52 100.02 374.29 79.97 381.29 60C381.37 59.78 381.61 59.63 381.82 59.55C382.28 59.39 382.77 59.32 383.25 59.31C389.42 59.24 395.59 59.16 401.75 59.31C402.34 59.33 402.88 59.66 403.44 59.83C402.89 61.75 402.47 63.7 401.79 65.57C392.28 92.15 382.56 118.66 372.88 145.18C372.53 146.14 372.18 147.1 371.71 148C371.6 148.2 371.41 148.44 371.18 148.45C364.2 148.67 357.23 148.69 350.25 148.69C349.95 148.69 349.61 148.64 349.37 148.47C349.06 148.25 348.79 147.93 348.66 147.57C338.41 119.77 328.36 91.89 318.23 64.04C317.87 63.06 317.45 62.1 317.19 61.09C317.08 60.69 317.15 60.26 317.13 59.85Z M564.55 59.8C564.95 59.64 565.32 59.33 565.75 59.32C572.41 59.16 579.08 59.26 585.75 59.31C586.09 59.32 586.44 59.35 586.75 59.49C587.06 59.63 587.45 59.79 587.57 60.11C595.35 79.64 602.8 99.29 610.41 118.89C610.61 118.85 610.85 118.92 611.01 118.79C611.37 118.48 611.68 118.08 611.86 117.64C619.39 98.43 626.43 79.02 634.11 59.86C634.27 59.47 634.83 59.32 635.25 59.31C641.75 59.13 648.25 59.15 654.75 59.31C655.2 59.32 655.58 59.65 655.99 59.82C655.95 60.42 656.08 61.07 655.86 61.64C639.67 103.52 623.39 145.38 606.8 187.1C606.59 187.64 606.09 188.22 605.51 188.26C599.44 188.64 593.34 188.33 587.25 188.33C586.99 188.33 586.72 188.37 586.49 188.26C586.27 188.15 586.15 187.9 585.99 187.73C586.09 187.01 586.06 186.25 586.31 185.56C590.67 173.34 595.45 161.28 599.78 149.06C599.98 148.5 600.09 147.84 599.87 147.29C588.55 118.95 576.65 90.85 565.22 62.55C564.87 61.67 564.77 60.72 564.55 59.8Z M269.55 76.76C271.44 76.56 273.34 76.26 275.25 76.32C277.1 76.38 278.94 76.71 280.75 77.12C281.87 77.38 282.95 77.78 283.97 78.3C284.92 78.79 285.82 79.4 286.6 80.13C287.47 80.95 288.21 81.9 288.86 82.9C289.6 84.02 290.28 85.2 290.77 86.46C291.31 87.84 291.67 89.29 291.92 90.75C292.06 91.55 291.93 92.37 291.94 93.17C291.54 93.34 291.18 93.68 290.75 93.69C278.58 93.86 266.42 93.78 254.25 93.69C253.96 93.69 253.69 93.51 253.41 93.41C253.37 92.96 253.17 92.49 253.29 92.05C253.76 90.28 254.31 88.5 255.14 86.87C256.02 85.16 257.19 83.59 258.4 82.09C258.99 81.37 259.74 80.8 260.5 80.27C261.6 79.5 262.75 78.8 263.95 78.22C264.89 77.77 265.89 77.46 266.89 77.2C267.76 76.97 268.66 76.86 269.55 76.76Z M446.08 76.78C447.96 76.57 449.85 76.27 451.75 76.32C453.6 76.36 455.44 76.66 457.25 77.04C458.4 77.28 459.53 77.67 460.6 78.16C461.27 78.46 461.85 78.92 462.43 79.37C463.26 80.02 464.13 80.64 464.81 81.44C465.59 82.35 466.29 83.36 466.79 84.45C467.6 86.24 468.27 88.11 468.73 90.02C468.98 91.04 468.85 92.12 468.91 93.16C468.52 93.34 468.17 93.68 467.75 93.69C455.58 93.86 443.42 93.78 431.25 93.69C430.95 93.69 430.69 93.51 430.41 93.42C430.35 92.94 430.15 92.45 430.24 91.96C430.46 90.8 430.86 89.66 431.33 88.56C431.86 87.32 432.53 86.13 433.24 84.98C433.79 84.07 434.4 83.19 435.1 82.39C435.8 81.59 436.57 80.82 437.43 80.19C438.41 79.47 439.5 78.89 440.59 78.36C441.52 77.91 442.48 77.53 443.47 77.24C444.32 77 445.2 76.88 446.08 76.78Z M706.97 77.24C708.36 76.9 709.82 76.93 711.25 76.93C713.04 76.92 714.84 76.94 716.61 77.21C717.92 77.41 719.21 77.81 720.44 78.32C721.56 78.79 722.62 79.42 723.6 80.13C724.75 80.97 725.84 81.91 726.8 82.97C727.91 84.2 728.91 85.55 729.75 86.98C730.58 88.39 731.22 89.91 731.78 91.44C732.24 92.71 732.57 94.03 732.8 95.36C733.18 97.47 733.43 99.61 733.62 101.75C733.72 102.91 733.76 104.09 733.67 105.25C733.48 107.87 733.3 110.51 732.78 113.09C732.36 115.16 731.68 117.18 730.86 119.13C730.24 120.59 729.47 122 728.5 123.26C727.3 124.84 725.94 126.32 724.41 127.58C723.26 128.52 721.92 129.2 720.56 129.79C719.35 130.31 718.06 130.68 716.75 130.87C715.1 131.11 713.42 131.09 711.75 131.07C710.33 131.05 708.9 130.98 707.49 130.75C706.42 130.57 705.36 130.28 704.36 129.85C703.13 129.33 702 128.62 700.86 127.92C700.24 127.53 699.6 127.13 699.09 126.6C698.05 125.49 697.06 124.31 696.25 123.02C695.45 121.74 694.83 120.35 694.29 118.94C693.78 117.58 693.41 116.17 693.13 114.75C692.7 112.6 692.34 110.43 692.16 108.25C691.99 106.09 691.94 103.91 692.08 101.75C692.28 98.76 692.68 95.78 693.18 92.83C693.38 91.65 693.75 90.5 694.17 89.39C694.76 87.87 695.34 86.33 696.21 84.95C697.1 83.54 698.22 82.27 699.4 81.09C700.14 80.34 701.01 79.69 701.95 79.21C703.55 78.39 705.23 77.67 706.97 77.24Z M821.58 108.3C822.46 108.15 823.36 108.11 824.25 108.01C824.49 108.26 824.94 108.41 824.96 108.75C825.12 110.71 825.01 112.69 824.79 114.65C824.62 116.16 824.21 117.64 823.8 119.11C823.56 119.96 823.26 120.82 822.84 121.6C822.27 122.66 821.64 123.69 820.85 124.59C819.53 126.1 818.15 127.59 816.57 128.82C815.03 130.01 813.29 130.91 811.55 131.78C810.62 132.24 809.61 132.59 808.59 132.79C807 133.11 805.37 133.32 803.75 133.32C801.45 133.33 799.14 133.21 796.88 132.82C795.87 132.65 794.91 132.2 794.06 131.64C792.98 130.93 792.04 130.01 791.16 129.07C790.75 128.64 790.43 128.11 790.22 127.55C789.94 126.77 789.76 125.94 789.71 125.11C789.63 123.97 789.57 122.81 789.81 121.7C790.07 120.55 790.53 119.42 791.19 118.43C791.78 117.56 792.62 116.85 793.47 116.23C794.55 115.44 795.73 114.77 796.95 114.22C798.72 113.42 800.53 112.73 802.39 112.2C805.19 111.39 808.04 110.78 810.89 110.2C814.44 109.48 818.01 108.88 821.58 108.3Z"></path></svg>`;
 
   // Marque « everyparts » (hexagone monogramme, viewBox 184×204). fill=white
   const MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184.07 204.03" fill="none" role="img" aria-label="everyparts"><path fill="white" fill-rule="evenodd" clip-rule="evenodd" d="M87.48 0.3C89.05 0.07 90.65 0.01 92.25 0C93.72 -0.01 95.21 -0.03 96.65 0.26C98.86 0.7 101.15 1.1 103.13 2.2C126.51 15.12 149.62 28.55 172.56 42.24C174.28 43.26 175.59 44.87 177.02 46.27C177.7 46.94 178.31 47.68 178.87 48.46C179.57 49.43 180.23 50.44 180.78 51.51C181.54 52.95 182.24 54.44 182.8 55.98C183.25 57.24 183.57 58.55 183.82 59.87C184 60.83 184.05 61.82 184.06 62.8C184.13 67.97 184.23 73.14 184.06 78.3C184.04 78.83 183.68 79.29 183.49 79.78C176.33 79.45 169.14 79.52 162.01 78.79C159.72 78.56 157.51 77.74 155.36 76.91C153.28 76.11 151.35 74.98 149.4 73.9C148.36 73.31 147.35 72.64 146.41 71.9C143.41 69.55 140.43 67.17 137.58 64.64C133.81 61.28 130.34 57.59 126.55 54.24C124.96 52.83 123.27 51.49 121.46 50.37C120.06 49.51 118.53 48.88 116.99 48.33C115.69 47.86 114.34 47.51 112.97 47.32C110.08 46.93 107.17 46.6 104.25 46.58C102.27 46.57 100.3 46.92 98.35 47.25C97.02 47.48 95.7 47.84 94.41 48.26C92.57 48.86 90.75 49.53 88.96 50.28C86.75 51.21 84.54 52.13 82.45 53.27C78.39 55.48 74.41 57.86 70.5 60.33C68.08 61.87 65.76 63.56 63.47 65.29C61.76 66.57 60.08 67.9 58.53 69.37C57.34 70.5 56.28 71.77 55.28 73.07C54.84 73.65 54.44 74.3 54.22 75C53.79 76.4 53.44 77.84 53.35 79.3C53.3 80.19 53.61 81.07 53.81 81.93C53.87 82.19 53.94 82.46 54.12 82.65C54.28 82.81 54.53 82.93 54.75 82.9C67.43 80.78 80.07 78.36 92.75 76.19C93.74 76.02 94.74 75.88 95.75 75.89C96.71 75.9 97.71 75.9 98.61 76.23C99.86 76.69 100.99 77.44 102.07 78.22C102.74 78.71 103.31 79.34 103.81 80.01C104.89 81.44 105.95 82.91 106.78 84.5C107.61 86.09 108.27 87.77 108.78 89.49C109.61 92.22 110.31 95.01 110.82 97.82C111.21 99.96 111.35 102.14 111.47 104.3C111.54 105.47 111.48 106.64 111.39 107.8C111.26 109.29 111.13 110.78 110.82 112.23C110.61 113.25 110.27 114.24 109.83 115.17C109.26 116.38 108.59 117.54 107.81 118.62C107.27 119.38 106.63 120.07 105.91 120.65C104.86 121.49 103.73 122.21 102.55 122.84C101.74 123.27 100.87 123.6 99.98 123.79C88.98 126.08 77.88 127.92 66.89 130.25C65.91 130.46 65.05 131.03 64.14 131.42C64.16 131.65 64.1 131.9 64.2 132.11C64.8 133.31 65.42 134.51 66.23 135.58C67.07 136.7 68.04 137.74 69.13 138.62C70.63 139.84 72.27 140.89 73.96 141.83C75.4 142.63 76.92 143.29 78.49 143.8C81.06 144.64 83.69 145.37 86.36 145.86C89.62 146.45 92.93 146.89 96.25 147.03C101.58 147.26 106.92 147.22 112.25 146.95C114.42 146.84 116.59 146.47 118.69 145.89C121.55 145.1 124.34 144.06 127.05 142.84C128.82 142.04 130.44 140.94 132.06 139.87C133.95 138.62 135.83 137.34 137.57 135.89C141.3 132.8 144.75 129.38 148.46 126.28C149.38 125.51 150.4 124.85 151.47 124.29C152.92 123.52 154.43 122.85 155.98 122.3C157.25 121.85 158.57 121.48 159.91 121.27C161.34 121.04 162.8 120.95 164.25 120.99C170.38 121.12 176.52 121.33 182.64 121.77C183.12 121.8 183.5 122.18 183.93 122.39C183.97 128.53 184.12 134.67 184.07 140.8C184.06 142.06 183.96 143.33 183.75 144.57C183.54 145.79 183.22 146.99 182.8 148.16C182.25 149.7 181.6 151.2 180.84 152.65C180.28 153.71 179.62 154.72 178.87 155.65C177.68 157.13 176.42 158.56 175.03 159.84C173.8 160.96 172.42 161.91 171.02 162.81C168.25 164.58 165.37 166.18 162.53 167.82C144.04 178.51 125.61 189.3 107.02 199.81C104.95 200.98 102.84 202.11 100.58 202.85C98.54 203.53 96.39 203.87 94.25 204.03C91.99 204.19 89.72 204.06 87.47 203.81C86.11 203.65 84.77 203.26 83.48 202.81C81.92 202.27 80.39 201.64 78.96 200.83C56.89 188.29 34.95 175.52 13.02 162.76C12.1 162.22 11.22 161.6 10.4 160.93C9.56 160.25 8.75 159.51 8.03 158.71C6.7 157.22 5.29 155.77 4.24 154.08C3 152.06 2.02 149.87 1.2 147.64C0.67 146.2 0.46 144.66 0.21 143.15C0.06 142.21 0 141.26 0 140.3C-0.06 114.64 -0.06 88.97 0.02 63.3C0.02 62.38 0.08 61.44 0.24 60.53C0.48 59.16 0.82 57.82 1.21 56.48C1.46 55.61 1.75 54.74 2.14 53.92C2.77 52.59 3.49 51.31 4.26 50.05C4.81 49.14 5.42 48.27 6.1 47.45C6.79 46.61 7.57 45.85 8.34 45.09C9.01 44.43 9.67 43.76 10.4 43.18C11.34 42.44 12.32 41.75 13.35 41.15C35.17 28.45 57 15.76 78.95 3.27C80.38 2.46 81.89 1.81 83.44 1.27C84.75 0.82 86.11 0.5 87.48 0.3Z"></path></svg>`;
 
-  // Badge BETA de la refonte PartsMind : petite pastille contournée, texte menthe,
-  // placée en ligne à droite du nom, centrée verticalement.
   const BETA_BADGE = `<span class="ep-beta">BETA</span>`;
 
-  /**
-   * Contenu brandé de l'en-tête. Dès que `data-logo` (URL d'image),
-   * `data-title` ou `data-subtitle` (textes) est fourni, le branding boutique
-   * REMPLACE le logo EveryParts par défaut (l'attribution EveryParts reste dans
-   * le footer « Propulsé par »). Sans aucun des trois, on affiche le logo EveryParts.
-   * `data-logo` → image ; `data-title`/`data-subtitle` → bloc texte empilé
-   * (sous-titre sous le titre, plus petit et plus léger).
-   * Le badge BETA est toujours ajouté ensuite.
-   */
   function headerBrandHtml() {
     const parts = [];
     if (!CONFIG.logo && !CONFIG.title && !CONFIG.subtitle) {
-      parts.push(LOGO_SVG);
-      parts.push(BETA_BADGE);
+      parts.push(`<div id="ep-header-text"><span id="ep-header-title">EveryParts ${BETA_BADGE}</span><span id="ep-header-subtitle">Recherche de pièces</span></div>`);
     } else {
       if (CONFIG.logo) {
         const alt = escHtml(CONFIG.title || 'EveryParts');
         parts.push(`<img id="ep-header-logo-img" src="${escHtml(CONFIG.logo)}" alt="${alt}">`);
+      } else {
+        parts.push(`<div id="ep-header-logo-img">${markSvg(25, 25, '#fff')}</div>`);
       }
       if (CONFIG.title || CONFIG.subtitle) {
         const text = [];
@@ -376,55 +511,166 @@
       --ep-shadow:    0 8px 32px rgba(6,76,76,.18);
     }
 
-    /* ── Bouton flottant ── */
+    /* ── Bouton flottant (frames 5a / 4a) ──
+       Un seul bouton, trois couches superposées en inset:0 qui se croisent en
+       opacité — jamais en display, sans quoi la morphologie sauterait :
+         .ep-fab-closed    bulle ronde : monogramme + compteur ;
+         .ep-fab-face      façade de champ de recherche, révélée par .ep-fab-expanded ;
+         .ep-fab-chevron   chevron « réduire », quand la fenêtre de chat est ouverte.
+       Seule la LARGEUR est animée : le bord ancré au coin (right/left selon
+       data-position) ne bouge pas, la pilule s'étire vers l'intérieur de la page. */
     #ep-fab {
       position: fixed;
       z-index: 2147483646;
       width: 60px;
-      height: 60px;
-      border-radius: 35%;
+      height: 58px;
+      border-radius: 29px;
+      /* Teal de fond permanent : chaque couche pose ensuite SA propre surface
+         (bulle teal, façade blanche). Le conteneur n'est jamais transparent, donc
+         le fondu croisé ne laisse jamais voir la page à travers la pilule — c'est
+         la seule entorse au frame, qui superpose deux couches opaques sur un fond
+         de canvas et se retrouve à ~25 % de transparence à mi-course. */
       background: var(--ep-dark);
       border: none;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 16px rgba(6,76,76,.35);
-      transition: transform .2s ease, box-shadow .2s ease;
+      display: block;
+      box-shadow: 0 14px 30px -14px rgba(6,76,76,.55);
       padding: 0;
       -webkit-tap-highlight-color: transparent;
+      /* Repli : .54s, soit le segment 58 %→64 % de la boucle 9 s du frame. */
+      transition: width .54s ease-in-out, transform .15s ease, box-shadow .15s ease;
+      /* Sans fill-mode : l'état final revient à la règle de base, sinon le
+         transform des keyframes neutraliserait définitivement :hover. */
+      animation: ep-fab-enter .7s cubic-bezier(.2,.8,.2,1);
     }
     #ep-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(6,76,76,.45); }
+    /* Déployé, la pilule fait 372px : la mettre à l'échelle au survol jurerait. */
+    #ep-fab.ep-fab-expanded:hover { transform: none; box-shadow: 0 16px 34px -14px rgba(6,76,76,.6); }
     #ep-fab:focus-visible { outline: 3px solid var(--ep-primary); outline-offset: 3px; }
     #ep-fab svg { display: block; }
 
-    /* Bascule d'icône du lanceur : monogramme (fermé) ⇄ chevron (ouvert). */
-    .ep-fab-ico { display: flex; align-items: center; justify-content: center; }
-    #ep-fab .ep-fab-ico-close { display: none; }
-    #ep-fab.ep-window-open .ep-fab-ico-open { display: none; }
-    #ep-fab.ep-window-open .ep-fab-ico-close { display: flex; }
+    @keyframes ep-fab-enter {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-    /* Badge de notification (messages non lus) sur le lanceur. */
-    #ep-fab-badge {
+    .ep-fab-layer {
       position: absolute;
-      top: -3px;
-      right: -3px;
-      min-width: 27px;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;   /* les clics reviennent au bouton */
+    }
+    /* Chaque couche porte sa propre surface — bulle teal / façade blanche cerclée de
+       teal — comme dans le 5a actualisé : c'est le FOND, pas seulement le contenu,
+       qui bascule. La façade est en overflow:hidden car ses ~113 px de contenu
+       minimum ne tiennent pas dans la pilule encore étroite : sans cela la pastille
+       déborderait du bord ancré pendant les ~400 premières ms. */
+    #ep-fab .ep-fab-closed  { opacity: 1; transition: opacity .54s ease-in-out; border-radius: 29px; background: var(--ep-dark); }
+    #ep-fab .ep-fab-face    { opacity: 0; transition: opacity .54s ease-in-out; justify-content: flex-start; gap: 12px; padding: 0 8px 0 18px; border-radius: 29px; background: var(--ep-white); border: 1.5px solid var(--ep-dark); overflow: hidden; }
+    #ep-fab .ep-fab-chevron { opacity: 0; transition: opacity .2s ease; }
+    /* Compteur de la façade : couche NON rognée. Il déborde volontairement du coin
+       arrondi — à 1 px du haut, un rayon de 29 px ne laisse la pilule s'étendre que
+       jusqu'à ~21 px du bord droit, alors que le compteur va jusqu'à 2 px. Le laisser
+       dans la façade (overflow:hidden) le coupait net. Il suit son fondu à l'identique. */
+    #ep-fab .ep-fab-face-badge { opacity: 0; transition: opacity .54s ease-in-out; }
+
+    /* Déploiement : largeur ET fondu croisé sur la MÊME fenêtre de 1,35 s (segment
+       10 %→25 % de la boucle 9 s), même easing — c'est ce parallélisme qui rend le
+       morphing identique au frame. Tout décalage entre les deux se voit. */
+    #ep-fab.ep-fab-expanded {
+      width: min(372px, calc(100vw - 32px));
+      transition: width 1.35s ease-in-out, transform .15s ease, box-shadow .15s ease;
+    }
+    #ep-fab.ep-fab-expanded .ep-fab-closed { opacity: 0; transition: opacity 1.35s ease-in-out; }
+    #ep-fab.ep-fab-expanded .ep-fab-face,
+    #ep-fab.ep-fab-expanded .ep-fab-face-badge { opacity: 1; transition: opacity 1.35s ease-in-out; }
+
+    /* Fenêtre de chat ouverte : retour à la bulle ronde, porteuse du chevron. */
+    #ep-fab.ep-window-open .ep-fab-closed,
+    #ep-fab.ep-window-open .ep-fab-face,
+    #ep-fab.ep-window-open .ep-fab-face-badge { opacity: 0; }
+    #ep-fab.ep-window-open .ep-fab-chevron { opacity: 1; transition: opacity .3s ease .3s; }
+
+    /* Façade déployée : loupe + exemples de recherche défilants + pastille de marque. */
+    .ep-fab-search { flex: none; }
+    .ep-fab-examples {
+      flex: 1;
+      position: relative;
       height: 18px;
-      padding: 0 5px;
-      border-radius: 9px;
-      background: var(--ep-primary);
-      border: 2px solid var(--ep-white);
-      color: #04332F;
-      font-family: var(--ep-font-title);
-      font-size: 10.5px;
-      font-weight: 800;
-      line-height: 1;
-      display: none;
+      overflow: hidden;
+      min-width: 0;
+    }
+    /* Les trois exemples se relaient dans le même créneau (cycle de 9 s décalé de
+       -3 s / -6 s) : un seul est visible à la fois, cf. frame 4a. */
+    .ep-fab-examples > span {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      font-family: var(--ep-font-body);
+      font-size: 14px;
+      font-weight: 500;
+      color: #5A6B68;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #ep-fab.ep-fab-expanded .ep-fab-examples > span { animation: ep-fab-example 9s ease-in-out infinite; }
+    #ep-fab.ep-fab-expanded .ep-fab-examples > span:nth-child(2) { animation-delay: -3s; }
+    #ep-fab.ep-fab-expanded .ep-fab-examples > span:nth-child(3) { animation-delay: -6s; }
+    @keyframes ep-fab-example {
+      0%   { opacity: 0; transform: translateY(5px); }
+      4%   { opacity: 1; transform: translateY(0); }
+      28%  { opacity: 1; transform: translateY(0); }
+      33%  { opacity: 0; transform: translateY(-5px); }
+      100% { opacity: 0; }
+    }
+    .ep-fab-disc {
+      flex: none;
+      width: 46px;
+      height: 46px;
+      border-radius: 23px;
+      background: var(--ep-dark);
+      display: flex;
       align-items: center;
       justify-content: center;
     }
-    #ep-fab-badge.ep-visible { display: flex; }
+
+    /* Compteur (messages non lus) : présent dans les deux états, d'où deux nœuds —
+       leur ancrage diffère (coin de la bulle vs coin de la pastille blanche).
+       Visibilité pilotée en opacité, pas en display : chaque compteur vit dans une
+       couche qui se fond, et un display:none le ferait disparaître d'un coup au lieu
+       de suivre sa couche. Absolu et dans une couche pointer-events:none : le laisser
+       dans le flux à opacité 0 n'a aucun effet de mise en page ni de clic. */
+    .ep-fab-badge {
+      position: absolute;
+      min-width: 26px;
+      height: 17px;
+      padding: 0 5px;
+      border-radius: 7px;
+      background: var(--ep-primary);
+      color: #fff;
+      font-family: var(--ep-font-title);
+      font-size: 9.5px;
+      font-weight: 800;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+    .ep-fab-badge.ep-visible { opacity: 1; }
+    .ep-fab-badge-bubble { top: -4px; right: -2px; border: 2px solid var(--ep-white); }
+    /* Ancré sur la pilule (sa couche fait inset:0), plus sur le disque : 1px/2px
+       reproduisent le -5px/-6px du frame, mesurés depuis le disque de 46px centré. */
+    .ep-fab-badge-disc   { top: 1px; right: 2px; border: 2px solid #fff; }
+    /* Déployé, le compteur n'appartient qu'à la pastille de la façade. Sans cette
+       règle il apparaîtrait aussi sur la bulle au tout début du déploiement — le
+       temps que la couche fermée s'efface — car showBadge() et .ep-fab-expanded
+       tombent dans le même tick. Sans transition : jamais visible, même brièvement. */
+    #ep-fab.ep-fab-expanded .ep-fab-badge-bubble { opacity: 0; transition: none; }
 
     .ep-pos-bottom-right { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); }
     .ep-pos-bottom-left  { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: calc(16px + env(safe-area-inset-left, 0px)); }
@@ -603,7 +849,7 @@
     }
     /* Cas titre boutique : le badge est en ligne dans le titre → petit décalage + centrage. */
     #ep-header-title .ep-beta { margin-left: 6px; vertical-align: middle; }
-    #ep-header-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+    #ep-header-actions { display: flex; align-items: center; gap: 12px; flex: none; }
     .ep-header-btn {
       background: rgba(255,255,255,.10);
       border: none;
@@ -620,6 +866,24 @@
     }
     .ep-header-btn:hover { background: rgba(255,255,255,.20); }
     .ep-header-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
+
+    /* Cibles tactiles ≥44×44 (Apple HIG / WCAG 2.5.5) sans agrandir la taille VISUELLE
+       de ces contrôles compacts : une zone invisible centrée sur chacun, via ::after,
+       étend la surface cliquable dans la (ou les) dimension(s) où le rendu est plus
+       petit que 44px — max(100%, 44px) ne change rien à ce qui dépasse déjà 44px.
+       Pour les icônes du header (34×34, cf. #ep-header-actions), les zones des deux
+       boutons se chevauchent légèrement au milieu du gap : compromis accepté plutôt
+       que d'agrandir visuellement des icônes pensées pour rester discrètes. */
+    #ep-moto-edit, .ep-pr-btn, .ep-clari-btn, .ep-header-btn { position: relative; }
+    #ep-moto-edit::after, .ep-pr-btn::after, .ep-clari-btn::after, .ep-header-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+    }
 
     /* ── Zone messages ── */
     #ep-messages {
@@ -676,6 +940,80 @@
       border: 1px solid #ffd0da;
     }
 
+    /* ── Carte d'échec de recherche ────────────────────────────────────────────
+       Remplace la bulle d'erreur brute quand /search n'aboutit pas : titre, cause
+       probable, conseil, et un bouton qui rejoue la MÊME requête. Transitoire comme
+       toutes les erreurs — jamais journalisée, donc jamais restaurée (rejouer une
+       panne passée afficherait un état faux). Occupe toute la largeur de la bulle,
+       d'où .ep-msg-wide sur le conteneur. */
+    .ep-retry-card {
+      position: relative;   /* ancre l'overlay de chargement */
+      background: #FFF5F7;
+      border: 1px solid #FFD3DC;
+      border-radius: 14px;
+      padding: 14px 15px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+    .ep-retry-row { display: flex; gap: 10px; align-items: flex-start; }
+    .ep-retry-row svg { flex: none; margin-top: 1px; }
+    .ep-retry-title {
+      font-family: var(--ep-font-title);
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.35;
+      color: var(--ep-red);
+    }
+    .ep-retry-sub { font-size: 13px; line-height: 1.45; color: #5A6B68; margin-top: 3px; }
+    .ep-retry-sep { height: 1px; background: #FFD3DC; }
+    .ep-retry-hint { font-size: 13px; line-height: 1.45; color: #5A6B68; }
+    .ep-retry-btn {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 34px;
+      margin-left: 28px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--ep-red);
+      color: var(--ep-white);
+      font-family: var(--ep-font-title);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ep-retry-btn:hover:not(:disabled) { filter: brightness(1.06); }
+    .ep-retry-btn:disabled { opacity: .5; cursor: default; }
+    .ep-retry-btn:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
+
+    /* Chargement du reessai : voile PAR-DESSUS la carte, qui reste en place. Le
+       contenu doit rester lisible dessous — on ne remplace pas, on couvre. */
+    .ep-retry-loading {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      /* Blanc, pas le rose de la carte : un voile de la meme teinte que le fond
+         qu'il couvre ne se voit pas. Le contenu doit visiblement reculer. */
+      background: rgba(255,255,255,.78);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: progress;
+    }
+    .ep-retry-spinner {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,72,105,.25);
+      border-top-color: var(--ep-red);
+      animation: ep-retry-spin .7s linear infinite;
+    }
+    @keyframes ep-retry-spin { to { transform: rotate(360deg); } }
+
     /* Avatar assistant (refonte 1a) : carré teal contenant la marque « everyparts »
        (hexagone) en vert. */
     .ep-msg-assistant { gap: 10px; align-items: flex-start; }
@@ -713,6 +1051,7 @@
     .ep-chip {
       display: inline-flex;
       align-items: center;
+      text-align: left;
       gap: 7px;
       min-height: 34px;
       padding: 0 13px;
@@ -853,6 +1192,33 @@
       font-style: italic;
       text-align: center;
     }
+    /* Avis de satisfaction greffé au bas de la liste de produits (pas une bulle
+       assistant séparée) : une carte à soi, cohérente avec « Voir plus de produits »
+       juste au-dessus plutôt qu'une nouvelle annonce avec avatar. */
+    .ep-products-review {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      /* flex-wrap : laisse la confirmation "merci" (.ep-review-thx) — ajoutée
+         après coup comme troisième enfant — se rabattre sur sa propre ligne
+         pleine largeur plutôt que de se serrer à côté des pouces. */
+      flex-wrap: wrap;
+      column-gap: 12px;
+      margin-top: 10px;
+      padding: 12px 16px;
+      border: 1.5px solid var(--ep-grey-200);
+      border-radius: 16px;
+      background: var(--ep-white);
+    }
+    .ep-products-review-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ep-grey-800);
+    }
+    .ep-products-review .ep-review-btns { margin-top: 0; }
+    /* Une fois l'avis envoyé, la confirmation vient toujours ici — jamais comme
+       enfant à part de .ep-products (cf. appendReviewThank). */
+    .ep-products-review .ep-review-thx { width: 100%; }
     .ep-cards { display: flex; flex-direction: column; gap: 8px; width: 100%; }
     .ep-card {
       background: var(--ep-white);
@@ -877,13 +1243,26 @@
     }
     .ep-card:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
     .ep-card-img {
-      width: 56px;
-      height: 56px;
-      border-radius: 8px;
-      object-fit: cover;
+      width: 64px;
+      height: 64px;
+      border-radius: 10px;
       flex-shrink: 0;
       background: var(--ep-grey-100);
+      border: 1px solid var(--ep-grey-200);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
     }
+    .ep-card-img img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .ep-card-img svg { flex: none; color: var(--ep-grey-300); }
     .ep-card-body { flex: 1; min-width: 0; }
     .ep-card-topline {
       display: flex;
@@ -939,17 +1318,17 @@
     .ep-badge {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      background: var(--ep-green);
-      color: var(--ep-dark);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 20px;
+      background: #EAFBF4;
+      color: #00A76F;
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 5px;
       cursor: default;
       white-space: nowrap;
     }
-    .ep-badge::before { content: '✓'; font-size: 10px; }
 
     /* ── Options de clarification ── */
     /* Alignées sous la bulle de l'assistant (décalage avatar 28px + gap 10px). */
@@ -1245,6 +1624,254 @@
     #ep-footer-brand svg { height: 15px; width: auto; display: block; }
     #ep-footer-brand:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
 
+    /* ── Motif d'un avis négatif ───────────────────────────────────────────────
+       Feuille modale ouverte juste après le pouce bas (#ep-rvr-backdrop, même
+       habillage .ep-sheet-* que la demande de pièce et le texte libre juste en
+       dessous). Les trois premières options renvoient /review directement ;
+       « Autre » ferme cette feuille et enchaîne sur celle du texte libre. */
+    .ep-review-reason-list { display: flex; flex-direction: column; gap: 8px; }
+    .ep-review-reason {
+      width: 100%;
+      border: 1px solid #DCE6E1;
+      background: var(--ep-white);
+      color: #12312D;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: var(--ep-font-title);
+      font-size: 13.5px;
+      font-weight: 600;
+      line-height: 1.3;
+      text-align: left;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ep-review-reason:hover:not(:disabled) { border-color: var(--ep-primary); background: #F2FCF8; }
+    .ep-review-reason:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    /* Confirmation « merci » — greffée dans le même conteneur que la carte
+       d'avis (cf. appendReviewThank), pas une bulle assistant à part. */
+    .ep-review-thx { color: #00A76F; font-size: 13px; }
+
+    /* Zone de texte de la feuille « Autre » — 16px sur mobile contre le zoom iOS,
+       valeur resserrée seulement au-dessus de 641px (cf. #ep-input, #ep-pr-email, #ep-pr-phone). */
+    #ep-rv-text {
+      width: 100%;
+      min-height: 88px;
+      resize: none;
+      padding: 11px 13px;
+      background: var(--ep-grey-100);
+      border: 1px solid #E4DFD2;
+      border-radius: 11px;
+      font-family: var(--ep-font-body);
+      font-size: 16px;
+      line-height: 1.45;
+      color: #12312D;
+    }
+    #ep-rv-text::placeholder { color: #9AA6A3; }
+    #ep-rv-text:focus { outline: 2px solid var(--ep-primary); outline-offset: -1px; border-color: transparent; }
+    .ep-rv-count { align-self: flex-end; font-size: 11.5px; color: #93A19E; }
+
+    /* ── Demande de pièce (frame 2a) ──────────────────────────────────────────
+       Deux morceaux : la proposition en bulle assistant dans le fil, et la fiche
+       en feuille modale ancrée au bas de #ep-window (celle-ci est en position:fixed
+       + overflow:hidden, elle sert donc de bloc conteneur ET rogne la feuille qui
+       glisse depuis le bas). La modale ne couvre que le widget, jamais la page hôte. */
+    /* Libellé réservé aux lecteurs d'écran : le frame ne montre qu'un placeholder,
+       or un placeholder n'est pas un libellé (il disparaît à la saisie). */
+    .ep-sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      overflow: hidden; white-space: nowrap;
+      clip: rect(0 0 0 0); clip-path: inset(50%);
+    }
+
+    .ep-pr-offer { display: flex; flex-direction: column; gap: 10px; }
+    .ep-pr-offer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ep-pr-btn {
+      height: 32px;
+      padding: 0 13px;
+      border: 0;
+      border-radius: 10px;
+      font-family: var(--ep-font-title);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* « Oui » : blanc tant qu'on n'a pas cliqué, vert une fois la demande envoyée.
+       Le vert EST la marque du choix — d'où l'absence de liseré (cf. .ep-pr-chosen). */
+    .ep-pr-btn-yes { border: 1px solid #DCE6E1; background: var(--ep-white); color: var(--ep-dark); }
+    .ep-pr-btn-yes.ep-pr-chosen { background: var(--ep-primary); color: #fff; border-color: transparent; }
+    .ep-pr-btn-no  { border: 1px solid #DCE6E1; background: var(--ep-white); color: #5A6B68; font-weight: 600; }
+    .ep-pr-btn:hover:not(:disabled) { filter: brightness(1.04); }
+    .ep-pr-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    /* Choix déjà fait (restauration ou après clic) : figé, l'option retenue reste lisible. */
+    .ep-pr-btn:disabled { cursor: default; opacity: .5; }
+    .ep-pr-btn.ep-pr-chosen:disabled { opacity: 1; }
+    /* « Non » n'a pas de couleur propre pour signaler le choix : il garde un liseré. */
+    .ep-pr-btn-no.ep-pr-chosen:disabled { box-shadow: inset 0 0 0 2px var(--ep-dark); }
+
+    .ep-sheet-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      background: rgba(6,76,76,.45);
+      display: flex;
+      align-items: flex-end;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .22s ease, visibility 0s linear .22s;
+    }
+    .ep-sheet-backdrop.ep-visible { opacity: 1; visibility: visible; transition: opacity .22s ease, visibility 0s; }
+    .ep-sheet {
+      width: 100%;
+      background: var(--ep-white);
+      border-radius: 20px 20px 0 0;
+      padding: 20px 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 -12px 30px -10px rgba(6,76,76,.3);
+      transform: translateY(100%);
+      transition: transform .28s cubic-bezier(.2,.8,.2,1);
+      max-height: 100%;
+      overflow-y: auto;
+    }
+    .ep-sheet-backdrop.ep-visible .ep-sheet { transform: translateY(0); }
+    .ep-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: #E4DFD2; align-self: center; flex: none; }
+    .ep-sheet-head { display: flex; flex-direction: column; gap: 4px; }
+    .ep-sheet-title { font-family: var(--ep-font-title); font-size: 16px; font-weight: 800; color: #0C2A27; }
+    .ep-sheet-sub { font-size: 13px; line-height: 1.45; color: #5A6B68; }
+    .ep-sheet-sub strong { font-weight: 700; color: #12312D; }
+
+    /* Rappel de la pièce recherchée : pré-rempli avec la requête de l'utilisateur,
+       mais ÉDITABLE — sa valeur part dans le champ message de /parts-request.
+       L'encart reprend l'habillage vert du frame ; l'input est transparent pour
+       lire comme le texte en gras du frame, avec un anneau de focus pour signaler
+       qu'il se modifie. */
+    .ep-pr-recall {
+      position: relative;
+      display: flex;
+      align-items: center;
+      /* Le frame tient sur une ligne ; ici la valeur est éditable, donc elle doit
+         rester LISIBLE en entier. On autorise le repli : libellé et champ restent
+         côte à côte tant que ça passe, sinon le champ prend la ligne suivante. */
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      /* Marge droite réservée au crayon (icône absolue, hors flux) : sans elle un
+         libellé traduit plus long pourrait passer dessous. */
+      padding: 9px 28px 9px 12px;
+      background: #F2FCF8;
+      border: 1px solid #CDEFE1;
+      border-radius: 11px;
+    }
+    .ep-pr-recall svg { flex: none; }
+    .ep-pr-recall-label { flex: none; font-size: 12.5px; line-height: 1.35; color: #5A6B68; }
+    /* Crayon en coin haut-droit : seul indice visuel que le rappel est modifiable
+       (le texte lui-même ressemble à du contenu figé, en gras). Purement décoratif
+       — aria-hidden, hors flux — le focus/anneau sur la zone de texte reste la
+       seule affordance réellement interactive. */
+    .ep-pr-edit-icon { position: absolute; top: 9px; right: 10px; pointer-events: none; }
+    #ep-pr-message {
+      /* Base 100% : le champ prend TOUJOURS sa propre ligne sous le libellé. Une base
+         plus étroite le laisserait tenir à côté (~200px) et tronquer la valeur — or
+         l'utilisateur doit lire en entier ce qu'il s'apprête à envoyer. Et c'est une
+         zone de texte, pas un input : à 16px sur mobile, la valeur (requête + moto)
+         dépasse une ligne, qu'un input mono-ligne rognerait. Elle s'étend toute seule. */
+      flex: 1 1 100%;
+      min-width: 0;
+      resize: none;
+      overflow: hidden;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      font-family: var(--ep-font-body);
+      /* ≥16px : empêche le zoom auto iOS, cf. #ep-input / #ep-pr-email / #ep-pr-phone. */
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: #12312D;
+    }
+    #ep-pr-message:focus { outline: 2px solid var(--ep-primary); outline-offset: 3px; border-radius: 3px; }
+    .ep-pr-recall:has(#ep-pr-message[aria-invalid="true"]) { border-color: #C0392B; background: #FDF3F2; }
+
+    .ep-pr-field { display: flex; flex-direction: column; gap: 6px; }
+    #ep-pr-email, #ep-pr-phone {
+      height: 42px;
+      padding: 0 13px;
+      background: var(--ep-grey-100);
+      border: 1px solid #E4DFD2;
+      border-radius: 11px;
+      font-family: var(--ep-font-body);
+      /* ≥16px : empêche le zoom auto iOS (même règle que #ep-input). Le 13.5px du
+         frame est rétabli au-dessus de 641px, où le zoom au focus n'existe pas. */
+      font-size: 16px;
+      color: #12312D;
+      width: 100%;
+    }
+    #ep-pr-email::placeholder, #ep-pr-phone::placeholder { color: #9AA6A3; }
+    #ep-pr-email:focus, #ep-pr-phone:focus { outline: 2px solid var(--ep-primary); outline-offset: -1px; border-color: transparent; }
+    #ep-pr-email[aria-invalid="true"], #ep-pr-phone[aria-invalid="true"] { border-color: #C0392B; background: #FDF3F2; }
+
+    /* Case de consentement : input réel (focus + clavier natifs) masqué visuellement,
+       doublé d'un carré peint. JAMAIS pré-cochée — un consentement pré-coché n'en est pas un. */
+    .ep-pr-consent { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+    #ep-pr-consent-input {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      overflow: hidden; white-space: nowrap;
+      clip: rect(0 0 0 0); clip-path: inset(50%);
+    }
+    .ep-pr-box {
+      width: 15px; height: 15px;
+      flex: none;
+      margin-top: 1px;
+      border-radius: 4px;
+      border: 1.5px solid #C9D4D0;
+      background: var(--ep-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ep-pr-box svg { opacity: 0; }
+    #ep-pr-consent-input:checked ~ .ep-pr-box { border-color: #00A76F; background: #F2FCF8; }
+    #ep-pr-consent-input:checked ~ .ep-pr-box svg { opacity: 1; }
+    #ep-pr-consent-input:focus-visible ~ .ep-pr-box { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    #ep-pr-consent-input[aria-invalid="true"] ~ .ep-pr-box { border-color: #C0392B; }
+    .ep-pr-consent-text { font-size: 11.5px; line-height: 1.4; color: #5A6B68; }
+
+    .ep-pr-error { font-size: 11.5px; line-height: 1.35; font-weight: 600; color: #C0392B; }
+    .ep-pr-error:empty { display: none; }
+
+    .ep-sheet-submit {
+      height: 42px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(150deg,#00D695,#00A76F);
+      color: #04332F;
+      font-family: var(--ep-font-title);
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ep-sheet-submit:hover:not(:disabled) { filter: brightness(1.06); }
+    .ep-sheet-submit:disabled { opacity: .45; cursor: default; }
+    .ep-sheet-submit:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
+    .ep-sheet-cancel {
+      height: 20px;
+      border: 0;
+      background: transparent;
+      color: #93A19E;
+      font-family: var(--ep-font-title);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ep-sheet-cancel:hover { color: #5A6B68; }
+    .ep-sheet-cancel:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 4px; }
+
     /* Masquer le FAB quand la fenêtre est ouverte (mobile plein écran) */
     #ep-fab.ep-window-open { display: none; }
 
@@ -1266,9 +1893,12 @@
       #ep-window.ep-pos-bottom-left  { bottom: 96px; left: 24px; top: auto; right: auto; }
       #ep-window.ep-pos-top-right    { top: 96px; right: 24px; bottom: auto; left: auto; }
       #ep-window.ep-pos-top-left     { top: 96px; left: 24px; bottom: auto; right: auto; }
-      #ep-header { padding: 14px 16px; }
-      #ep-fab.ep-window-open { display: flex; }
+      #ep-header { padding: 12px 12px; }
+      #ep-fab.ep-window-open { display: block; }
       #ep-input { font-size: 14px; }
+      #ep-pr-email, #ep-pr-phone { font-size: 13.5px; }   /* valeur du frame 2a */
+      #ep-pr-message { font-size: 12.5px; } /* idem — 16px sur mobile contre le zoom iOS */
+      #ep-rv-text { font-size: 13.5px; }    /* idem */
       .ep-clari-filter { font-size: 13px; }
       .ep-products-filter { font-size: 13px; padding: 8px 12px; }
       .ep-products-sort { font-size: 13px; padding: 8px 6px; min-height: 36px; }
@@ -1279,8 +1909,25 @@
 
     @media (prefers-reduced-motion: reduce) {
       #ep-window, .ep-msg, .ep-card, .ep-card-arrow { transition: none; animation: none; }
+      .ep-sheet-backdrop, .ep-sheet { transition: none; }
+      /* Le voile reste — c'est lui qui signale l'attente ; seule la rotation cesse. */
+      .ep-retry-spinner { animation: none; }
       .ep-dot { animation: none; }
       #ep-input:placeholder-shown ~ #ep-send-btn:not(:disabled) { animation: none; }
+      /* Le lanceur change d'état sans morphing ni défilement des exemples. Les sélecteurs
+         doivent égaler la spécificité des règles d'état ci-dessus (une media query n'en
+         ajoute pas) : sinon transition survivrait sur les couches. Le premier exemple
+         reste affiché — sans l'animation, les trois seraient à opacity 0. */
+      #ep-fab,
+      #ep-fab.ep-fab-expanded,
+      #ep-fab .ep-fab-layer,
+      #ep-fab .ep-fab-badge,
+      #ep-fab.ep-fab-expanded .ep-fab-closed,
+      #ep-fab.ep-fab-expanded .ep-fab-face,
+      #ep-fab.ep-fab-expanded .ep-fab-face-badge,
+      #ep-fab.ep-window-open .ep-fab-chevron { transition: none; animation: none; }
+      #ep-fab.ep-fab-expanded .ep-fab-examples > span { animation: none; }
+      #ep-fab.ep-fab-expanded .ep-fab-examples > span:first-child { opacity: 1; }
     }
   `;
 
@@ -1299,7 +1946,343 @@
   // Véhicule identifié par le serveur (champ `interpreted` des réponses). Alimente
   // la barre de contexte « Ma moto », affichée uniquement quand marque + modèle sont
   // connus. null tant qu'aucune moto n'est identifiée. Persisté avec la session.
+  // Derniere tentative de /search ({ query, extraBody }), rejouee telle quelle par le
+  // bouton de la carte d'echec. Hors persistance : une panne ne se restaure pas.
+  // Plafond d'essais pour UN MEME message, garde-fou anti-martelage du serveur :
+  // au-dela, s'acharner ne sert a rien. Le premier envoi compte comme un essai —
+  // il reste donc SEARCH_MAX_TRIES - 1 clics sur « Reessayer ».
+  const SEARCH_MAX_TRIES = 3;
+  // ... mais « reessayez plus tard » doit rester vrai : passe ce delai sans nouvelle
+  // tentative, le compteur du meme message repart de zero.
+  const SEARCH_TRIES_RESET_MS = 5 * 60 * 1000;
+
+  // ══ Télémétrie comportementale ═══════════════════════════════════════════
+  // Module isolé : un seul point d'entrée `track(event, payload)`, une file en
+  // mémoire, un envoi groupé. AUCUN fetch de télémétrie ailleurs dans le widget.
+  //
+  // Trois règles qui priment sur tout le reste :
+  //   1. la télémétrie ne bloque, ne retarde et ne casse jamais l'UI — tout est
+  //      en fire-and-forget, chaque appel est encapsulé, rien ne remonte ;
+  //   2. on ne réessaie JAMAIS un 4xx : il échouera identiquement pour toujours ;
+  //   3. sur 429 ou 5xx on vide la file et on se tait — la télémétrie ne doit
+  //      jamais marteler l'endpoint qui sert aussi les recherches.
+  const Telemetry = (function () {
+    const MAX_BATCH   = 20;      // le serveur refuse au-delà (too_many_events)
+    const MAX_BODY    = 10000;   // octets, corps entier
+    const MAX_PAYLOAD = 4000;    // octets, par payload
+    const IDLE_MS     = 5000;    // debounce d'inactivité
+    const MAX_AGE     = 86400000;
+    // Coupé pour toute la visite après un 429/5xx ; persisté pour l'onglet
+    // quand c'est le quota d'événements qui est épuisé.
+    const OFF_KEY = 'everyparts-events-off';
+
+    let queue = [];
+    let timer = null;
+    let off = false;
+
+    try { if (sessionStorage.getItem(OFF_KEY) === '1') off = true; } catch (e) { /* ignore */ }
+
+    // ── Validation locale ──────────────────────────────────────────────────
+    // Un lot est TOUT-OU-RIEN côté serveur : une entrée invalide rejette
+    // l'ensemble. On valide donc avant d'empiler, et une requête refusée coûte
+    // un crédit de quota — raison de plus de ne jamais en envoyer une mauvaise.
+    const str = max => v => (typeof v === 'string' && v.trim() && v.length <= max) ? v : undefined;
+    const url = max => v => {
+      if (typeof v !== 'string' || !v || v.length > max) return undefined;
+      try { new URL(v); return v; } catch (e) { return undefined; }
+    };
+    const int = (min, max) => v =>
+      (typeof v === 'number' && isFinite(v) && Math.round(v) >= min && Math.round(v) <= max)
+        ? Math.round(v) : undefined;
+    const num = min => v => (typeof v === 'number' && isFinite(v) && v >= min) ? v : undefined;
+    const bool = () => v => typeof v === 'boolean' ? v : undefined;
+    const oneOf = list => v => list.indexOf(v) !== -1 ? v : undefined;
+    const exactLen = n => v => (typeof v === 'string' && v.length === n) ? v : undefined;
+    // `interpreted` : exactement ces quatre clés, les autres seraient signalées
+    // dans meta.ignored.
+    const interpreted = () => v => {
+      if (!v || typeof v !== 'object') return undefined;
+      const out = {};
+      const m = str(191)(v.manufacturer); if (m !== undefined) out.manufacturer = m;
+      const mo = str(191)(v.model);       if (mo !== undefined) out.model = mo;
+      const y = int(1900, 2100)(v.year);  if (y !== undefined) out.year = y;
+      const pt = str(191)(v.part_type);   if (pt !== undefined) out.part_type = pt;
+      return Object.keys(out).length ? out : undefined;
+    };
+
+    // `!` en tête = champ requis : s'il ne passe pas, l'événement entier est
+    // abandonné plutôt que de faire échouer tout le lot côté serveur.
+    const SCHEMA = {
+      session_start:      { url: url(2048), referrer: str(2048), locale: str(35) },
+      session_end:        { duration_ms: int(0, MAX_AGE), message_count: int(0, 1000),
+                            '!reason': oneOf(['new_conversation', 'result_shown', 'session_expired', 'model_reset']) },
+      widget_open:        { '!url': url(2048), page_title: str(255), referrer: str(2048) },
+      widget_close:       { url: url(2048), page_title: str(255), referrer: str(2048), open_ms: int(0, MAX_AGE) },
+      product_click:      { '!product_ref': str(191), position: int(1, 500), page: int(1, 1e9),
+                            query: str(500), interpreted: interpreted(),
+                            model_confirmed: bool(), result_count: int(0, 1000), refined: bool(),
+                            price: num(0), currency: exactLen(3), name: str(255),
+                            brand: str(191), url: url(2048) },
+      samples_click:      { '!sample': str(191), position: int(1, 50), sample_count: int(1, 50) },
+      // with_comment : second review_submit émis quand le motif d'un avis négatif
+      // est effectivement soumis (canné ou texte libre)
+      review_submit:      { '!rating': oneOf(['up', 'down']), with_comment: bool() },
+      parts_request_open:  { query: str(500), reason: oneOf(['no_results', 'manual']) },
+      parts_request_close: { filled: bool() },
+      parts_request_submit:{ has_message: bool(), consent: bool() },
+    };
+
+    // Journal de mise au point (data-debug). Prefixe explicite : la console d'une
+    // boutique est partagee avec son theme et ses autres scripts, il faut pouvoir
+    // reconnaitre d'un coup d'oeil ce qui vient du widget. Jamais bloquant : meme
+    // un console indisponible ne doit rien casser.
+    const LOG = '[PartsMind]';
+    function dbg(kind, args) {
+      if (!CONFIG.debug) return;
+      try { (console[kind] || console.log).apply(console, [LOG].concat(args)); } catch (e) { /* ignore */ }
+    }
+    const dlog  = (...args) => dbg('log', args);
+    const dwarn = (...args) => dbg('warn', args);
+
+    function byteLength(s) {
+      try { return new TextEncoder().encode(s).length; } catch (e) { return s.length * 3; }
+    }
+
+    // Ne conserve que les clés connues et valides. Renvoie null si un champ
+    // requis manque — l'événement est alors purement et simplement abandonné.
+    function sanitize(event, raw) {
+      const schema = SCHEMA[event];
+      if (!schema) return null;
+      const payload = {};
+      for (const key of Object.keys(schema)) {
+        const required = key.charAt(0) === '!';
+        const name = required ? key.slice(1) : key;
+        const value = schema[key]((raw || {})[name]);
+        if (value === undefined) {
+          if (required) return null;
+          continue;
+        }
+        payload[name] = value;
+      }
+      if (byteLength(JSON.stringify(payload)) > MAX_PAYLOAD) return null;
+      return payload;
+    }
+
+    // ── File ───────────────────────────────────────────────────────────────
+    function track(event, raw, sid) {
+      if (off) {
+        dwarn('event.' + event, 'ignored, telemetry disabled');
+        return;
+      }
+      try {
+        const session = sid || (typeof sessionId === 'string' ? sessionId : '');
+        if (!session) {                     // empty_session_id : inutile d'envoyer
+          dwarn('event.' + event, 'ignored, no session');
+          return;
+        }
+        const payload = sanitize(event, raw);
+        if (payload === null) {
+          // Le cas le plus utile a voir en developpement : type inconnu, champ
+          // requis manquant ou invalide, ou payload au-dela de 4 000 octets.
+          dwarn('event.' + event, 'dropped at validation:', raw);
+          return;
+        }
+        // performance.now() et JAMAIS l'horloge murale : une horloge décalée
+        // placerait l'événement dans le futur ou hors fenêtre de rétention.
+        queue.push({ event, payload, session, t: performance.now() });
+        // widget_close : le sujet (chemin d'URL) est mis en avant dans la trace,
+        // plutôt que noyé dans le payload, pour repérer d'un coup d'œil la page.
+        if (event === 'widget_close' && payload.url) {
+          let subject = payload.url;
+          try { subject = new URL(payload.url).pathname; } catch (e) { /* garde l'URL complète */ }
+          dlog('event.' + event, payload, '· subject', subject, '· session', session, '· queue', queue.length);
+        } else {
+          dlog('event.' + event, payload, '· session', session, '· queue', queue.length);
+        }
+        if (queue.length >= MAX_BATCH) flush();
+        else schedule();
+      } catch (e) { /* la télémétrie ne remonte jamais d'erreur */ }
+    }
+
+    function schedule() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(flush, IDLE_MS);
+    }
+
+    // Découpe en corps respectant les deux plafonds (20 entrées, 10 000 octets).
+    function buildBodies(entries) {
+      const bodies = [];
+      let batch = [];
+      const now = performance.now();
+      const encode = list => {
+        const top = list[0].session;
+        return JSON.stringify({
+          session_id: top,
+          events: list.map(e => {
+            const out = { event: e.event, age_ms: Math.min(MAX_AGE, Math.max(0, Math.round(now - e.t))) };
+            if (Object.keys(e.payload).length) out.payload = e.payload;
+            // Le session_id de tête sert de défaut ; une entrée d'une autre
+            // session porte le sien (le widget en renouvelle un par recherche).
+            if (e.session !== top) out.session_id = e.session;
+            return out;
+          }),
+        });
+      };
+      for (const entry of entries) {
+        const next = batch.concat([entry]);
+        if (next.length > MAX_BATCH || byteLength(encode(next)) > MAX_BODY) {
+          if (batch.length) bodies.push(encode(batch));
+          batch = [entry];
+          // Une entrée seule qui dépasse encore : impossible à envoyer, on la jette.
+          if (byteLength(encode(batch)) > MAX_BODY) batch = [];
+        } else {
+          batch = next;
+        }
+      }
+      if (batch.length) bodies.push(encode(batch));
+      return bodies;
+    }
+
+    function flush() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (off || !queue.length) return;
+      const entries = queue;
+      queue = [];
+      let bodies;
+      try { bodies = buildBodies(entries); } catch (e) { return; }
+      dlog('flushing', entries.length, 'event(s) in', bodies.length, 'request(s):',
+           entries.map(e => e.event).join(', '));
+      bodies.forEach(send);
+    }
+
+    function stop(persist) {
+      dwarn('telemetry disabled for this visit' + (persist ? ' and this tab (quota exceeded)' : ''));
+      off = true;
+      queue = [];
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (persist) { try { sessionStorage.setItem(OFF_KEY, '1'); } catch (e) { /* ignore */ } }
+    }
+
+    function send(body) {
+      try {
+        // keepalive et NON sendBeacon : ce dernier ne sait pas poser l'en-tête
+        // Authorization, donc ne peut pas s'authentifier. Le plafond keepalive
+        // (64 Ko) est très au-dessus de nos 10 000 octets.
+        fetch(`${CONFIG.apiBase}/events`, {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${CONFIG.token}`,
+          },
+          body,
+        }).then(resp => {
+          if (resp.status === 201) {
+            if (CONFIG.debug) {
+              resp.json().then(d => {
+                const ignored = d && d.meta && d.meta.ignored;
+                // meta.ignored non vide = un nom de champ que le serveur ne connait
+                // pas. C'est LE signal qui attrape une faute de frappe.
+                if (ignored && ignored.length) dwarn('fields dropped by server:', ignored);
+                else dlog('201 · stored', d && d.count ? '(' + d.count + ')' : '');
+              }).catch(() => {});
+            }
+            return;
+          }
+          if (resp.status === 429 || resp.status >= 500) {
+            // On se tait pour le reste de la visite. Le quota d'événements est
+            // distinct de celui des recherches : la recherche n'est pas affectée,
+            // et rien n'est montré au visiteur.
+            resp.json().then(d => {
+              stop(d && d.error && d.error.code === 'event_quota_exceeded');
+            }).catch(() => stop(false));
+            return;
+          }
+          // 4xx : jamais de réessai, les entrées sont déjà hors de la file.
+          if (CONFIG.debug) {
+            resp.json().then(d => {
+              dwarn('rejected', resp.status, d && d.error ? d.error.code : '', d && d.meta ? d.meta : '');
+            }).catch(() => dwarn('rejected', resp.status));
+          }
+        }).catch(() => { dwarn('network failure, events lost'); });
+      } catch (e) { /* fetch indisponible : la télémétrie s'efface */ }
+    }
+
+    return {
+      track,
+      flush,
+      isOff: () => off,
+      // exposés pour les tests
+      _sanitize: sanitize,
+      _buildBodies: buildBodies,
+    };
+  })();
+
+  // Suivi de session pour la telemetrie : un couple session_start/session_end
+  // par session_id — le widget en renouvelle un a chaque recherche aboutie.
+  // Session ecartee pour expiration du TTL, a clore en session_end « timeout ».
+  let expiredSession = null;
+  let restoredSession = false;
+  let telemetrySessionAt = 0;
+  let telemetryMessages = 0;
+  let pendingRotationReason = null;
+  // Dernier `meta` de /search, repris tel quel dans les product_click.
+  let lastSearchMeta = null;
+
+  function telemetryStartSession() {
+    telemetrySessionAt = performance.now();
+    telemetryMessages = 0;
+    Telemetry.track('session_start', {
+      url: location.href,
+      referrer: document.referrer,
+      locale: CONFIG.locale,          // BCP-47 complet, jamais tronque
+    });
+  }
+  // `endingId` : la session qui se termine, pas la courante — au moment d'une
+  // rotation, sessionId a deja change.
+  function telemetryEndSession(reason, endingId) {
+    if (!telemetrySessionAt) return;
+    Telemetry.track('session_end', {
+      duration_ms: Math.round(performance.now() - telemetrySessionAt),
+      message_count: telemetryMessages,
+      reason,
+    }, endingId || sessionId);
+    telemetrySessionAt = 0;
+  }
+  // Si la rotation est demandée suite à un affichage de résultat (result_shown), on la met en attente jusqu'au
+  // prochain message utilistateur, sinon on la déclenche immédiatement.
+  // Le but étant de privilégier la cohérence au niveau du timing des events déclenchés si le user intéragit encore avec
+  // la session sur le point d'être terminée (interaction avec le listing produits, review). Et de ne déclencher le
+  // session_end et session_start qu'une fois qu'il entame réelement une nouvelle session en postant un message.
+  function rotateSession(reason) {
+    if (reason !== 'result_shown') {
+      // Un motif explicite (action volontaire de l'utilisateur) remplace toute
+      // rotation encore en attente : elle n'a plus lieu d'être, qu'une rotation
+      // immédiate se déclenche ci-dessous ou non (session déjà vide). Sans ce
+      // reset, un « result_shown » resté en attente survivrait, muet, jusqu'au
+      // prochain message — et déciderait alors à tort si CE message doit
+      // rouvrir une session déjà refermée ici.
+      pendingRotationReason = null;
+      if (telemetryMessages === 0) return;
+      telemetryEndSession(reason, sessionId);
+      sessionId = generateUUID();
+      telemetryStartSession();
+    } else {
+      pendingRotationReason = reason;
+    }
+  }
+
+  let lastSearchAttempt = null;
+  // Carte d'echec a reutiliser pour l'appel EN COURS (renseignee seulement quand
+  // l'appel vient du bouton de reessai), et marqueur de l'issue de cet appel.
+  let pendingRetryCard = null;
+  let searchFailedNow = false;
   let identifiedVehicle = null;
+  // Type de pièce interprété par le serveur (`interpreted.part_type`, ex. « guidon »).
+  // Même logique que identifiedVehicle : c'est la lecture SERVEUR de la demande, pas le
+  // texte brut tapé par l'utilisateur — lequel contient souvent déjà la moto
+  // (« guidon honda cbr 600 85 ») et ferait doublon avec le véhicule. Persisté aussi.
+  let identifiedPart = null;
 
   // ── Persistance de session (survit à la navigation) ─────────────────────────
   // Historique ordonné de la conversation, maintenue à jour au fil
@@ -1341,9 +2324,21 @@
       return null;
     }
     // Payload d'une autre version, d'un autre token, ou périmé → on repart à neuf.
+    const expired = saved && saved.v === STORAGE_SCHEMA_VERSION && saved.token === CONFIG.token
+      && Array.isArray(saved.transcript) && saved.sessionId
+      && (Date.now() - (saved.lastActive || 0)) > SESSION_TTL_MS;
     if (!saved || saved.v !== STORAGE_SCHEMA_VERSION || saved.token !== CONFIG.token
         || !Array.isArray(saved.transcript)
         || (Date.now() - (saved.lastActive || 0)) > SESSION_TTL_MS) {
+      // Perime par le TTL : la session a REELLEMENT existe, elle vient de s'eteindre
+      // faute d'activite. C'est le seul « timeout » qu'on puisse constater — on garde
+      // de quoi le declarer, l'envoi se fait au montage.
+      if (expired) {
+        expiredSession = {
+          sessionId: saved.sessionId,
+          messageCount: saved.transcript.filter(e => e && e.t === 'user').length,
+        };
+      }
       clearState();
       return null;
     }
@@ -1359,6 +2354,7 @@
         sessionId,
         conversationContext,
         identifiedVehicle,
+        identifiedPart,
         transcript,
         lastActive: Date.now(),
       }));
@@ -1400,15 +2396,36 @@
     styleEl.textContent = STYLES;
     shadow.appendChild(styleEl);
 
-    // Bouton flottant : monogramme (fermé) + chevron (ouvert) + badge non-lus.
+    // Bouton flottant (frames 5a / 4a) : trois couches superposées — bulle ronde
+    // (monogramme + compteur), façade de champ de recherche déployée, chevron
+    // « réduire ». Le CSS les croise en opacité selon .ep-fab-expanded / .ep-window-open.
+    // Le texte de la façade est purement décoratif : le bouton porte son propre
+    // aria-label, les couches sont donc masquées aux lecteurs d'écran.
     const fab = document.createElement('button');
     fab.id = 'ep-fab';
     fab.className = `ep-pos-${CONFIG.position}`;
     fab.setAttribute('aria-label', t('open'));
     fab.title = t('open');
-    fab.innerHTML = `<span class="ep-fab-ico ep-fab-ico-open">${ICOTYPE_SVG}</span><span class="ep-fab-ico ep-fab-ico-close">${FAB_CLOSE_ICON}</span><span id="ep-fab-badge" aria-hidden="true"></span>`;
+    const fabExamples = tList('launcher_examples')
+      .map(s => `<span>${escHtml(s)}</span>`).join('');
+    fab.innerHTML =
+      `<span class="ep-fab-layer ep-fab-closed" aria-hidden="true">` +
+        markSvg(22, 25, '#fff') +
+        `<span class="ep-fab-badge ep-fab-badge-bubble"></span>` +
+      `</span>` +
+      `<span class="ep-fab-layer ep-fab-face" aria-hidden="true">` +
+        `<svg class="ep-fab-search" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7C8A88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.35-4.35"></path></svg>` +
+        `<span class="ep-fab-examples">${fabExamples}</span>` +
+        `<span class="ep-fab-disc">${markSvg(17, 19, '#fff')}</span>` +
+      `</span>` +
+      // Le compteur de la façade est une couche à part : il déborde du coin arrondi
+      // (cf. frame), or la façade est rognée. Il se fond au même rythme qu'elle.
+      `<span class="ep-fab-layer ep-fab-face-badge" aria-hidden="true">` +
+        `<span class="ep-fab-badge ep-fab-badge-disc"></span>` +
+      `</span>` +
+      `<span class="ep-fab-layer ep-fab-chevron" aria-hidden="true">${FAB_CLOSE_ICON}</span>`;
     shadow.appendChild(fab);
-    const fabBadge = fab.querySelector('#ep-fab-badge');
+    const fabBadges = fab.querySelectorAll('.ep-fab-badge');
 
     // Bandeau d'amorce / aperçu (affiché quand le chat est fermé).
     const teaser = document.createElement('div');
@@ -1443,6 +2460,33 @@
     const motoLabel  = win.querySelector('#ep-moto-label');
     const motoValue  = win.querySelector('#ep-moto-value');
     const motoEdit   = win.querySelector('#ep-moto-edit');
+    // Fiche « demander cette pièce » (frame 2a)
+    // Feuille des motifs d'un avis négatif
+    const rvrBackdrop = win.querySelector('#ep-rvr-backdrop');
+    const rvrButtons  = [...win.querySelectorAll('#ep-rvr-list .ep-review-reason')];
+    const rvrOtherBtn = win.querySelector('#ep-rvr-other');
+    const rvrCancel   = win.querySelector('#ep-rvr-cancel');
+    // Feuille « préciser votre retour » (motif Autre)
+    const rvBackdrop = win.querySelector('#ep-rv-backdrop');
+    const rvSheet    = win.querySelector('#ep-rv-sheet');
+    const rvText     = win.querySelector('#ep-rv-text');
+    const rvCount    = win.querySelector('#ep-rv-count');
+    const rvSubmit   = win.querySelector('#ep-rv-submit');
+    const rvCancel   = win.querySelector('#ep-rv-cancel');
+    const prBackdrop = win.querySelector('#ep-pr-backdrop');
+    const prSheet    = win.querySelector('#ep-pr-sheet');
+    const prSub      = win.querySelector('#ep-pr-sub');
+    const prEmail    = win.querySelector('#ep-pr-email');
+    const prEmailErr = win.querySelector('#ep-pr-email-err');
+    const prPhone    = win.querySelector('#ep-pr-phone');
+    const prPhoneErr = win.querySelector('#ep-pr-phone-err');
+    const prMessage  = win.querySelector('#ep-pr-message');
+    const prMsgErr   = win.querySelector('#ep-pr-message-err');
+    const prConsent  = win.querySelector('#ep-pr-consent-input');
+    const prConsErr  = win.querySelector('#ep-pr-consent-err');
+    const prFormErr  = win.querySelector('#ep-pr-form-err');
+    const prSubmit   = win.querySelector('#ep-pr-submit');
+    const prCancel   = win.querySelector('#ep-pr-cancel');
 
     // ── Événements ────────────────────────────────────────────────────────
     let isOpen = false;
@@ -1456,6 +2500,9 @@
     let teaserTimer = null;
     const TEASER_DELAY_MS = 4000;
     const TEASER_DISMISS_KEY = `everyparts-teaser-dismissed:${CONFIG.token}`;
+    // Déploiement du lanceur : ~1 s après son animation d'entrée, comme en 5a.
+    let expandTimer = null;
+    const LAUNCHER_EXPAND_MS = 1000;
     teaser.addEventListener('click', () => toggleWindow(true));
     teaser.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleWindow(true); }
@@ -1464,7 +2511,12 @@
 
     // Fermeture à Échap
     shadow.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && isOpen) toggleWindow(false);
+      if (e.key !== 'Escape' || !isOpen) return;
+      // La fiche de demande passe avant : Échap la referme sans fermer le chat.
+      if (isReviewReasonsOpen()) { closeReviewReasons(); return; }
+      if (isReviewOtherOpen()) { closeReviewOther(); return; }
+      if (isPartsRequestOpen()) { closePartsRequest(); return; }
+      toggleWindow(false);
     });
 
     sendBtn.addEventListener('click', sendMessage);
@@ -1480,6 +2532,63 @@
     renderMotoBar();
     // Lanceur fermé : badge + aperçu du dernier message assistant, ou amorce générique.
     initClosedLauncher();
+
+    // ── Télémétrie : cycle de vie ──────────────────────────────────────────
+    // AUCUN session_start au chargement : un visiteur qui ne touche jamais au
+    // widget ne doit pas compter comme une session, sinon toute page vue en
+    // creerait une et les statistiques ne voudraient plus rien dire. La session
+    // s'ouvre a la PREMIERE ouverture du panneau (cf. toggleWindow).
+    //
+    // Seule exception : une session periment par TTL a bel et bien existe, on la
+    // clot donc ici, meme si le visiteur n'ouvre pas le widget. duration_ms est
+    // omis — on n'a jamais persiste l'instant de debut, et l'inventer serait faux.
+    if (expiredSession) {
+      Telemetry.track('session_end', {
+        message_count: expiredSession.messageCount,
+        reason: 'session_expired',
+      }, expiredSession.sessionId);
+      expiredSession = null;
+    }
+
+    // Deux declencheurs, deux roles DISTINCTS — les confondre produisait quatre
+    // faux evenements (onglet change, rafraichissement compte double, session
+    // terminee alors qu'elle survit) :
+    //
+    //   visibilitychange->hidden : on VIDE seulement la file. Changer d'onglet
+    //     n'est ni une fermeture du panneau ni une fin de session — le visiteur
+    //     revient. C'est en revanche la derniere occasion fiable d'expedier ce qui
+    //     attend, sur mobile ou l'onglet peut ne jamais etre « decharge ».
+    //
+    //   pagehide : la page part pour de bon. Le panneau ouvert se ferme donc
+    //     effectivement. `once` + drapeau : un rafraichissement declenche pagehide
+    //     ET visibilitychange, et pagehide lui-meme peut se repeter.
+    //
+    // AUCUN session_end ici : la conversation est persistee (TTL 30 min) et
+    // reprend au rechargement. Un depart de page ne termine donc pas la session ;
+    // elle se termine a une rotation, a une reinitialisation, ou par expiration.
+    let finalized = false;
+    function telemetryPageHide() {
+      if (finalized) return;
+      finalized = true;
+      try {
+        if (isOpen) {
+          Telemetry.track('widget_close', {
+            url: location.href,
+            page_title: document.title,
+            referrer: document.referrer,
+            open_ms: openedAt ? Math.round(performance.now() - openedAt) : undefined,
+          });
+          openedAt = 0;
+        }
+        Telemetry.flush();
+      } catch (e) { /* jamais rien remonter depuis un handler de fin de vie */ }
+    }
+    window.addEventListener('pagehide', telemetryPageHide);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        try { Telemetry.flush(); } catch (e) { /* ignore */ }
+      }
+    });
 
     // ── Lanceur fermé : amorce, aperçu, badge ────────────────────────────────
     function showTeaser(text) {
@@ -1499,10 +2608,22 @@
       try { return sessionStorage.getItem(TEASER_DISMISS_KEY) === '1'; } catch (e) { return false; }
     }
     function showBadge(n) {
-      fabBadge.textContent = n > 9 ? '9+' : String(n);
-      fabBadge.classList.add('ep-visible');
+      const label = n > 9 ? '9+' : String(n);
+      fabBadges.forEach(b => { b.textContent = label; b.classList.add('ep-visible'); });
     }
-    function hideBadge() { fabBadge.classList.remove('ep-visible'); }
+    function hideBadge() { fabBadges.forEach(b => b.classList.remove('ep-visible')); }
+
+    // ── Lanceur déployé (frame 5a) ───────────────────────────────────────────
+    // La bulle ronde s'étire en façade de champ de recherche et le reste jusqu'au
+    // premier clic (la boucle du frame ne sert qu'à la démonstration sur le canvas).
+    function expandLauncher() {
+      if (isOpen) return;
+      fab.classList.add('ep-fab-expanded');
+    }
+    function collapseLauncher() {
+      if (expandTimer) { clearTimeout(expandTimer); expandTimer = null; }
+      fab.classList.remove('ep-fab-expanded');
+    }
 
     function hasUserInteraction() {
       return transcript.some(e => e.t === 'user');
@@ -1534,16 +2655,27 @@
       }
       return text ? { text: text, count: count } : null;
     }
-    // Au chargement, chat fermé : si une conversation est en cours et que l'assistant
-    // a répondu en dernier → badge + aperçu tronqué ; sinon (visiteur neuf) → amorce
-    // générique après un court délai. Rien si l'utilisateur a écrit sans réponse.
+    // Au chargement, chat fermé, deux cas :
+    // - conversation déjà engagée → le lanceur RESTE une bulle ronde fermée, avec le
+    //   badge de non-lus et l'aperçu du dernier message de l'assistant ;
+    // - visiteur neuf → la bulle se déploie en façade de recherche (frame 5a) et le
+    //   reste jusqu'au premier clic. Ce déploiement remplace l'ancien bandeau d'amorce
+    //   générique : même intention, même coin, même instant — les cumuler ferait deux
+    //   sollicitations concurrentes, et les frames n'en montrent qu'une.
+    // Rien du tout si l'utilisateur a écrit sans avoir encore reçu de réponse.
     function initClosedLauncher() {
       if (isOpen) return;
       const preview = lastAssistantPreview();
       if (preview) {
         showBadge(preview.count);
-        if (!teaserDismissed()) showTeaser(truncateText(preview.text, 100));
-      } else if (!hasUserInteraction() && !teaserDismissed()) {
+        if (!teaserDismissed()) showTeaser(truncateText(preview.text, 70));
+      } else if (!hasUserInteraction()) {
+        expandTimer = setTimeout(function () {
+          if (isOpen) return;
+          expandLauncher();
+          showBadge(1);   // le message d'accueil compte comme 1 message assistant
+        }, LAUNCHER_EXPAND_MS);
+
         teaserTimer = setTimeout(function () {
           if (!isOpen && !teaserDismissed()) {
             showTeaser(t('teaser'));
@@ -1765,14 +2897,41 @@
     inputEl.addEventListener('focus', function () { inputFocused = true; settleViewport(); });
     inputEl.addEventListener('blur', function () { inputFocused = false; settleViewport(); });
 
+    let openedAt = 0;
     function toggleWindow(open) {
       isOpen = open;
+      if (open) {
+        // Premiere ouverture : c'est ICI que la session commence. Une conversation
+        // restaurée reprend la sienne — son session_start est deja parti lors d'une
+        // vue precedente, en emettre un second violerait « once per session_id ».
+        if (!telemetrySessionAt) {
+          if (restoredSession) telemetrySessionAt = performance.now();
+          else telemetryStartSession();
+        }
+        openedAt = performance.now();
+        Telemetry.track('widget_open', {
+          url: location.href,                 // requis
+          page_title: document.title,
+          referrer: document.referrer,
+        });
+      } else {
+        Telemetry.track('widget_close', {
+          url: location.href,
+          page_title: document.title,
+          referrer: document.referrer,
+          open_ms: openedAt ? Math.round(performance.now() - openedAt) : undefined,
+        });
+        openedAt = 0;
+      }
       win.classList.toggle('ep-hidden', !open);
       fab.classList.toggle('ep-window-open', open);
       fab.setAttribute('aria-label', open ? t('close') : t('open'));
       fab.title = open ? t('close') : t('open');
       if (open) {
-        // L'ouverture « consomme » l'amorce/aperçu et le badge de non-lus.
+        // L'ouverture « consomme » l'amorce/aperçu et le badge de non-lus, et replie
+        // la façade déployée en bulle ronde — le repli court pendant l'ouverture de
+        // la fenêtre, comme en 5a.
+        collapseLauncher();
         hideTeaser();
         hideBadge();
         applyViewport();      // gèle la page et cale la fenêtre avant tout focus
@@ -1785,6 +2944,8 @@
         }
       } else {
         clearTimeout(settleTimer);
+        closeReviewOther();
+        closePartsRequest();  // une fiche laissée ouverte ne doit pas réapparaître à la réouverture
         inputEl.blur();       // referme le clavier avant de rendre la main à la page
         applyViewport();      // dégèle et restaure la position de défilement
         fab.focus();
@@ -1795,13 +2956,17 @@
     // l'accueil. Permet à l'utilisateur de contourner la persistance de sa conversation
     // s'il souhaite recommencer
     function newConversation() {
+      closeReviewReasons({ silent: true }); // silent : une conversation neuve n'a pas à hériter d'une relance
+      closeReviewOther();
+      closePartsRequest();   // la fiche est rattachée à une proposition qui disparaît
       transcript = [];
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
       pendingRefinement = null;
       activeList = null;
       identifiedVehicle = null;
-      sessionId = generateUUID();
+      identifiedPart = null;
+      rotateSession('new_conversation');
       clearState();
       renderMotoBar();       // masque la barre « Ma moto »
       messagesEl.innerHTML = '';
@@ -1834,12 +2999,7 @@
       bubble.className = 'ep-bubble ep-welcome';
 
       const p1 = document.createElement('p');
-      const seg = t('welcome_p1').split('{brand}');
-      p1.appendChild(document.createTextNode(seg[0]));
-      const strong = document.createElement('strong');
-      strong.textContent = 'PartsMind';
-      p1.appendChild(strong);
-      p1.appendChild(document.createTextNode(seg[1] || ''));
+      p1.textContent = t('welcome_p1');
 
       const p2 = document.createElement('p');
       p2.className = 'ep-welcome-sub';
@@ -1871,13 +3031,16 @@
 
       const row = document.createElement('div');
       row.className = 'ep-chips';
-      chips.forEach(text => {
+      chips.forEach((text, i) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'ep-chip';
         btn.textContent = text;
         btn.addEventListener('click', () => {
           if (isLoading) return;
+          Telemetry.track('samples_click', {
+            sample: text, position: i + 1, sample_count: chips.length,
+          });
           removeTryChips();
           appendUserMessage(text);
           callSearch(text);
@@ -1907,6 +3070,23 @@
       };
       renderMotoBar();
       if (!isRestoring) saveState();
+    }
+
+    // Type de pièce interprété par le serveur. Indépendant du véhicule : une requête
+    // peut nommer la pièce sans que la moto soit encore identifiée, et inversement —
+    // d'où une fonction distincte de updateVehicleFromData(), qui sort tôt sans moto.
+    function updatePartFromData(data) {
+      const part = data && data.interpreted && data.interpreted.part_type;
+      if (!part) return;
+      identifiedPart = String(part).trim() || null;
+      if (!isRestoring) saveState();
+    }
+
+    // Majuscule initiale seule : `part_type` arrive en minuscules (« guidon »), et
+    // titleCase() capitaliserait chaque mot (« Plaquette De Frein »).
+    function capitalize(s) {
+      s = String(s || '');
+      return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
     }
 
     // Casse titre (l'API renvoie la marque en capitales, ex. « HONDA »).
@@ -1940,17 +3120,18 @@
     }
 
     // « Modifier » : réinitialise le véhicule et le contexte moto pour que l'utilisateur
-    // redécrive sa moto. Un NOUVEL identifiant de session est généré : le serveur tient
-    // l'état conversationnel par session_id (CDC §8), donc vider `previous_clarifications`
+    // redécrive sa moto. Un NOUVEL identifiant de session est généré (sauf si la session
+    // courante n'a encore servi à rien, cf. rotateSession) : le serveur tient l'état
+    // conversationnel par session_id (CDC §8), donc vider `previous_clarifications`
     // côté widget ne suffit pas — sans nouvelle session, le serveur réutiliserait le
-    // véhicule mémorisé au prochain /search. On repart donc d'une session vierge.
+    // véhicule mémorisé au prochain /search.
     function editMoto() {
       identifiedVehicle = null;
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
       pendingRefinement = null;
       activeList = null;
-      sessionId = generateUUID();
+      rotateSession('model_reset');
       renderMotoBar();
       saveState();
       inputEl.focus();
@@ -1980,7 +3161,7 @@
     // Les avis et listes paginées déjà affichés gardent l'ancien session_id capturé ;
     // activeList n'est pas remis à zéro pour que « Voir plus » reste fonctionnel.
     function startNewSession() {
-      sessionId = generateUUID();
+      rotateSession('result_shown');   // toujours non-vide ici : un message vient de partir
       lastClarificationField = null;
       pendingRefinement = null;
       if (identifiedVehicle) {
@@ -1995,9 +3176,11 @@
       const saved = loadState();
       if (!saved || !saved.transcript.length) return;
 
+      restoredSession = !!saved.sessionId;
       sessionId = saved.sessionId || sessionId;
       conversationContext = saved.conversationContext || { previous_clarifications: [] };
       identifiedVehicle = saved.identifiedVehicle || null;
+      identifiedPart = saved.identifiedPart || null;
       transcript = saved.transcript;
 
       isRestoring = true;
@@ -2065,12 +3248,28 @@
           if (!answered) {
             renderReviewPrompt(undefined, entry);
           } else {
-            renderReviewPrompt(entry.rating);
+            // L'entree est passee AUSSI pour un avis deja donne : les pouces restent
+            // figes (restoreRating), mais les motifs ont besoin d'elle pour retrouver
+            // lequel avait ete choisi.
+            renderReviewPrompt(entry.rating, entry);
           }
           break;
         }
         case 'no_results':
           appendAssistantMessageEl(buildNoResults(entry.message, entry.suggestions));
+          break;
+        case 'pr_offer':
+          // Éteinte entre-temps : une conversation journalisée quand la fonctionnalité
+          // était active ne doit pas la faire réapparaître. L'entrée reste dans
+          // l'historique — la rejouer serait proposer un service qui n'existe plus.
+          if (!CONFIG.partsRequest) break;
+          // Une proposition SANS RÉPONSE reste cliquable quelle que soit sa position —
+          // même règle que les avis, pas celle des groupes d'options. Elle cesse d'être
+          // la dernière entrée dès que le message de relance est ajouté ; la figer là
+          // condamnerait définitivement la demande de quiconque a ouvert la fiche puis
+          // annulé. Chaque entrée porte sa session, sa moto et sa pièce : rouvrir une
+          // proposition ancienne reste rattaché à la bonne recherche.
+          renderPartsRequestOffer(entry);
           break;
       }
     }
@@ -2123,16 +3322,32 @@
     }
 
     // ── Appel API ──────────────────────────────────────────────────────────
-    async function callSearch(query, extraBody) {
+    async function callSearch(query, extraBody, retryCard) {
       if (isLoading) return;
+      // Memorisee pour le bouton de reessai de la carte d'echec : on rejoue la MEME
+      // requete et les memes extras (affinage, pagination), sans reafficher le
+      // message utilisateur — il est deja dans le fil.
+      // Compteur par message : reinitialise des que la requete change, ou apres le
+      // delai de repos ci-dessus.
+      const sameMessage = lastSearchAttempt
+        && lastSearchAttempt.query === query
+        && (Date.now() - lastSearchAttempt.at) < SEARCH_TRIES_RESET_MS;
+      lastSearchAttempt = {
+        query, extraBody,
+        tries: (sameMessage ? lastSearchAttempt.tries : 0) + 1,
+        at: Date.now(),
+      };
+      pendingRetryCard = retryCard || null;
+      searchFailedNow = false;
       isLoading = true;
       sendBtn.disabled = true;
       showTyping(true);
 
       const body = {
         query,
-        session_id: sessionId,
-        context:    conversationContext,
+        session_id:     sessionId,
+        context:        conversationContext,
+        default_locale: CONFIG.locale,
       };
       if (extraBody) Object.assign(body, extraBody);
 
@@ -2151,9 +3366,13 @@
         renderResponse(data);
       } catch (err) {
         showTyping(false);
-        appendErrorMessage(t('error_unexpected'));
+        renderSearchFailure();
         console.error(err);
       } finally {
+        // Reessai abouti : la carte disparait, la conversation a repris. Echoue :
+        // renderSearchFailure() l'a deja remise en etat, elle reste en place.
+        if (retryCard && !searchFailedNow) retryCard.remove();
+        pendingRetryCard = null;
         isLoading = false;
         sendBtn.disabled = false;
         if (!isMobile()) inputEl.focus();
@@ -2162,8 +3381,10 @@
 
     // ── Rendu des réponses ─────────────────────────────────────────────────
     function renderResponse(data) {
+      if (data && data.meta) lastSearchMeta = data.meta;
       // Met à jour la barre « Ma moto » dès qu'une réponse identifie le véhicule.
       updateVehicleFromData(data);
+      updatePartFromData(data);
       switch (data.type) {
         case 'results':
           renderResults(data);
@@ -2175,23 +3396,20 @@
           renderNoResults(data);
           break;
         case 'error':
-          appendErrorMessage(data.error?.message || t('error_unknown'));
+          if (data.error?.code === 'pagination_expired' && data.error?.message) {
+            appendErrorMessage(data.error.message);
+          } else {
+            console.error(data.error || t('error_unknown'));
+            renderSearchFailure();
+          }
           break;
         default:
-          appendErrorMessage(t('error_unexpected'));
+          renderSearchFailure();
       }
     }
 
     function renderResults(data) {
       const products = data.results || [];
-
-      // Affinage serveur (CDC §6.6) : trop de produits → les questions sont
-      // posées en chaîne AVANT d'afficher la liste ; celle-ci reste en main
-      // pour le cas « tout je-ne-sais-pas » (aucun nouvel appel API).
-      if (products.length > 0 && data.refinement?.questions?.length) {
-        startRefinement(data);
-        return;
-      }
 
       appendAssistantMessage(data.message);
 
@@ -2210,7 +3428,40 @@
         renderReviewPrompt();
       }
 
-      appendAssistantMessage(t('after_result'));
+      // Affinage serveur (CDC §6.6) : trop de produits → un second temps,
+      // greffé APRÈS la liste (déjà affichée ci-dessus), propose d'affiner la
+      // sélection. Ce n'est plus une porte qui retient les résultats : la
+      // liste reste utilisable telle quelle pendant que l'utilisateur répond
+      // ou l'ignore. finishRefinement() referme ce second temps (nouvel appel
+      // /search, ou — si tout est resté « je ne sais pas » — le simple
+      // rattachement de session ci-dessous, sans rien réafficher).
+      if (products.length > 0 && data.refinement?.questions?.length) {
+        startRefinement(data);
+        return;
+      }
+
+      finalizeResults();
+    }
+
+    // Referme le tour de résultats : relance après 10s d'inactivité + rotation
+    // de session logique. Factorisé car appelé à la fois par renderResults()
+    // (pas d'affinage à poser) et par finishRefinement() (affinage posé mais
+    // entièrement répondu par « je ne sais pas », donc rien à réafficher).
+    // immediate : l'utilisateur vient d'ignorer explicitement la dernière question
+    // d'affinage — la relance n'a pas à attendre 10s d'inactivité, elle répond
+    // directement à ce geste (même délai que les autres relances post-action,
+    // cf. renderReviewPrompt).
+    function finalizeResults(immediate) {
+      if (immediate) {
+        appendAssistantMessageWithDelay(t('after_result'), 1000);
+      } else {
+        // si au bout de 10s l'utilisateur n'a pas réécrit et que le message de relance n'a pas déjà été affiché, on l'affiche
+        setTimeout(() => {
+          if (transcript[transcript.length - 1].t !== 'user' && transcript[transcript.length - 1].text !== t('after_result')) {
+            appendAssistantMessage(t('after_result'));
+          }
+        }, 10000);
+      }
 
       // Nouvelle session logique dès l'after_result : la recherche suivante démarre
       // sur un nouvel identifiant MAIS hérite du contexte (moto identifiée). L'avis
@@ -2247,8 +3498,10 @@
       const reviewSessionId = (logEntry && logEntry.sessionId) || sessionId;
 
       const content = document.createElement('div');
+      content.className = 'ep-products-review';
 
       const txt = document.createElement('div');
+      txt.className = 'ep-products-review-text';
       txt.textContent = t('review_question');
       content.appendChild(txt);
 
@@ -2256,6 +3509,11 @@
       btns.className = 'ep-review-btns';
       btns.setAttribute('role', 'group');
       btns.setAttribute('aria-label', t('review_question'));
+
+      // Conteneur de la liste associé À CETTE recherche (pas l'activeList courante
+      // au moment du clic — une autre recherche a pu démarrer entre-temps) : c'est
+      // là que la carte d'avis (content, ci-dessous) doit être insérée.
+      const reviewContainerEl = (activeList && activeList.containerEl) || null;
 
       const makeBtn = (rating, label, svg) => {
         const btn = document.createElement('button');
@@ -2265,10 +3523,36 @@
         btn.title = label;
         btn.innerHTML = svg;
         btn.addEventListener('click', () => {
-          btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
+          // Un « down » déjà voté reste cliquable : la feuille de motifs peut être
+          // annulée sans perdre la main, ce second clic la rouvre simplement.
+          if (btn.classList.contains('ep-selected')) {
+            if (rating === 'down') openReviewReasons(logEntry, reviewSessionId, btn, content);
+            return;
+          }
+          if (rating === 'up') {
+            btns.querySelectorAll('.ep-review-btn').forEach(b => { b.disabled = true; });
+          } else {
+            // Vote verrouillé sur « down » : lui seul reste cliquable, pour
+            // pouvoir rouvrir la feuille de motifs tant qu'aucun n'est retenu.
+            upBtn.disabled = true;
+          }
           btn.classList.add('ep-selected');
           if (logEntry) { logEntry.rating = rating; saveState(); }
+          Telemetry.track('review_submit', {
+            rating,
+          }, reviewSessionId);
           sendReview(rating, reviewSessionId);
+          // Avis negatif : on demande pourquoi, dans une feuille modale (comme la
+          // fiche de demande de pièce). Le vote est deja parti, le motif suivra
+          // dans un second appel. La carte d'avis elle-même (content) — pas le
+          // conteneur .ep-products — est passée en aval : c'est là, à l'intérieur
+          // d'elle, que la confirmation finale doit atterrir (cf. appendReviewThank).
+          if (rating === 'down') {
+            openReviewReasons(logEntry, reviewSessionId, btn, content);
+          } else {
+            appendReviewThank(content);
+            appendAssistantMessageWithDelay(t('after_result'), 1000);
+          }
         });
         return btn;
       };
@@ -2290,13 +3574,182 @@
         else if (restoreRating === 'down') downBtn.classList.add('ep-selected');
       }
 
-      appendAssistantMessageEl(content);
+      // Pas une bulle assistant à part : greffée au bas de la liste de produits
+      // qui vient d'être affichée (cf. renderProductList), comme « Voir plus de
+      // produits » juste au-dessus. renderReviewPrompt n'est appelé qu'avec des
+      // produits déjà rendus, donc activeList.containerEl est toujours la bonne
+      // cible — sauf s'il a été perdu, auquel cas on retombe sur l'ancien comportement
+      // plutôt que de faire disparaître l'avis.
+      if (reviewContainerEl) {
+        reviewContainerEl.appendChild(content);
+        scrollBottom();
+      } else {
+        appendAssistantMessageEl(content);
+      }
+
+      // Rejeu d'un avis déjà résolu : un « up » est toujours résolu dès le clic, la
+      // confirmation revient donc avec lui à l'identique. Un « down » ne l'est que
+      // s'il a un motif — la feuille de motifs, elle, ne s'ouvre jamais toute seule
+      // au chargement (ce serait une modale surprise) ; si le motif n'a jamais été
+      // recueilli (feuille fermée avant d'aboutir, session interrompue), le pouce
+      // reste figé « down » sans confirmation — seul un nouveau clic EN DIRECT
+      // (donc hors rejeu) rouvre la feuille.
+      if (isReplay && (restoreRating === 'up' || (restoreRating === 'down' && logEntry && logEntry.reason))) {
+        appendReviewThank(content);
+      }
     }
+
+    // ── Motif d'un avis négatif ─────────────────────────────────────────────
+    // Feuille modale (même habillage que la fiche de demande de pièce) ouverte
+    // juste après le pouce bas — le vote lui-même est déjà parti. Les trois
+    // premières options repartent aussitôt en /review avec `comment` ; « Autre »
+    // ferme cette feuille et enchaîne sur celle du texte libre (openReviewOther).
+    // Le motif est journalisé sur l'entrée d'avis, donc il survit au rechargement
+    // et n'est jamais redemandé. reviewSessionId : la session notée, pas forcément
+    // la courante. reviewCardEl : la carte d'avis elle-même (.ep-products-review,
+    // cf. renderReviewPrompt) — c'est à l'intérieur d'elle qu'atterrit le
+    // remerciement final, jamais comme enfant à part de .ep-products.
+    let rvrOpenFor = null; // { entry, sessionId, trigger, reviewCardEl }
+
+    function openReviewReasons(entry, reviewSessionId, trigger, reviewCardEl) {
+      rvrOpenFor = { entry, sessionId: reviewSessionId, trigger, reviewCardEl };
+      rvrBackdrop.classList.add('ep-visible');
+      rvrBackdrop.setAttribute('aria-hidden', 'false');
+      // Aucun champ texte ici (que des boutons) : pas de clavier mobile à éviter,
+      // le focus peut toujours entrer directement dans la feuille.
+      rvrButtons[0].focus({ preventScroll: true });
+    }
+
+    // opts.silent : n'affiche pas la relance after_result — utilisé quand la
+    // fermeture n'est pas un abandon mais une bascule vers une autre feuille
+    // (« Autre, préciser » enchaîne immédiatement sur openReviewOther).
+    function closeReviewReasons(opts) {
+      if (!rvrBackdrop.classList.contains('ep-visible')) return;
+      rvrBackdrop.classList.remove('ep-visible');
+      rvrBackdrop.setAttribute('aria-hidden', 'true');
+      win.scrollTop = 0;
+      const trigger = rvrOpenFor && rvrOpenFor.trigger;
+      rvrOpenFor = null;
+      // Annulation : le pouce bas reste cliquable (jamais désactivé pour cette
+      // feuille, cf. renderReviewPrompt) — l'utilisateur peut rouvrir plus tard.
+      if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
+      else if (!isMobile()) inputEl.focus({ preventScroll: true });
+      if (!opts || !opts.silent) appendAssistantMessageWithDelay(t('after_result'), 1000);
+    }
+
+    function isReviewReasonsOpen() {
+      return rvrBackdrop.classList.contains('ep-visible');
+    }
+
+    rvrCancel.addEventListener('click', () => closeReviewReasons());
+    rvrBackdrop.addEventListener('click', e => { if (e.target === rvrBackdrop) closeReviewReasons(); });
+
+    rvrButtons.filter(b => b !== rvrOtherBtn).forEach(b => {
+      b.addEventListener('click', () => {
+        const ctx = rvrOpenFor;
+        if (!ctx) return;
+        const label = b.dataset.label;
+        if (ctx.entry) { ctx.entry.reason = label; if (!isRestoring) saveState(); }
+        Telemetry.track('review_submit', { rating: 'down', with_comment: true }, ctx.sessionId);
+        sendReview('down', ctx.sessionId, label);
+        // Motif recueilli : plus rien à rouvrir, le pouce se fige pour de bon.
+        if (ctx.trigger) ctx.trigger.disabled = true;
+        closeReviewReasons({ silent: true });
+        appendAssistantMessageWithDelay(t('after_result'), 1000);
+        appendReviewThank(ctx.reviewCardEl);
+      });
+    });
+
+    rvrOtherBtn.addEventListener('click', () => {
+      const ctx = rvrOpenFor;
+      if (!ctx) return;
+      const label = t('review_reason_other');
+      closeReviewReasons({ silent: true });
+      openReviewOther(ctx.entry, ctx.sessionId, () => { if (ctx.trigger) ctx.trigger.disabled = true; }, label, ctx.trigger, ctx.reviewCardEl);
+    });
+
+    // Confirmation « merci » après un avis négatif motivé — toujours À L'INTÉRIEUR
+    // de la carte d'avis (reviewCardEl, l'élément .ep-products-review lui-même,
+    // capturé à la création par renderReviewPrompt), jamais comme enfant à part de
+    // .ep-products. Filet vers une bulle assistant si cette carte n'existe plus
+    // (ne devrait pas arriver, cf. renderReviewPrompt).
+    function appendReviewThank(reviewCardEl) {
+      const reviewThanks = document.createElement('div');
+      reviewThanks.className = 'ep-review-thx';
+      reviewThanks.textContent = t('review_reason_thx');
+      if (reviewCardEl) {
+        reviewCardEl.appendChild(reviewThanks);
+        scrollBottom();
+      } else {
+        appendAssistantMessageEl(reviewThanks);
+      }
+    }
+
+    // ── Feuille « préciser votre retour » ───────────────────────────────────
+    let rvOpenFor = null;   // { entry, sessionId, freeze, label, trigger, reviewCardEl }
+
+    function rvSyncSubmit() {
+      const n = rvText.value.length;
+      rvCount.textContent = n + ' / 200';
+      rvSubmit.disabled = !rvText.value.trim();
+    }
+
+    function openReviewOther(entry, reviewSessionId, freeze, label, trigger, reviewCardEl) {
+      rvOpenFor = { entry, sessionId: reviewSessionId, freeze, label, trigger, reviewCardEl };
+      rvText.value = '';
+      rvSyncSubmit();
+      rvBackdrop.classList.add('ep-visible');
+      rvBackdrop.setAttribute('aria-hidden', 'false');
+      // Mêmes règles que la fiche de demande : pas de clavier impose sur mobile, et
+      // jamais de scroll-into-view (il decalerait #ep-window durablement).
+      if (!isMobile()) rvText.focus({ preventScroll: true });
+      else rvSheet.scrollTop = 0;
+    }
+
+    function closeReviewOther() {
+      if (!rvBackdrop.classList.contains('ep-visible')) return;
+      rvBackdrop.classList.remove('ep-visible');
+      rvBackdrop.setAttribute('aria-hidden', 'true');
+      win.scrollTop = 0;
+      const trigger = rvOpenFor && rvOpenFor.trigger;
+      rvOpenFor = null;
+      // Annulation : le pouce bas reste cliquable (jamais désactivé pour cette
+      // feuille), l'utilisateur peut rouvrir la feuille des motifs plus tard.
+      if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
+      else if (!isMobile()) inputEl.focus({ preventScroll: true });
+
+      appendAssistantMessageWithDelay(t('after_result'), 1000);
+    }
+
+    function isReviewOtherOpen() {
+      return rvBackdrop.classList.contains('ep-visible');
+    }
+
+    rvText.addEventListener('input', rvSyncSubmit);
+    rvCancel.addEventListener('click', closeReviewOther);
+    rvBackdrop.addEventListener('click', e => { if (e.target === rvBackdrop) closeReviewOther(); });
+    rvSheet.addEventListener('submit', e => {
+      e.preventDefault();
+      const ctx = rvOpenFor;
+      const comment = rvText.value.trim();
+      if (!ctx || !comment) return;
+      // Le libelle identifie le motif ; le texte libre est ce qui part en commentaire.
+      if (ctx.entry) {
+        ctx.entry.reason = ctx.label;
+        ctx.entry.reasonText = comment;
+        if (!isRestoring) saveState();
+      }
+      ctx.freeze(ctx.label);
+      Telemetry.track('review_submit', { rating: 'down', with_comment: true }, ctx.sessionId);
+      sendReview('down', ctx.sessionId, comment);
+      closeReviewOther();
+      appendReviewThank(ctx.reviewCardEl);
+    });
 
     // Envoi de l'avis — silencieux en cas d'échec (ne bloque pas l'UX).
     // reviewSessionId : session de la recherche notée (cf. renderReviewPrompt),
     // pas forcément la session courante.
-    async function sendReview(rating, reviewSessionId) {
+    async function sendReview(rating, reviewSessionId, comment) {
       try {
         await fetch(`${CONFIG.apiBase}/review`, {
           method:  'POST',
@@ -2304,11 +3757,13 @@
             'Content-Type':  'application/json',
             'Authorization': `Bearer ${CONFIG.token}`,
           },
-          body: JSON.stringify({
+          // `comment` n'est joint que s'il est renseigné : un second POST part
+          // apres le vote pour porter le motif de l'insatisfaction.
+          body: JSON.stringify(Object.assign({
             type:       'review',
             rating,
             session_id: reviewSessionId || sessionId,
-          }),
+          }, comment ? { comment } : null)),
         });
       } catch (err) {
         /* no-op : l'avis est best-effort */
@@ -2469,11 +3924,13 @@
 
     // ── Affinage des résultats (CDC §6.6) ──────────────────────────────────
     // Le serveur joint `refinement.questions` quand la liste est trop longue.
-    // Chaque question est posée à son tour, toujours avec l'option « Je ne
-    // sais pas » (critère facultatif). À la fin de la chaîne :
+    // La liste est déjà affichée (renderResults) quand ce second temps démarre ;
+    // il ne la remplace ni ne la retient, il propose juste de l'affiner. Chaque
+    // question est posée à son tour, toujours avec l'option « Je ne sais pas »
+    // (critère facultatif). À la fin de la chaîne (finishRefinement) :
     //   - au moins une réponse → un seul nouvel appel API avec les réponses ;
-    //   - que des « je ne sais pas » → la liste initiale, déjà reçue, est
-    //     affichée sans appel réseau.
+    //   - que des « je ne sais pas » → rien à refaire, la liste déjà affichée
+    //     reste la réponse finale (finalizeResults() referme juste le tour).
     function startRefinement(data) {
       pendingRefinement = {
         data,
@@ -2481,14 +3938,21 @@
         answers: [],
         freezeCurrent: null,
       };
-      appendAssistantMessage(data.refinement.message || data.message);
+
+      let message = data.refinement.message || data.message;
+      if (data.refinement.questions.length) {
+        message += '\n\n' + data.refinement.questions[0].question;
+      }
+      appendAssistantMessage(message);
       askRefinementQuestion();
     }
 
     function askRefinementQuestion() {
       const p = pendingRefinement;
       const question = p.questions[p.answers.length];
-      appendAssistantMessage(question.question);
+
+      // first question has already been included in assistant refinement message
+      if (p.answers.length > 0) appendAssistantMessage(question.question);
 
       const options = (question.options || []).map(o => ({ label: o, value: o }));
       options.push({ label: t('refine_dont_know'), value: null });
@@ -2501,7 +3965,16 @@
       };
 
       const group = appendOptionsGroup(options, (value, label) => {
-        appendUserMessage(label);
+        // Dernière question ET tout ce qui précède était déjà « je ne sais pas » :
+        // ce clic ne va déclencher aucun nouvel appel /search (cf. finishRefinement),
+        // donc rien à écrire dans le fil au nom de l'utilisateur — seule la relance
+        // finale (after_result) doit apparaître. Un « je ne sais pas » qui laisse
+        // encore une question ouverte, ou qui suit une vraie réponse, reste un choix
+        // normal et s'affiche comme tel.
+        const isLastQuestion = p.answers.length + 1 === p.questions.length;
+        const allIgnoredSoFar = p.answers.every(a => a.answer === null);
+        const willResolveWithoutAnswer = value === null && isLastQuestion && allIgnoredSoFar;
+        if (!willResolveWithoutAnswer) appendUserMessage(label);
         recordRefinementAnswer(value);
       }, { logExtra });
       p.freezeCurrent = group ? group.freeze : null;
@@ -2524,9 +3997,12 @@
       const p = pendingRefinement;
       pendingRefinement = null;
 
+      // Tout « je ne sais pas » : la liste déjà affichée (renderResults l'a
+      // rendue avant de poser ces questions) reste la réponse finale — pas de
+      // nouvel appel, pas de second rendu. On referme juste le tour.
       const answered = p.answers.filter(a => a.answer !== null);
       if (answered.length === 0) {
-        renderResults({ ...p.data, refinement: null });
+        finalizeResults(true);
         return;
       }
 
@@ -2668,12 +4144,44 @@
 
     /**
      * Carte produit — s'appuie sur le payload API réel :
-     * { product_ref, name, brand, price, url, compatibility: { compatible, n_sources, label } }
-     * `image_url` est optionnel (absent du payload actuel).
+     * { product_ref, name, brand, price, url, image, compatibility: { compatible, n_sources, label } }
      */
     function buildProductCard(product) {
       const card = document.createElement('a');
       card.className = 'ep-card';
+      // On empile puis on vide la file en keepalive, SANS attendre la reponse :
+      // le lien s'ouvre immediatement. Le rang et la page viennent de la liste
+      // reellement affichee ; le reste est l'echo de la reponse /search.
+      card.addEventListener('click', () => {
+        const list = activeList;
+        const idx = list ? list.entries.findIndex(e => e.product === product) : -1;
+        Telemetry.track('product_click', {
+          product_ref: product.product_ref,
+          position: idx >= 0 ? idx + 1 : undefined,
+          page: list && list.pagination ? list.pagination.page : undefined,
+          query: lastSearchAttempt ? lastSearchAttempt.query : undefined,
+          interpreted: identifiedVehicle ? {
+            manufacturer: identifiedVehicle.manufacturer,
+            model: identifiedVehicle.model,
+            year: identifiedVehicle.year,
+            part_type: identifiedPart || undefined,
+          } : undefined,
+          model_confirmed: lastSearchMeta ? lastSearchMeta.model_confirmed : undefined,
+          // pagination.total d'abord : c'est le total de la recherche, alors que
+          // meta.result_count ne vaut que pour la page servie.
+          result_count: (list && list.pagination && typeof list.pagination.total === 'number')
+            ? list.pagination.total
+            : (lastSearchMeta ? lastSearchMeta.result_count : undefined),
+          // L'API peut renvoyer le prix en chaine (« 5.90 ») — le widget lui-meme
+          // le parse ailleurs. Un test de type strict le faisait disparaitre.
+          price: toPrice(product.price),
+          currency: 'EUR',
+          name: product.name,
+          brand: product.brand,
+          url: product.url,
+        }, list && list.sessionId ? list.sessionId : undefined);
+        Telemetry.flush();
+      });
       card.href = product.url || '#';
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
@@ -2683,9 +4191,14 @@
       const tip = n > 1 ? t('compat_tip', { n }) : (product.compatibility?.label || t('compat_label'));
       const badgeLabel = product.compatibility?.label || t('compat_label');
 
-      const imgHtml = product.image_url
-        ? `<img class="ep-card-img" src="${escHtml(product.image_url)}" alt="" loading="lazy" onerror="this.remove()">`
-        : '';
+      // La photo se superpose à l'icône générique (position:absolute en CSS) ;
+      // absente ou en échec de chargement (onerror), l'icône reste visible dessous.
+      const imgHtml = `
+        <div class="ep-card-img">
+          ${product.image ? `<img src="${escHtml(product.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+          ${PRODUCT_PLACEHOLDER_ICON}
+        </div>
+      `;
 
       card.innerHTML = `
         ${imgHtml}
@@ -2891,22 +4404,442 @@
         conversationContext = { previous_clarifications: [] };
         saveState();
       }
+
+      // Frame 2a : la recherche infructueuse enchaîne sur une proposition de
+      // demande de pièce. L'utilisateur y entre explicitement — rien ne s'ouvre seul.
+      if (CONFIG.partsRequest) {
+        renderPartsRequestOffer();
+      } else {
+        // Demandes éteintes : sans relance, la conversation resterait suspendue sur
+        // l'échec. Elle sort donc tout de suite, à la place de la proposition — et
+        // sans entrée à laquelle s'adosser, d'où l'appel avec null : renderNoResults()
+        // ne s'exécute qu'une fois par réponse, il n'y a rien à dédoublonner.
+        showAfterPartsRequest(null);
+      }
+    }
+
+    // Dernière requête de l'utilisateur — celle qui a produit la recherche
+    // infructueuse, puisque appendUserMessage() précède toujours callSearch().
+    function lastUserQuery() {
+      for (let i = transcript.length - 1; i >= 0; i--) {
+        if (transcript[i].t === 'user') return transcript[i].text || '';
+      }
+      return '';
+    }
+
+    // Relance « Souhaitez-vous faire une autre recherche ? ». Deux points d'appel, tous
+    // deux terminaux : le refus, et le 201 — après « C'est noté… », jamais avant, sinon
+    // la relance devancerait la confirmation de la demande qu'elle invite à dépasser.
+    // Le drapeau vit sur l'entrée persistée : au plus une relance par proposition, même
+    // après rechargement, quel que soit le chemin emprunté.
+    function showAfterPartsRequest(entry) {
+      if (entry && entry.afterShown) return;
+      if (entry) entry.afterShown = true;   // saveState() suit, via appendAssistantMessage
+      appendAssistantMessage(t('after_result'));
+    }
+
+    // ── Fiche modale de demande de pièce (frame 2a) ─────────────────────────
+    // Un seul formulaire réutilisé, rattaché à la proposition qui l'a ouvert.
+    let prOpenFor = null;      // { entry, trigger } — entrée journalisée + bouton d'origine
+    let prSending = false;
+
+    // Codes 422 → champ concerné. Le libellé affiché reste celui du serveur
+    // (français, présentable) ; c'est le CODE qui décide de l'emplacement.
+    const PR_ERROR_FIELDS = {
+      invalid_email:    'email',
+      invalid_phone:    'phone',
+      consent_required: 'consent',
+      empty_request:    'message',
+      message_too_long: 'message',
+    };
+    const PR_ERROR_FALLBACK = {
+      invalid_email:    'pr_err_invalid_email',
+      invalid_phone:    'pr_err_invalid_phone',
+      consent_required: 'pr_err_consent_required',
+      empty_request:    'pr_err_empty_request',
+      message_too_long: 'pr_err_message_too_long',
+    };
+
+    const PHONE_CHARS = /^[+0-9 .\-()]+$/;
+    function isPhoneValid(value) {
+      if (!PHONE_CHARS.test(value)) return false;
+      const plus = (value.match(/\+/g) || []).length;
+      if (plus > 1 || (plus === 1 && value.indexOf('+') !== 0)) return false;
+      const digits = value.replace(/\D/g, '').length;
+      return digits >= 6 && digits <= 15;
+    }
+
+    function prClearErrors() {
+      prEmailErr.textContent = '';
+      prPhoneErr.textContent = '';
+      prConsErr.textContent = '';
+      prMsgErr.textContent = '';
+      prFormErr.textContent = '';
+      prEmail.removeAttribute('aria-invalid');
+      prPhone.removeAttribute('aria-invalid');
+      prConsent.removeAttribute('aria-invalid');
+      prMessage.removeAttribute('aria-invalid');
+    }
+
+    // Place un message sur le bon champ et y amène le focus (première erreur).
+    function prShowError(field, message) {
+      // preventScroll : les champs sont déjà visibles dans la feuille, et un
+      // scroll-into-view ferait défiler #ep-window (défilable par programme malgré
+      // overflow:hidden), ce qui décale l'en-tête hors cadre — durablement.
+      if (field === 'email') {
+        prEmailErr.textContent = message;
+        prEmail.setAttribute('aria-invalid', 'true');
+        prEmail.focus({ preventScroll: true });
+      } else if (field === 'phone') {
+        prPhoneErr.textContent = message;
+        prPhone.setAttribute('aria-invalid', 'true');
+        prPhone.focus({ preventScroll: true });
+      } else if (field === 'consent') {
+        prConsErr.textContent = message;
+        prConsent.setAttribute('aria-invalid', 'true');
+        prConsent.focus({ preventScroll: true });
+      } else if (field === 'message') {
+        prMsgErr.textContent = message;
+        prMessage.setAttribute('aria-invalid', 'true');
+        prMessage.focus({ preventScroll: true });
+      } else {
+        prFormErr.textContent = message;
+      }
+    }
+
+    // Le bouton ne s'active qu'avec un email non vide ET le consentement coché.
+    function prSyncSubmit() {
+      prSubmit.disabled = prSending || !prEmail.value.trim() || !prConsent.checked;
+    }
+
+    function openPartsRequest(entry, trigger) {
+      prOpenFor = { entry: entry || null, trigger: trigger || null, submitted: false };
+      Telemetry.track('parts_request_open', {
+        query: (entry && entry.query) || lastUserQuery() || undefined,
+        reason: 'no_results',            // seul chemin d'entree aujourd'hui
+      }, (entry && entry.sessionId) || undefined);
+      prClearErrors();
+      prEmail.value = '';
+      prPhone.value = '';
+      prConsent.checked = false;      // jamais pré-coché
+      prSending = false;
+      prSubmit.textContent = t('pr_submit');
+      prSyncSubmit();
+
+      // Sous-titre : reprend le véhicule identifié, comme dans le frame.
+      const vehicle = (entry && entry.vehicle) || identifiedVehicle;
+      if (vehicle) {
+        // Jeton neutre, remplacé APRÈS échappement : le véhicule passe en gras sans
+        // jamais réinjecter de HTML venu du serveur. Un marqueur ' ' viserait la
+        // première espace de la phrase, pas le placeholder — d'où le caractère nul.
+        const TOKEN = '\u0000';
+        prSub.innerHTML = escHtml(t('pr_subtitle', { vehicle: TOKEN }))
+          .replace(TOKEN, `<strong>${escHtml(formatVehicle(vehicle))}</strong>`);
+      } else {
+        prSub.textContent = t('pr_subtitle_novehicle');
+      }
+
+      // Rappel de la pièce recherchée, pré-rempli et modifiable : c'est ce champ qui
+      // part en `message`. La requête vient de l'entrée journalisée (elle a capturé
+      // celle de la recherche infructueuse), pas du dernier message en date.
+      // La PIÈCE INTERPRÉTÉE, pas la requête brute : « guidon honda cbr 600 85 »
+      // suivi de « Honda CBR 600 F · 1985 » répéterait la moto. On ne retombe sur la
+      // requête que si le serveur n'a pas su isoler la pièce — dans ce cas on ne
+      // rajoute pas le véhicule, il y est déjà selon toute vraisemblance.
+      const part = (entry && entry.part) || identifiedPart;
+      const query = (entry && entry.query) || lastUserQuery();
+      prMessage.value = part
+        ? [capitalize(part), vehicle ? formatVehicle(vehicle) : ''].filter(Boolean).join(' — ')
+        : query;
+      prAutoGrow();
+
+      prBackdrop.classList.add('ep-visible');
+      prBackdrop.setAttribute('aria-hidden', 'false');
+      // Mobile : pas de focus automatique — même règle que toggleWindow(). Ouvrir le
+      // clavier d'emblée réduit la fiche de moitié et masque le consentement avant
+      // qu'il ait été lu. Sur desktop, le focus entre directement dans le champ.
+      if (!isMobile()) prEmail.focus({ preventScroll: true });
+      else prSheet.scrollTop = 0;
+    }
+
+    function closePartsRequest() {
+      if (!prBackdrop.classList.contains('ep-visible')) return;
+      // Abandon seulement : apres un envoi reussi, la fermeture n'est pas un
+      // abandon et ne doit pas emettre parts_request_close.
+      if (prOpenFor && !prOpenFor.submitted) {
+        Telemetry.track('parts_request_close', {
+          filled: !!(prEmail.value.trim() || prPhone.value.trim() || prMessage.value.trim()),
+        }, (prOpenFor.entry && prOpenFor.entry.sessionId) || undefined);
+      }
+      prBackdrop.classList.remove('ep-visible');
+      prBackdrop.setAttribute('aria-hidden', 'true');
+      // Filet : si le navigateur a tout de même fait défiler la fenêtre pour révéler
+      // un champ, le décalage survivrait à la fermeture et rognerait l'en-tête.
+      win.scrollTop = 0;
+      const trigger = prOpenFor && prOpenFor.trigger;
+      prOpenFor = null;
+      // Le focus revient d'où il venait, sauf si le bouton a été figé entre-temps.
+      // preventScroll ici aussi : rendre le bouton visible ferait défiler #ep-window
+      // APRÈS la remise à zéro ci-dessus, et l'en-tête repartirait hors cadre. La
+      // conversation, elle, garde sa propre position — on ferme sur la vue d'où
+      // l'utilisateur a ouvert la fiche, le bouton y est donc déjà visible.
+      if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
+      else if (!isMobile()) inputEl.focus({ preventScroll: true });
+    }
+
+    function isPartsRequestOpen() {
+      return prBackdrop.classList.contains('ep-visible');
+    }
+
+    // La zone de texte épouse son contenu : remise à zéro avant lecture de
+    // scrollHeight, sinon elle ne pourrait que grandir, jamais rétrécir.
+    function prAutoGrow() {
+      prMessage.style.height = 'auto';
+      prMessage.style.height = prMessage.scrollHeight + 'px';
+    }
+    prMessage.addEventListener('input', prAutoGrow);
+    // Entrée valide le formulaire plutôt que d'insérer un saut de ligne : le champ
+    // tient sur une ligne ou deux, ce n'est pas un espace de rédaction libre.
+    prMessage.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); submitPartsRequest(); }
+    });
+
+    prCancel.addEventListener('click', closePartsRequest);
+    prEmail.addEventListener('input', prSyncSubmit);
+    prConsent.addEventListener('change', prSyncSubmit);
+    // Un clic sur le fond ferme, comme une feuille modale usuelle.
+    prBackdrop.addEventListener('click', e => { if (e.target === prBackdrop) closePartsRequest(); });
+    prSheet.addEventListener('submit', e => { e.preventDefault(); submitPartsRequest(); });
+
+    async function submitPartsRequest() {
+      if (prSending) return;
+      prClearErrors();
+
+      const email = prEmail.value.trim();
+      // Validation miroir des 422 : une UI correcte ne doit jamais les déclencher.
+      if (!email || email.length > 255 || !prEmail.checkValidity()) {
+        prShowError('email', t('pr_err_invalid_email'));
+        return;
+      }
+
+      // Facultatif : vide = absent. Rempli, il doit avoir la forme d'un numero.
+      const phone = prPhone.value.trim();
+      if (phone && !isPhoneValid(phone)) {
+        prShowError('phone', t('pr_err_invalid_phone'));
+        return;
+      }
+      if (!prConsent.checked) {
+        prShowError('consent', t('pr_err_consent_required'));
+        return;
+      }
+      // Blanc = absent des deux côtés (cf. schéma) : le champ est facultatif, mais
+      // s'il est rempli il doit tenir dans les 5000 caractères.
+      const message = prMessage.value.trim();
+      if (message.length > 5000) {
+        prShowError('message', t('pr_err_message_too_long'));
+        return;
+      }
+
+      const entry = prOpenFor && prOpenFor.entry;
+      const trigger = prOpenFor && prOpenFor.trigger;
+      // Session de la recherche infructueuse, capturée à la création de l'entrée.
+      const prSessionId = (entry && entry.sessionId) || sessionId;
+
+      prSending = true;
+      prSubmit.disabled = true;
+      prSubmit.textContent = t('pr_sending');
+
+      const result = await sendPartsRequest(email, phone, prSessionId, message);
+
+      prSending = false;
+      prSubmit.textContent = t('pr_submit');
+
+      if (result.ok) {
+        // NI l'email, NI le telephone, NI le texte : ces donnees partent sur
+        // /parts-request et seraient de toute facon rejetees ici.
+        Telemetry.track('parts_request_submit', {
+          has_message: !!message, consent: true,
+        }, prSessionId);
+        if (prOpenFor) prOpenFor.submitted = true;
+        // La fiche disparaît et ne peut plus être renvoyée : la proposition est figée.
+        if (entry) {
+          entry.status = 'sent';
+          if (!isRestoring) saveState();
+        }
+        if (trigger) {
+          trigger.disabled = true;
+          trigger.classList.add('ep-pr-chosen');
+          const sibling = trigger.parentElement && trigger.parentElement.querySelector('.ep-pr-btn-no');
+          if (sibling) sibling.disabled = true;
+        }
+        closePartsRequest();
+        appendAssistantMessage(t('pr_success'));
+        showAfterPartsRequest(entry);
+        return;
+      }
+
+      // Échec : la fiche reste ouverte, saisie conservée, message sur le bon champ.
+      const field = PR_ERROR_FIELDS[result.code] || 'form';
+      const fallbackKey = PR_ERROR_FALLBACK[result.code];
+      prShowError(field, result.message || (fallbackKey ? t(fallbackKey) : t('pr_err_unexpected')));
+      prSyncSubmit();
+    }
+
+    // Un envoi par soumission : aucun réessai automatique (l'appel consomme le
+    // quota du tenant au même titre qu'une recherche, et le serveur ne dédoublonne pas).
+    async function sendPartsRequest(email, phone, prSessionId, message) {
+      try {
+        const resp = await fetch(`${CONFIG.apiBase}/parts-request`, {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Accept':        'application/json',
+            'Authorization': `Bearer ${CONFIG.token}`,
+          },
+          // `message` n'est joint que s'il est non vide : le schéma impose
+          // minLength 1 et additionalProperties:false — une chaîne vide serait rejetée.
+          body: JSON.stringify(Object.assign({
+            type:       'parts_request',
+            email,
+            consent:    true,
+            session_id: prSessionId,
+          }, phone ? { phone } : null, message ? { message } : null)),
+        });
+
+        const data = await resp.json().catch(() => null);
+        if (resp.status === 201 && data && data.recorded) return { ok: true };
+        return {
+          ok:      false,
+          code:    data && data.error ? data.error.code : null,
+          message: data && data.error ? data.error.message : null,
+        };
+      } catch (err) {
+        console.error(err);
+        return { ok: false, code: null, message: null };
+      }
+    }
+
+    // ── Demande de pièce (frame 2a) ─────────────────────────────────────────
+    // Bulle assistant « Oui, me contacter / Non, merci ». Journalisée comme les
+    // autres échanges : son statut (pending/declined/sent) survit à la navigation,
+    // et le session_id est capturé ICI — c'est la recherche infructueuse qu'on
+    // rattache à la demande, pas la session courante (startNewSession a pu passer).
+    function renderPartsRequestOffer(reuseEntry) {
+      let logEntry = reuseEntry || null;
+      if (!logEntry && !isRestoring) {
+        logEntry = { t: 'pr_offer', status: 'pending', sessionId, vehicle: identifiedVehicle, part: identifiedPart, query: lastUserQuery() };
+        transcript.push(logEntry);
+        saveState();
+      }
+      const status = logEntry ? logEntry.status : 'pending';
+
+      const content = document.createElement('div');
+      content.className = 'ep-pr-offer';
+
+      const p = document.createElement('p');
+      p.textContent = t('pr_offer');
+      content.appendChild(p);
+
+      const actions = document.createElement('div');
+      actions.className = 'ep-pr-offer-actions';
+
+      const yes = document.createElement('button');
+      yes.type = 'button';
+      yes.className = 'ep-pr-btn ep-pr-btn-yes';
+      yes.textContent = t('pr_offer_yes');
+
+      const no = document.createElement('button');
+      no.type = 'button';
+      no.className = 'ep-pr-btn ep-pr-btn-no';
+      no.textContent = t('pr_offer_no');
+
+      actions.appendChild(yes);
+      actions.appendChild(no);
+      content.appendChild(actions);
+      appendAssistantMessageEl(content);
+
+      function freeze(chosen) {
+        yes.disabled = true;
+        no.disabled = true;
+        if (chosen === 'yes') yes.classList.add('ep-pr-chosen');
+        if (chosen === 'no') no.classList.add('ep-pr-chosen');
+      }
+
+      if (status === 'declined') { freeze('no'); return; }
+      if (status === 'sent')     { freeze('yes'); return; }
+
+      // « Oui » ne fige PAS la proposition (annuler doit permettre d'y revenir) et
+      // n'ajoute AUCUN message : la relance appartient aux issues terminales, refus
+      // ou envoi confirmé — cf. showAfterPartsRequest().
+      yes.addEventListener('click', () => {
+        openPartsRequest(logEntry, yes);
+      });
+      no.addEventListener('click', () => {
+        freeze('no');
+        if (logEntry && !isRestoring) { logEntry.status = 'declined'; saveState(); }
+        showAfterPartsRequest(logEntry);
+      });
     }
 
     // ── Helpers DOM ────────────────────────────────────────────────────────
-    function appendUserMessage(text) {
+    // beforeEl : insere le message AVANT ce noeud plutot qu'en fin de fil. Sert au
+    // reessai, ou le message resoumis doit suivre le precedent et donc passer
+    // au-dessus de la carte d'echec, qui reste en dernier.
+    function appendUserMessage(text, beforeEl) {
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-user';
       const bubble = document.createElement('div');
       bubble.className = 'ep-bubble';
       bubble.textContent = text;
       div.appendChild(bubble);
-      messagesEl.appendChild(div);
+      if (beforeEl && beforeEl.parentNode === messagesEl) messagesEl.insertBefore(div, beforeEl);
+      else messagesEl.appendChild(div);
+      // Si rotation en attente, on la déclenche (un affichage de résultat
+      // met en attente une rotation de session jusqu'au prochain message utilisateur)
+      if (!isRestoring) {
+        if (pendingRotationReason) {
+          const reason = pendingRotationReason;
+          pendingRotationReason = null;
+          if (telemetryMessages > 0) {
+            telemetryEndSession(reason, sessionId);
+            sessionId = generateUUID();
+            telemetryStartSession();
+          }
+        }
+        telemetryMessages = Math.min(1000, telemetryMessages + 1);
+      }
       scrollBottom();
       if (!isRestoring) { transcript.push({ t: 'user', text }); saveState(); }
     }
 
     function appendAssistantMessage(text) {
+        // security guard to avoid duplicate assistant messages
+        if (transcript[transcript.length - 1].text === text) {
+          return;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'ep-msg ep-msg-assistant';
+        const avatar = document.createElement('div');
+        avatar.className = 'ep-msg-avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+        avatar.innerHTML = MARK_SVG;
+        const bubble = document.createElement('div');
+        bubble.className = 'ep-bubble';
+        bubble.textContent = text;
+        div.appendChild(avatar);
+        div.appendChild(bubble);
+        messagesEl.appendChild(div);
+        scrollBottom();
+        if (!isRestoring) { transcript.push({ t: 'assistant', text }); saveState(); }
+    }
+
+    function appendAssistantMessageWithDelay(text, delay = 0) {
+      if (delay > 0) setTimeout(() => appendAssistantMessage(text), delay);
+      else appendAssistantMessage(text);
+    }
+
+    function appendAssistantMessageEl(el) {
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-assistant';
       const avatar = document.createElement('div');
@@ -2915,31 +4848,123 @@
       avatar.innerHTML = MARK_SVG;
       const bubble = document.createElement('div');
       bubble.className = 'ep-bubble';
-      bubble.textContent = text;
+      bubble.appendChild(el);
       div.appendChild(avatar);
       div.appendChild(bubble);
       messagesEl.appendChild(div);
       scrollBottom();
-      if (!isRestoring) { transcript.push({ t: 'assistant', text }); saveState(); }
     }
 
-    function appendAssistantMessageEl(el) {
-      const div = document.createElement('div');
-      div.className = 'ep-msg ep-msg-assistant';
-      const bubble = document.createElement('div');
-      bubble.className = 'ep-bubble';
-      bubble.appendChild(el);
-      div.appendChild(bubble);
-      messagesEl.appendChild(div);
+    // Echec de recherche : carte avec cause probable, conseil, et reessai. Remplace
+    // l'affichage brut d'error_unexpected sur le chemin /search. Non journalisee :
+    // rejouer une panne passee afficherait un etat faux.
+    function renderSearchFailure() {
+      searchFailedNow = true;
+      const exhausted = !!lastSearchAttempt && lastSearchAttempt.tries >= SEARCH_MAX_TRIES;
+      // Echec d'un reessai : on ne cree pas une seconde carte, on rend la main
+      // a celle qui est deja affichee — sauf si le plafond est atteint, auquel cas
+      // elle perd son bouton.
+      if (pendingRetryCard) {
+        pendingRetryCard.stopLoading();
+        if (exhausted) pendingRetryCard.exhaust();
+        return;
+      }
+      const ICO_FACE = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF4869" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 15.2c1-.9 2.2-1.3 3.5-1.3s2.5.4 3.5 1.3"></path><path d="M9 9.5h.01M15 9.5h.01"></path></svg>`;
+      const ICO_BULB = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4A62A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0-3.5 10.9c.5.4.8 1 .8 1.6v.5h5.4v-.5c0-.6.3-1.2.8-1.6A6 6 0 0 0 12 3Z"></path><path d="M10 19.5h4"></path></svg>`;
+      const ICO_REFRESH = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"></path><path d="M20 4v4.5h-4.5"></path></svg>`;
+
+      const card = document.createElement('div');
+      card.className = 'ep-retry-card';
+      card.setAttribute('role', 'alert');
+
+      const head = document.createElement('div');
+      head.className = 'ep-retry-row';
+      head.innerHTML = ICO_FACE +
+        `<div><div class="ep-retry-title">${escHtml(t('retry_title'))}</div>` +
+        `<div class="ep-retry-sub">${escHtml(t('retry_sub'))}</div></div>`;
+      card.appendChild(head);
+
+      const sep = document.createElement('div');
+      sep.className = 'ep-retry-sep';
+      card.appendChild(sep);
+
+      const hintText = document.createElement('div');
+      hintText.className = 'ep-retry-hint';
+      hintText.textContent = t('retry_hint');
+      const hint = document.createElement('div');
+      hint.className = 'ep-retry-row';
+      hint.innerHTML = ICO_BULB;
+      hint.appendChild(hintText);
+      card.appendChild(hint);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ep-retry-btn';
+      btn.innerHTML = `<span>${escHtml(t('retry_action'))}</span>` + ICO_REFRESH;
+      card.appendChild(btn);
+
+      const overlay = document.createElement('div');
+      overlay.className = 'ep-retry-loading';
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.innerHTML = '<span class="ep-retry-spinner"></span>';
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'ep-msg ep-msg-assistant ep-msg-wide';
+      wrapper.appendChild(card);
+      messagesEl.appendChild(wrapper);
       scrollBottom();
+
+      // La carte survit aux tentatives : elle se voile pendant l'essai et se
+      // redecouvre s'il echoue, au lieu de disparaitre puis reapparaitre.
+      const controller = {
+        startLoading() {
+          btn.disabled = true;
+          card.setAttribute('aria-busy', 'true');
+          card.appendChild(overlay);
+        },
+        stopLoading() {
+          overlay.remove();
+          card.removeAttribute('aria-busy');
+          btn.disabled = false;
+        },
+        remove() { wrapper.remove(); },
+        // Plafond atteint : le bouton disparait plutot que de rester grise — rien
+        // ne le reactivera dans cet ecran, et le conseil dit quoi faire a la place.
+        exhaust() {
+          btn.remove();
+          hintText.textContent = t('retry_exhausted');
+        },
+      };
+
+      // Carte nee alors que le plafond est deja atteint (l'utilisateur a renvoye le
+      // meme message a la main) : pas de bouton du tout.
+      if (exhausted) controller.exhaust();
+
+      btn.addEventListener('click', () => {
+        if (!lastSearchAttempt || btn.disabled) return;
+        if (lastSearchAttempt.tries >= SEARCH_MAX_TRIES) { controller.exhaust(); return; }
+        const attempt = lastSearchAttempt;
+        controller.startLoading();
+        // Le message resoumis se glisse AVANT la carte, donc a la suite du precedent :
+        // l'utilisateur voit que c'est bien sa demande qui repart.
+        appendUserMessage(attempt.query, wrapper);
+        setTimeout(() => {
+          callSearch(attempt.query, attempt.extraBody, controller);
+        }, 500);
+      });
     }
 
     function appendErrorMessage(text) {
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-assistant ep-msg-error';
+      const avatar = document.createElement('div');
+      avatar.className = 'ep-msg-avatar';
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.innerHTML = MARK_SVG;
       const bubble = document.createElement('div');
       bubble.className = 'ep-bubble';
       bubble.textContent = text;
+      div.appendChild(avatar);
       div.appendChild(bubble);
       messagesEl.appendChild(div);
       scrollBottom();
@@ -2971,7 +4996,6 @@
     return `
       <div id="ep-header">
         <div id="ep-header-brand">
-          ${CONFIG.logo ? '' : AVATAR_HTML}
           <div id="ep-header-logo">
             ${headerBrandHtml()}
           </div>
@@ -3031,6 +5055,98 @@
           <span id="ep-footer-text">${t('powered_by')}</span>
           <a id="ep-footer-brand" href="${escHtml(t('brand_url'))}" target="_blank" rel="noopener noreferrer" aria-label="EveryParts">${LOGO_GREEN_SVG}</a>
         </div>
+      </div>
+
+      <!-- Feuille des motifs d'un avis négatif — s'ouvre juste après le pouce bas
+           (le vote lui-même est déjà parti). Même habillage .ep-sheet-* que les
+           deux autres. « Autre, préciser » y ferme cette feuille et enchaîne sur
+           #ep-rv-backdrop juste en dessous, qui recueille le texte libre. -->
+      <div id="ep-rvr-backdrop" class="ep-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="ep-rvr-title" aria-hidden="true">
+        <div class="ep-sheet">
+          <span class="ep-sheet-handle" aria-hidden="true"></span>
+          <div class="ep-sheet-head">
+            <span id="ep-rvr-title" class="ep-sheet-title">${escHtml(t('review_reason_prompt'))}</span>
+          </div>
+          <div class="ep-review-reason-list" id="ep-rvr-list">
+            <button type="button" class="ep-review-reason" data-label="${escHtml(t('review_reason_1'))}">${escHtml(t('review_reason_1'))}</button>
+            <button type="button" class="ep-review-reason" data-label="${escHtml(t('review_reason_2'))}">${escHtml(t('review_reason_2'))}</button>
+            <button type="button" class="ep-review-reason" data-label="${escHtml(t('review_reason_3'))}">${escHtml(t('review_reason_3'))}</button>
+            <button type="button" class="ep-review-reason" id="ep-rvr-other" data-label="${escHtml(t('review_reason_other'))}">${escHtml(t('review_reason_other'))}</button>
+          </div>
+          <button type="button" id="ep-rvr-cancel" class="ep-sheet-cancel">${escHtml(t('review_other_cancel'))}</button>
+        </div>
+      </div>
+
+      <!-- Feuille « préciser votre retour » (motif « Autre » d'un avis négatif).
+           Même habillage que la fiche de demande — classes .ep-sheet-*. Indépendante
+           de data-enable-parts-request : éteindre les demandes ne coupe pas les avis. -->
+      <div id="ep-rv-backdrop" class="ep-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="ep-rv-title" aria-hidden="true">
+        <form id="ep-rv-sheet" class="ep-sheet" novalidate>
+          <span class="ep-sheet-handle" aria-hidden="true"></span>
+          <div class="ep-sheet-head">
+            <span id="ep-rv-title" class="ep-sheet-title">${escHtml(t('review_other_title'))}</span>
+            <span class="ep-sheet-sub">${escHtml(t('review_other_sub'))}</span>
+          </div>
+          <label class="ep-sr-only" for="ep-rv-text">${escHtml(t('review_other_label'))}</label>
+          <textarea id="ep-rv-text" rows="3" maxlength="200"
+                    placeholder="${escHtml(t('review_other_ph'))}"
+                    aria-describedby="ep-rv-count"></textarea>
+          <span class="ep-rv-count" id="ep-rv-count" aria-live="polite"></span>
+          <button type="submit" id="ep-rv-submit" class="ep-sheet-submit" disabled>${escHtml(t('review_other_submit'))}</button>
+          <button type="button" id="ep-rv-cancel" class="ep-sheet-cancel">${escHtml(t('review_other_cancel'))}</button>
+        </form>
+      </div>
+
+      <!-- Fiche « demander cette pièce » (frame 2a). Toujours dans le DOM, masquée :
+           les libellés d'erreur doivent exister avant d'être annoncés (aria-live). -->
+      <div id="ep-pr-backdrop" class="ep-sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="ep-pr-title" aria-hidden="true">
+        <form id="ep-pr-sheet" class="ep-sheet" novalidate>
+          <span class="ep-sheet-handle" aria-hidden="true"></span>
+          <div class="ep-sheet-head">
+            <span id="ep-pr-title" class="ep-sheet-title">${escHtml(t('pr_title'))}</span>
+            <span class="ep-sheet-sub" id="ep-pr-sub"></span>
+          </div>
+          <div class="ep-pr-field">
+            <div class="ep-pr-recall">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.35-4.35"></path></svg>
+              <label class="ep-pr-recall-label" for="ep-pr-message">${escHtml(t('pr_part_label'))}</label>
+              <textarea id="ep-pr-message" rows="1" maxlength="5000"
+                        aria-describedby="ep-pr-message-err"></textarea>
+              <svg class="ep-pr-edit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            </div>
+            <span class="ep-pr-error" id="ep-pr-message-err" role="alert"></span>
+          </div>
+          <div class="ep-pr-field">
+            <label class="ep-sr-only" for="ep-pr-email">${escHtml(t('pr_email_label'))}</label>
+            <input id="ep-pr-email" type="email" inputmode="email" autocomplete="email"
+                   maxlength="255" required spellcheck="false"
+                   placeholder="${escHtml(t('pr_email_ph'))}"
+                   aria-describedby="ep-pr-email-err">
+            <span class="ep-pr-error" id="ep-pr-email-err" role="alert"></span>
+          </div>
+          <div class="ep-pr-field">
+            <label class="ep-sr-only" for="ep-pr-phone">${escHtml(t('pr_phone_label'))}</label>
+            <input id="ep-pr-phone" type="tel" inputmode="tel" autocomplete="tel"
+                   maxlength="25" spellcheck="false"
+                   pattern="[+0-9 .\\(\\)\\-]+"
+                   placeholder="${escHtml(t('pr_phone_ph'))}"
+                   aria-describedby="ep-pr-phone-err">
+            <span class="ep-pr-error" id="ep-pr-phone-err" role="alert"></span>
+          </div>
+          <div class="ep-pr-field">
+            <label class="ep-pr-consent" for="ep-pr-consent-input">
+              <input type="checkbox" id="ep-pr-consent-input" required aria-describedby="ep-pr-consent-err">
+              <span class="ep-pr-box" aria-hidden="true">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 18 20 6"></path></svg>
+              </span>
+              <span class="ep-pr-consent-text">${escHtml(t('pr_consent'))}</span>
+            </label>
+            <span class="ep-pr-error" id="ep-pr-consent-err" role="alert"></span>
+          </div>
+          <span class="ep-pr-error" id="ep-pr-form-err" role="alert"></span>
+          <button type="submit" id="ep-pr-submit" class="ep-sheet-submit" disabled>${escHtml(t('pr_submit'))}</button>
+          <button type="button" id="ep-pr-cancel" class="ep-sheet-cancel">${escHtml(t('pr_cancel'))}</button>
+        </form>
       </div>
     `;
   }
