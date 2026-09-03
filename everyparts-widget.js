@@ -7,7 +7,7 @@
  * fichier depuis une URL épinglée `immutable`, ce qui rend une nouvelle version
  * active au prochain chargement de page. Pointer une boutique directement sur une
  * URL jsDelivr `@latest` la figerait 7 jours (max-age=604800 imposé par jsDelivr) ;
- * l'épingler (`@1.1.0`) fonctionne mais impose d'éditer le snippet à chaque release.
+ * l'épingler (`@1.2.2`) fonctionne mais impose d'éditer le snippet à chaque release.
  *
  * <script
  *   src="https://cdn.everyparts.io/widget/v1/loader.js"

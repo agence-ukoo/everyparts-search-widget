@@ -2,17 +2,20 @@
 #
 # release.sh — prépare une release du widget EveryParts.
 #
-#   ./tools/release.sh 1.1.0          minifie le widget, calcule le SRI, régénère le loader
-#   ./tools/release.sh verify 1.1.0   vérifie que jsDelivr sert bien le fichier attendu
+#   ./tools/release.sh 1.2.3          minifie le widget, calcule le SRI, régénère le loader
+#   ./tools/release.sh verify 1.2.3   vérifie que jsDelivr sert bien le fichier attendu
+#
+# Version actuellement référencée par le loader : 1.2.2 (dernier tag publié).
+# Une version déjà taguée est refusée par le script — voir assert_version_free.
 #
 # Le dispositif à deux étages (loader `no-cache` + widget épinglé `immutable`) n'est
 # correct que si l'URL et l'empreinte SRI du loader correspondent EXACTEMENT au
 # `.min.js` publié. Fait à la main, ça dérive — d'où ce script.
 #
 # ORDRE DES OPÉRATIONS (important) :
-#   1. ./tools/release.sh 1.1.0
-#   2. git add -A && git commit && git tag v1.1.0 && git push --tags
-#   3. ./tools/release.sh verify 1.1.0        ← le tag doit exister sur jsDelivr
+#   1. ./tools/release.sh 1.2.3
+#   2. git add -A && git commit && git tag 1.2.3 && git push origin 1.2.3
+#   3. ./tools/release.sh verify 1.2.3        ← le tag doit exister sur jsDelivr
 #   4. déployer everyparts-widget-loader.min.js sur l'host, en Cache-Control: no-cache
 #
 # L'étape 4 vient en dernier : le loader référence un tag qui doit déjà être publié.
