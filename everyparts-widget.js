@@ -95,13 +95,13 @@
       teaser:          "Vous cherchez une pièce ?\rJe la trouve pour vous !",
       teaser_dismiss:  'Masquer',
       // ── Demande de pièce (frame 2a) ──
-      pr_offer:        'Souhaitez-vous que je transmette une demande de recherche à notre équipe pièces ?',
-      pr_offer_yes:    'Oui, me contacter',
+      pr_offer:        'Souhaitez-vous qu’un de nos experts recherche cette pièce pour vous ?',
+      pr_offer_yes:    'Oui, soumettre',
       pr_offer_no:     'Non, merci',
       pr_part_label:   'Pièce recherchée : ',
       pr_title:        'Demander cette pièce',
-      pr_subtitle:     'Notre équipe recherche la référence pour {vehicle} et vous recontacte par email.',
-      pr_subtitle_novehicle: 'Notre équipe recherche la référence et vous recontacte par email.',
+      pr_subtitle:     'Notre équipe recherche la référence pour {vehicle} et vous recontacte.',
+      pr_subtitle_novehicle: 'Notre équipe recherche la référence et vous recontacte.',
       pr_email_label:  'Adresse e-mail',
       pr_email_ph:     'vous@exemple.com',
       pr_phone_label:  'Numéro de téléphone',
@@ -184,13 +184,13 @@
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       // ── Part request (frame 2a) ──
-      pr_offer:        'Would you like me to pass a search request to our parts team?',
-      pr_offer_yes:    'Yes, contact me',
+      pr_offer:        'Would you like one of our experts to find this part for you?',
+      pr_offer_yes:    'Yes, submit',
       pr_offer_no:     'No, thanks',
       pr_part_label:   'Searched part: ',
       pr_title:        'Request this part',
-      pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you by email.',
-      pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
+      pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you.',
+      pr_subtitle_novehicle: 'Our team will look up the reference and get back to you.',
       pr_email_label:  'Email address',
       pr_email_ph:     'you@example.com',
       pr_phone_label:  'Phone number',
@@ -273,13 +273,13 @@
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       // ── Part request (frame 2a) ──
-      pr_offer:        'Would you like me to pass a search request to our parts team?',
-      pr_offer_yes:    'Yes, contact me',
+      pr_offer:        'Would you like one of our experts to find this part for you?',
+      pr_offer_yes:    'Yes, submit',
       pr_offer_no:     'No, thanks',
       pr_part_label:   'Searched part: ',
       pr_title:        'Request this part',
-      pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you by email.',
-      pr_subtitle_novehicle: 'Our team will look up the reference and get back to you by email.',
+      pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you.',
+      pr_subtitle_novehicle: 'Our team will look up the reference and get back to you.',
       pr_email_label:  'Email address',
       pr_email_ph:     'you@example.com',
       pr_phone_label:  'Phone number',
@@ -4737,7 +4737,7 @@
       content.className = 'ep-pr-offer';
 
       const p = document.createElement('p');
-      p.textContent = t('pr_offer');
+      p.textContent = t('pr_offer') + " 👀";
       content.appendChild(p);
 
       const actions = document.createElement('div');
