@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — affinage affiché en plus des résultats, pas à leur place</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Affinage à côté des résultats, pas au lieu des résultats</h1>
+<p class="sub">
+  Quand <code>/search</code> répond <code>results</code> avec des produits ET
+  <code>refinement.questions</code>, la liste et l'avis de satisfaction doivent
+  s'afficher IMMÉDIATEMENT ; l'affinage est un second temps ajouté APRÈS, pas
+  une porte qui les retient. Et si l'utilisateur répond « Je ne sais pas » à
+  toutes les questions, rien ne doit se réafficher en double (ni nouvel appel
+  réseau) puisque la liste est déjà à l'écran.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_REFINEMENT_TOKEN';
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+const searchCalls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  if (/\/review$/.test(u)) {
+    return { status: 200, ok: true, headers: new Headers(), json: async () => ({ ok: true }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    return {
+      status: 200, ok: true, headers: new Headers(),
+      json: async () => ({
+        type: 'results',
+        message: 'Voici ce qu’on a trouvé.',
+        results: [
+          { id: 1, name: 'Plaquettes avant', brand: 'EBC', reference: 'FA213', price: 29.9 },
+          { id: 2, name: 'Plaquettes arrière', brand: 'EBC', reference: 'FA214', price: 24.9 },
+        ],
+        pagination: { page: 1, total: 2, has_more: false },
+        interpreted: { manufacturer: 'Honda', model: 'CBR 600 F', year: 1996, part_type: 'plaquettes' },
+        refinement: {
+          message: 'Pour affiner parmi ces résultats…',
+          questions: [
+            { criterion: 'position', question: 'Avant ou arrière ?', options: ['Avant', 'Arrière'] },
+          ],
+        },
+        meta: {},
+      }),
+    };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  const input = $('#ep-input');
+  input.value = 'plaquettes honda cbr 600';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $('#ep-send-btn').click();
+
+  await until(() => $$('.ep-products').length > 0, 3000);
+
+  // ── 1. Les résultats et l'avis sont là immédiatement, sans attendre l'affinage ──
+  check('la liste de produits est affichée dès la réponse',
+        $$('.ep-products').length === 1);
+  check('l\'avis de satisfaction est affiché dès la réponse (pas retenu par l\'affinage)',
+        $$('.ep-review-btns').length === 1);
+
+  // ── 2. L'affinage arrive APRÈS, en plus — jamais à la place ──
+  await until(() => $$('.ep-clari-btn').length > 0, 2000);
+  const clariButtons = $$('.ep-clari-btn');
+  check('la question d\'affinage est posée (options + "je ne sais pas")',
+        clariButtons.length === 3, `reçu ${clariButtons.length} boutons`);
+
+  const bubbles = $$('.ep-msg-wide, .ep-msg-assistant');
+  const productsIdx = bubbles.findIndex(b => b.querySelector('.ep-products'));
+  const clariIdx = bubbles.findIndex(b => b.querySelector('.ep-clari'));
+  check('la question d\'affinage apparaît APRÈS la liste de produits dans le fil',
+        productsIdx >= 0 && clariIdx > productsIdx,
+        `productsIdx=${productsIdx} clariIdx=${clariIdx}`);
+
+  check('un seul appel /search a eu lieu jusqu\'ici', searchCalls.length === 1);
+
+  // ── 3. Tout "je ne sais pas" → pas de second rendu, pas de second appel ──
+  const dontKnowBtn = clariButtons.find(b => b.textContent.trim() === 'Je ne sais pas');
+  check('le bouton "je ne sais pas" existe', !!dontKnowBtn);
+  dontKnowBtn.click();
+  await sleep(200);
+
+  check('aucun nouvel appel /search après "je ne sais pas" (liste déjà affichée)',
+        searchCalls.length === 1, `reçu ${searchCalls.length} appels`);
+  check('la liste de produits n\'est PAS dupliquée',
+        $$('.ep-products').length === 1, `reçu ${$$('.ep-products').length}`);
+  check('l\'avis de satisfaction n\'est PAS dupliqué',
+        $$('.ep-review-btns').length === 1, `reçu ${$$('.ep-review-btns').length}`);
+  check('le message d\'accompagnement des résultats n\'est pas réaffiché en double',
+        $$('.ep-msg-assistant').filter(b => b.textContent.includes('Voici ce qu’on a trouvé')).length === 1);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_REFINEMENT_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>

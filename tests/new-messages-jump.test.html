@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — cadrage sur le premier message neuf + pastille « nouveaux messages »</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Cadrage sur le PREMIER message neuf, et pastille de rattrapage</h1>
+<p class="sub">
+  Un tour de réponse affiche plusieurs blocs d'un coup (message, liste, avis).
+  La vue doit se caler sur le PREMIER d'entre eux — jamais sauter au dernier —
+  et une pastille « n nouveaux messages » doit annoncer ce qui reste en dessous.
+  Sans rien de neuf mais loin du bas, la même pastille devient un simple retour
+  au dernier message : ronde, rangée à droite. Elle flotte juste au-dessus de la
+  barre « Ma moto » quand elle est là, de la zone de saisie sinon.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_JUMP_TOKEN';
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+// Un onglet en arrière-plan ne cadence pas requestAnimationFrame : le widget y
+// coalesce ses décisions de défilement, elles ne se déclencheraient jamais. On
+// rabat rAF sur setTimeout — l'ordre relatif vis-à-vis des MutationObserver
+// (microtâches, donc en amont) est préservé.
+window.requestAnimationFrame = cb => setTimeout(() => cb(performance.now()), 0);
+
+// 14 produits : assez pour que la liste déborde largement de la fenêtre, donc
+// pour que l'avis de satisfaction (dernier bloc du tour) tombe hors champ.
+const PRODUCTS = Array.from({ length: 14 }, (_, i) => ({
+  id: i + 1,
+  name: `Plaquette de frein modèle ${i + 1}`,
+  brand: 'EBC',
+  reference: `FA${200 + i}`,
+  price: 20 + i,
+}));
+
+const SEARCH_LATENCY_MS = 400;
+const searchCalls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  if (/\/review$/.test(u)) {
+    return { status: 200, ok: true, headers: new Headers(), json: async () => ({ ok: true }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    // Latence : sans elle, la réponse tomberait dans la MÊME frame que le
+    // message de l'utilisateur et les deux ne formeraient qu'un seul tour.
+    await sleep(SEARCH_LATENCY_MS);
+    return {
+      status: 200, ok: true, headers: new Headers(),
+      json: async () => ({
+        type: 'results',
+        message: 'Voici ce qu’on a trouvé pour votre moto.',
+        results: PRODUCTS,
+        pagination: { page: 1, total: PRODUCTS.length, has_more: false },
+        interpreted: { manufacturer: 'Honda', model: 'CBR 600 F', year: 1996, part_type: 'plaquettes' },
+        meta: {},
+      }),
+    };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  // Un onglet en arrière-plan ne fait tourner NI les animations de défilement NI
+  // les transitions CSS : `scroll-behavior: smooth` n'y avancerait jamais, et la
+  // pastille resterait figée sur la valeur de départ de son fondu (décalée de
+  // 8px, `visibility` encore héritée). Le test porte sur les CIBLES — position
+  // finale et visibilité —, pas sur les animations : on les supprime, exactement
+  // comme le fait le bloc `prefers-reduced-motion` du widget.
+  const noAnim = document.createElement('style');
+  noAnim.textContent = `
+    #ep-jump, #ep-jump.ep-visible { transition: none !important; }
+    .ep-msg, #ep-moto-bar { animation: none !important; }
+  `;
+  shadow.appendChild(noAnim);
+  // Rétablissable : un pas de ce scénario a besoin du défilement ANIMÉ, donc
+  // asynchrone, pour reproduire un bogue qui n'existe que dans ce régime.
+  const instant = document.createElement('style');
+  const INSTANT_SCROLL = '#ep-messages { scroll-behavior: auto !important; }';
+  instant.textContent = INSTANT_SCROLL;
+  shadow.appendChild(instant);
+
+  const msgs = $('#ep-messages');
+  const jump = $('#ep-jump');
+  const label = $('#ep-jump-label');
+  const motoBar = $('#ep-moto-bar');
+  const maxScroll = () => Math.max(0, msgs.scrollHeight - msgs.clientHeight);
+  const distBottom = () => maxScroll() - msgs.scrollTop;
+  const blockTop = el => el.offsetTop - msgs.offsetTop;
+  const visible = el => getComputedStyle(el).visibility === 'visible';
+  // Un onglet en arrière-plan ne dispatche pas non plus les événements `scroll`
+  // (ils sont émis au rythme des frames) : on défile comme l'utilisateur —
+  // `wheel` rend la main au suivi du défilement — puis on émet l'événement.
+  const userScrollTo = top => {
+    msgs.dispatchEvent(new Event('wheel'));
+    msgs.scrollTop = top;
+    msgs.dispatchEvent(new Event('scroll'));
+  };
+  const send = text => {
+    const input = $('#ep-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    $('#ep-send-btn').click();
+  };
+
+  check('la pastille existe et est masquée sur une conversation neuve',
+        !!jump && !visible(jump));
+
+  send('plaquettes honda cbr 600');
+  await until(() => $$('.ep-products').length > 0, 3000);
+  await until(() => $$('.ep-review-btns').length > 0, 3000);
+  await sleep(200);
+
+  // ── 1. La vue se cale sur le PREMIER bloc du tour, pas sur le dernier ──
+  const answer = $$('.ep-msg-assistant').find(
+    b => b.textContent.includes('Voici ce qu’on a trouvé'));
+  check('le message de réponse est affiché', !!answer);
+  check('la réponse déborde de la fenêtre (préalable du test)',
+        maxScroll() > 300, `maxScroll=${maxScroll()}`);
+  check('la vue est cadrée sur le PREMIER bloc neuf',
+        answer && Math.abs(msgs.scrollTop - (blockTop(answer) - 8)) <= 4,
+        answer ? `scrollTop=${msgs.scrollTop} attendu≈${blockTop(answer) - 8}` : '');
+  check('la vue n\'a PAS sauté au bas du fil',
+        distBottom() > 100, `distance au bas=${distBottom()}`);
+
+  // ── 2. La pastille annonce ce qui reste en dessous ──
+  check('la pastille est visible', visible(jump));
+  check('la pastille annonce des nouveaux messages',
+        /nouveau/.test(label.textContent), `libellé="${label.textContent}"`);
+  check('la pastille n\'est pas en mode « retour au dernier message »',
+        !jump.classList.contains('ep-jump-plain'));
+
+  const jRect = jump.getBoundingClientRect();
+  const mRect = msgs.getBoundingClientRect();
+  check('la pastille est centrée horizontalement',
+        Math.abs((jRect.left + jRect.right) / 2 - (mRect.left + mRect.right) / 2) < 6,
+        `centre pastille=${(jRect.left + jRect.right) / 2} centre fil=${(mRect.left + mRect.right) / 2}`);
+
+  // ── 3. Ancrage : juste au-dessus de la barre « Ma moto » quand elle est là ──
+  check('la barre « Ma moto » est visible (véhicule identifié)',
+        motoBar.classList.contains('ep-visible'));
+  const gapMoto = motoBar.getBoundingClientRect().top - jRect.bottom;
+  check('la pastille flotte juste au-dessus de la barre « Ma moto », avec une marge',
+        gapMoto > 0 && gapMoto < 24, `écart=${gapMoto}`);
+
+  // Sans barre « Ma moto », la même pastille se cale au-dessus de la saisie.
+  motoBar.classList.remove('ep-visible');
+  const gapInput = $('#ep-input-area').getBoundingClientRect().top
+                 - jump.getBoundingClientRect().bottom;
+  check('sans barre « Ma moto », elle se cale au-dessus de la zone de saisie',
+        gapInput > 0 && gapInput < 24, `écart=${gapInput}`);
+  motoBar.classList.add('ep-visible');
+
+  // ── 4. Clic : on descend au dernier message, la pastille s'effface ──
+  jump.click();
+  await until(() => distBottom() <= 24, 2000);
+  check('le clic ramène au dernier message',
+        distBottom() <= 24, `distance au bas=${distBottom()}`);
+  // `visibility` est transitionnée avec 180ms de retard (cf. #ep-jump) : la
+  // pastille reste « visible » pour getComputedStyle le temps du fondu.
+  await until(() => !visible(jump), 1000);
+  check('la pastille disparaît une fois en bas', !visible(jump));
+
+  // ── 5. Remonté loin sans rien de neuf : simple retour au dernier message ──
+  userScrollTo(0);
+  await until(() => visible(jump), 1500);
+  check('la pastille réapparaît quand on s\'éloigne du bas', visible(jump));
+  check('elle passe en mode « retour au dernier message » (ronde)',
+        jump.classList.contains('ep-jump-plain'));
+  check('elle n\'affiche aucun libellé', label.textContent === '');
+  const pRect = jump.getBoundingClientRect();
+  check('elle est rangée à droite, pas centrée',
+        pRect.right < mRect.right && pRect.left > (mRect.left + mRect.right) / 2,
+        `left=${pRect.left} right=${pRect.right} droite du fil=${mRect.right}`);
+  check('les blocs déjà parus à l\'écran ne redeviennent pas « non lus »',
+        label.textContent === '', `libellé="${label.textContent}"`);
+
+  // ── 5 bis. Les deux pièges propres à la pastille rangée à droite ──
+  // Le clic doit la faire disparaître alors que le défilement est ANIMÉ : à cet
+  // instant scrollTop n'a pas encore bougé, la décision doit donc se prendre sur
+  // la CIBLE. On rétablit l'animation le temps de ce pas — dans un onglet en
+  // arrière-plan elle n'avance jamais, ce qui rend le piège parfaitement
+  // déterministe : seule une décision prise sur la cible masque la pastille.
+  instant.textContent = '';
+  const rightRect = jump.getBoundingClientRect();
+  jump.click();
+  await sleep(250);
+  check('un clic sur la pastille de droite la fait disparaître aussitôt',
+        !visible(jump), `distance au bas=${distBottom()}`);
+  // Et elle s'efface SANS se recentrer : sa forme reste figée pendant le fondu.
+  check('elle garde sa forme « à droite » pendant sa disparition',
+        jump.classList.contains('ep-jump-plain'));
+  const goneRect = jump.getBoundingClientRect();
+  check('elle ne se déplace pas horizontalement en disparaissant',
+        Math.abs(goneRect.left - rightRect.left) < 1
+        && Math.abs(goneRect.right - rightRect.right) < 1,
+        `avant [${rightRect.left};${rightRect.right}] après [${goneRect.left};${goneRect.right}]`);
+  instant.textContent = INSTANT_SCROLL;
+  userScrollTo(msgs.scrollHeight);   // le défilement animé n'a pas abouti : on se recale
+
+  // ── 5 ter. Retour au bas à la main : elle s'efface SUR PLACE ──
+  // Repasser la pastille en « centrée, vide » au moment où elle s'en va la
+  // ferait revenir au centre en plein fondu — bien visible à l'œil.
+  userScrollTo(0);
+  await until(() => visible(jump) && jump.classList.contains('ep-jump-plain'), 1500);
+  const beforeHide = jump.getBoundingClientRect();
+  userScrollTo(msgs.scrollHeight);
+  check('en s\'effaçant, elle garde sa forme « à droite »',
+        !visible(jump) && jump.classList.contains('ep-jump-plain'),
+        `visible=${visible(jump)} classes="${jump.className}"`);
+  const afterHide = jump.getBoundingClientRect();
+  check('sa position horizontale ne change pas en s\'effaçant',
+        Math.abs(afterHide.left - beforeHide.left) < 1,
+        `avant left=${beforeHide.left} après left=${afterHide.left}`);
+
+  // ── 6. Le message de l'utilisateur, lui, ramène toujours au fil ──
+  send('et pour un CBR 1000 ?');
+  await until(() => distBottom() <= 48, 1500);
+  check('le message de l\'utilisateur ramène au bas du fil',
+        distBottom() <= 48, `distance au bas=${distBottom()}`);
+
+  // ── 7. Un tour qui arrive alors qu'on lit plus haut ne déplace pas la vue ──
+  await sleep(60);              // le tour « message utilisateur » est résolu
+  userScrollTo(0);              // on remonte pendant que la réponse est en vol
+  const before = msgs.scrollTop;
+  await until(() => $$('.ep-products').length > 1, 3000);
+  await sleep(200);
+  check('la vue n\'a pas bougé pendant l\'arrivée de la réponse',
+        msgs.scrollTop === before, `scrollTop=${msgs.scrollTop} avant=${before}`);
+  check('la pastille annonce le tour arrivé hors champ',
+        visible(jump) && /nouveau/.test(label.textContent),
+        `libellé="${label.textContent}"`);
+  check('elle repasse en mode compte (centrée), pas en simple retour au bas',
+        !jump.classList.contains('ep-jump-plain'));
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_JUMP_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>

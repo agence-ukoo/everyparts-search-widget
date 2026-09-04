@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — autres pièces compatibles jointes à une recherche infructueuse</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>« Aucun résultat » + autres pièces compatibles</h1>
+<p class="sub">
+  Une réponse <code>no_results</code> peut joindre les AUTRES pièces compatibles
+  avec le véhicule identifié (<code>results</code> + <code>pagination</code>).
+  Dans ce cas la proposition d'expert change de copie et son refus devient
+  « Autres pièces », qui affiche la liste — elle ne s'affiche jamais d'office.
+  Sans ces pièces, rien ne change : copie et « Non merci » d'origine.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_OTHER_PARTS_TOKEN';
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+const COPY_OTHER = 'ou bien consulter nos autres pièces';
+const OTHER_PARTS = Array.from({ length: 8 }, (_, i) => ({
+  product_ref: `REF-${i + 1}`,
+  name: `Autre pièce compatible ${i + 1}`,
+  brand: 'EBC',
+  price: 20 + i,
+}));
+
+// Une proposition restaurée depuis l'historique doit garder SA copie, SON
+// libellé et SES pièces : elles vivent sur l'entrée, pas dans une closure.
+const RESTORED = new URLSearchParams(location.search).get('restore') === '1';
+if (RESTORED) {
+  localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
+    v: 4, token: TOKEN, sessionId: 'sess-echec', isOpen: true, lastActive: Date.now(),
+    conversationContext: { previous_clarifications: [] },
+    identifiedVehicle: { manufacturer: 'Honda', model: 'CBR 600 F', year: 1996 },
+    identifiedPart: 'guidon',
+    transcript: [
+      { t: 'user', text: 'guidon cbr 600' },
+      { t: 'no_results', message: 'Je n’ai pas trouvé cette pièce.', suggestions: [] },
+      { t: 'pr_offer', status: 'pending', sessionId: 'sess-echec',
+        vehicle: { manufacturer: 'Honda', model: 'CBR 600 F', year: 1996 },
+        part: 'guidon', query: 'guidon cbr 600',
+        otherParts: OTHER_PARTS,
+        otherPagination: { page: 1, total: 8, has_more: false } },
+    ],
+  }));
+}
+
+const searchCalls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    const body = JSON.parse(opts.body);
+    searchCalls.push(body);
+    await sleep(120);
+    const q = body.query || '';
+    // Pagination de la liste révélée : elle repart de l'état mémorisé côté
+    // serveur pour la session de la recherche infructueuse.
+    if (body.pagination) {
+      return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+        type: 'results',
+        results: [{ product_ref: 'REF-9', name: 'Autre pièce compatible 9', brand: 'EBC', price: 99 }],
+        pagination: { page: body.pagination.page, total: 9, has_more: false },
+        meta: {},
+      }) };
+    }
+    if (/guidon/.test(q)) {
+      return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+        type: 'no_results',
+        message: 'Je n’ai pas trouvé cette pièce.',
+        suggestions: [],
+        results: OTHER_PARTS,
+        pagination: { page: 1, total: 9, has_more: true },
+        interpreted: { manufacturer: 'Honda', model: 'CBR 600 F', year: 1996, part_type: 'guidon' },
+        meta: {},
+      }) };
+    }
+    if (/introuvable/.test(q)) {
+      return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+        type: 'no_results',
+        message: 'Je n’ai rien trouvé du tout.',
+        suggestions: [],
+        interpreted: { manufacturer: 'Honda', model: 'CBR 600 F', year: 1996, part_type: 'phare' },
+        meta: {},
+      }) };
+    }
+    return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+      type: 'results',
+      message: 'Voici ce qu’on a trouvé.',
+      results: [{ product_ref: 'OK-1', name: 'Plaquette', brand: 'EBC', price: 30 }],
+      pagination: { page: 1, total: 1, has_more: false },
+      interpreted: { manufacturer: 'Honda', model: 'CBR 600 F', year: 1996, part_type: 'plaquettes' },
+      meta: {},
+    }) };
+  }
+  return { status: 200, ok: true, headers: new Headers(), json: async () => ({ ok: true }) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+  const offerText = () => { const o = $('.ep-pr-offer'); return o ? o.querySelector('p').textContent : ''; };
+  const noBtn = () => $$('.ep-pr-btn-no').pop();
+  const cards = () => $$('.ep-card').length;
+  const stored = () => JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  const send = text => {
+    const input = $('#ep-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    $('#ep-send-btn').click();
+  };
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  if (RESTORED) return await runRestored({ $, $$, offerText, noBtn, cards, stored });
+
+  // ── 1. Échec + autres pièces : la proposition bascule sur l'alternative ──
+  send('guidon cbr 600');
+  await until(() => !!$('.ep-pr-offer'), 3000);
+
+  check('la copie annonce les autres pièces compatibles',
+        offerText().includes(COPY_OTHER), `copie="${offerText()}"`);
+  check('le refus devient « Autres pièces »',
+        noBtn().textContent === 'Autres pièces', `libellé="${noBtn().textContent}"`);
+  check('la liste ne s\'affiche PAS d\'office',
+        cards() === 0, `${cards()} cartes déjà affichées`);
+  check('un seul appel /search (les pièces sont venues avec l\'échec)',
+        searchCalls.length === 1, `${searchCalls.length} appels`);
+
+  // ── 2. Le clic affiche la liste ──
+  const sessionEchec = searchCalls[0].session_id;
+  noBtn().click();
+  await until(() => cards() > 0, 2000);
+  check('le clic affiche les autres pièces', cards() === OTHER_PARTS.length,
+        `${cards()} cartes`);
+  check('aucun appel réseau pour les afficher (elles étaient déjà là)',
+        searchCalls.length === 1, `${searchCalls.length} appels`);
+  check('la proposition est figée sur le refus',
+        noBtn().disabled && $$('.ep-pr-btn-yes').pop().disabled
+        && noBtn().classList.contains('ep-pr-chosen'));
+  await until(() => $$('.ep-msg-assistant').some(b => b.textContent.includes('autre recherche')), 2000);
+  check('la relance suit la liste, elle ne la devance pas',
+        (() => {
+          const blocs = $$('#ep-messages > .ep-msg');
+          const iList = blocs.findIndex(b => b.querySelector('.ep-products'));
+          const iRelance = blocs.findIndex(b => b.textContent.includes('autre recherche'));
+          return iList >= 0 && iRelance > iList;
+        })());
+
+  // ── 3. La liste révélée est journalisée comme n'importe quelle liste ──
+  const entries = (stored().transcript || []);
+  const prEntry = entries.find(e => e.t === 'pr_offer');
+  const prodEntry = entries.find(e => e.t === 'products');
+  check('la proposition est persistée « declined »',
+        prEntry && prEntry.status === 'declined', JSON.stringify(prEntry && prEntry.status));
+  check('les autres pièces sont persistées sur la proposition',
+        prEntry && (prEntry.otherParts || []).length === OTHER_PARTS.length);
+  check('la liste révélée est persistée comme entrée products',
+        prodEntry && (prodEntry.products || []).length === OTHER_PARTS.length);
+  check('elle est journalisée APRÈS la proposition',
+        entries.indexOf(prodEntry) > entries.indexOf(prEntry));
+
+  // ── 4. « Voir plus » pagine sur la session de la recherche infructueuse ──
+  // Deux tours de résultats ont fait tourner la session logique entre-temps ;
+  // l'état paginé, lui, est mémorisé côté serveur sous celle de l'échec.
+  send('plaquettes');
+  await until(() => searchCalls.length === 2, 3000);
+  await sleep(200);
+  send('plaquettes encore');
+  await until(() => searchCalls.length === 3, 3000);
+  await sleep(200);
+  check('la session logique a bien tourné entre-temps (préalable du test)',
+        searchCalls[2].session_id !== sessionEchec,
+        `échec=${sessionEchec} courante=${searchCalls[2].session_id}`);
+
+  // La liste des autres pièces n'est plus la liste active : on la ré-affiche
+  // depuis la proposition restée dans le fil… qui est figée. On repart donc
+  // d'une proposition NEUVE avec les mêmes pièces.
+  send('guidon cbr 600');
+  await until(() => searchCalls.length === 4, 3000);
+  await until(() => $$('.ep-pr-offer').length === 2, 2000);
+  const sessionEchec2 = searchCalls[3].session_id;
+  noBtn().click();
+  await until(() => !!$('.ep-load-more'), 2000);
+  check('la liste révélée offre « Voir plus » (has_more)', !!$('.ep-load-more'));
+  $('.ep-load-more').click();
+  await until(() => searchCalls.length === 5, 3000);
+  const pageCall = searchCalls[4];
+  check('« Voir plus » demande la page suivante',
+        pageCall.pagination && pageCall.pagination.page === 2,
+        JSON.stringify(pageCall.pagination));
+  check('« Voir plus » interroge la session de la recherche infructueuse, pas la session courante',
+        pageCall.session_id === sessionEchec2,
+        `envoyé=${pageCall.session_id} attendu=${sessionEchec2}`);
+
+  // ── 5. Sans autres pièces : rien ne change ──
+  $('#ep-reset-btn').click();
+  await sleep(60);
+  send('phare introuvable');
+  await until(() => !!$('.ep-pr-offer'), 3000);
+  check('la copie reste celle d\'origine',
+        !offerText().includes(COPY_OTHER), `copie="${offerText()}"`);
+  check('le refus reste « Non merci »',
+        noBtn().textContent === 'Non merci', `libellé="${noBtn().textContent}"`);
+  noBtn().click();
+  await sleep(300);
+  check('refuser n\'affiche aucune liste', cards() === 0, `${cards()} cartes`);
+  check('la relance sort quand même',
+        $$('.ep-msg-assistant').some(b => b.textContent.includes('autre recherche')));
+
+  done();
+}
+
+// Proposition restaurée depuis l'historique, restée sans réponse.
+async function runRestored({ $, $$, offerText, noBtn, cards, stored }) {
+  await sleep(300);
+  check('la proposition restaurée garde la copie « autres pièces »',
+        offerText().includes(COPY_OTHER), `copie="${offerText()}"`);
+  check('elle garde le libellé « Autres pièces »',
+        noBtn().textContent === 'Autres pièces', `libellé="${noBtn().textContent}"`);
+  check('elle est restée cliquable (aucune réponse donnée)', !noBtn().disabled);
+  check('la liste n\'est pas ré-affichée d\'office au rechargement',
+        cards() === 0, `${cards()} cartes`);
+
+  noBtn().click();
+  await until(() => cards() > 0, 2000);
+  check('après rechargement, le clic affiche toujours les pièces persistées',
+        cards() === OTHER_PARTS.length, `${cards()} cartes`);
+  const prodEntry = (stored().transcript || []).find(e => e.t === 'products');
+  check('la liste révélée après rechargement reste rattachée à la session de l\'échec',
+        prodEntry && prodEntry.sessionId === 'sess-echec',
+        JSON.stringify(prodEntry && prodEntry.sessionId));
+  check('aucun appel /search n\'a été nécessaire',
+        searchCalls.length === 0, `${searchCalls.length} appels`);
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = (RESTORED ? '[restauration] ' : '[direct] ')
+    + (bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`);
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_OTHER_PARTS_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>

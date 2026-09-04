@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — réouverture automatique après navigation</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Réouverture automatique après une navigation interne</h1>
+<p class="sub">
+  Le panneau était ouvert quand la page précédente s'est déchargée (état persisté
+  <code>isOpen: true</code>, semé avant que le widget ne monte). Vérifie qu'il se
+  rouvre sans le moindre clic, sans voler le focus, et que la fermeture reste
+  volontaire — donc bien persistée — une fois rouvert.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+function eq(name, a, e) { check(name, JSON.stringify(a) === JSON.stringify(e), `attendu ${JSON.stringify(e)}, reçu ${JSON.stringify(a)}`); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_REOPEN_TOKEN';
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+// Conversation persistée avec le panneau resté OUVERT — comme après une navigation
+// interne sans fermeture volontaire. Semée avant que le widget (defer) ne monte.
+localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
+  v: 4, token: TOKEN, sessionId: 'sess-restee-ouverte', isOpen: true, lastActive: Date.now(),
+  conversationContext: { previous_clarifications: [] },
+  identifiedVehicle: null,
+  identifiedPart: null,
+  transcript: [
+    { t: 'user', text: 'bougie cbr 600' },
+    { t: 'assistant', text: 'Voici les pièces compatibles.' },
+  ],
+}));
+
+const calls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  calls.push({ url: u, body: opts.body ? JSON.parse(opts.body) : null });
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  return { status: 200, ok: true, headers: new Headers(), json: async () => ({ type: 'no_results', message: 'x', meta: {} }) };
+};
+const evCalls = () => calls.filter(c => /\/events$/.test(c.url));
+const allEvents = () => evCalls().flatMap(c => (c.body && c.body.events) || []);
+const names = () => allEvents().map(e => e.event);
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $ = s => shadow.querySelector(s);
+
+  // ── 1. Réouvert automatiquement, sans le moindre clic ──
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+  check('le panneau est visible sans qu\'aucun clic n\'ait eu lieu',
+        !$('#ep-window').classList.contains('ep-hidden'));
+  check('la conversation restaurée est rejouée dans la fenêtre',
+        shadow.querySelectorAll('.ep-bubble').length > 0);
+
+  // ── 2. Sans voler le focus (rien n'a été demandé sur CETTE page) ──
+  await sleep(80);
+  check('le champ de saisie n\'a pas volé le focus au chargement',
+        shadow.activeElement !== $('#ep-input'), String(shadow.activeElement && shadow.activeElement.id));
+
+  // ── 3. La réouverture reste un vrai widget_open (juste sans clic) ──
+  await until(() => names().includes('widget_open'), 8000);
+  check('widget_open est émis malgré l\'absence de clic', names().includes('widget_open'));
+  check('pas de second session_start : la session restaurée n\'est pas rouverte',
+        !names().includes('session_start'), names().join(','));
+
+  // ── 4. Une fermeture volontaire, elle, reste persistée fermée ──
+  calls.length = 0;
+  $('#ep-close-btn').click();
+  await sleep(60);
+  const saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  eq('la fermeture volontaire persiste isOpen: false', saved.isOpen, false);
+  check('la fenêtre est bien masquée après la fermeture',
+        $('#ep-window').classList.contains('ep-hidden'));
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_REOPEN_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>
