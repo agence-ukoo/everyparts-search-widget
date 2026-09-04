@@ -44,6 +44,7 @@
       retry_sub:       'Cela peut être temporaire ou lié à une information manquante.',
       retry_hint:      'Essayez à nouveau dans quelques instants, ou reformulez votre demande avec d\'autres mots.',
       retry_action:    'Réessayer maintenant',
+      see_all_parts:   'Voir tout',
       retry_exhausted: 'Plusieurs tentatives ont échoué. Réessayez plus tard, ou reformulez votre demande avec d\'autres mots.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmée par {n} sources',
@@ -88,6 +89,10 @@
       review_other_cancel:   'Annuler',
       review_reason_thx:     'Merci pour votre avis !',
       try_label:       'Essayez',
+      // ── Pastille « nouveaux messages » / retour au dernier message ──
+      new_message_one: '1 nouveau message',
+      new_messages:    '{n} nouveaux messages',
+      scroll_to_end:   'Aller au dernier message',
       my_moto:         'Ma moto',
       edit_moto:       'Modifier',
       try_chips:       ['Cache culbuteur gasgas fse 450 enduro (2006)', 'Demarreur kawasaki zzr 1100 (1991)', 'Cache lateral yamaha xp 500 t-max (2004)'],
@@ -95,9 +100,11 @@
       teaser:          "Vous cherchez une pièce ?\rJe la trouve pour vous !",
       teaser_dismiss:  'Masquer',
       // ── Demande de pièce (frame 2a) ──
-      pr_offer:        'Souhaitez-vous qu’un de nos experts recherche cette pièce pour vous ?',
-      pr_offer_yes:    'Oui, soumettre',
-      pr_offer_no:     'Non, merci',
+      pr_offer:        'Vous pouvez soumettre votre recherche à un expert qui vous recontactera.',
+      pr_offer_other_parts: 'Vous pouvez soumettre votre recherche à un expert qui vous recontactera, ou bien consulter nos autres pièces compatibles avec votre véhicule.',
+      pr_offer_yes:    'Demander à un expert',
+      pr_offer_no:     'Non merci',
+      pr_offer_no_other_parts:     'Autres pièces',
       pr_part_label:   'Pièce recherchée : ',
       pr_title:        'Demander cette pièce',
       pr_subtitle:     'Notre équipe recherche la référence pour {vehicle} et vous recontacte.',
@@ -133,6 +140,7 @@
       retry_sub:       'This may be temporary, or due to missing information.',
       retry_hint:      'Try again in a few moments, or rephrase your request using different words.',
       retry_action:    'Try again now',
+      see_all_parts:   'See all',
       retry_exhausted: 'Several attempts have failed. Please try again later, or rephrase your request using different words.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmed by {n} sources',
@@ -177,6 +185,9 @@
       review_other_cancel:   'Cancel',
       review_reason_thx:     'Thank you for your feedback!',
       try_label:       'Try',
+      new_message_one: '1 new message',
+      new_messages:    '{n} new messages',
+      scroll_to_end:   'Go to latest message',
       my_moto:         'My bike',
       edit_moto:       'Edit',
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
@@ -184,9 +195,9 @@
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       // ── Part request (frame 2a) ──
-      pr_offer:        'Would you like one of our experts to find this part for you?',
-      pr_offer_yes:    'Yes, submit',
-      pr_offer_no:     'No, thanks',
+      pr_offer:        'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your vehicle.',
+      pr_offer_yes:    'Ask an expert',
+      pr_offer_no:     'Other Parts',
       pr_part_label:   'Searched part: ',
       pr_title:        'Request this part',
       pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you.',
@@ -222,6 +233,7 @@
       retry_sub:       'This may be temporary, or due to missing information.',
       retry_hint:      'Try again in a few moments, or rephrase your request using different words.',
       retry_action:    'Try again now',
+      see_all_parts:   'See all',
       retry_exhausted: 'Several attempts have failed. Please try again later, or rephrase your request using different words.',
       compat_label:    'Compatible',
       compat_tip:      'Confirmed by {n} sources',
@@ -266,6 +278,9 @@
       review_other_cancel:   'Cancel',
       review_reason_thx:     'Thank you for your feedback!',
       try_label:       'Try',
+      new_message_one: '1 new message',
+      new_messages:    '{n} new messages',
+      scroll_to_end:   'Go to latest message',
       my_moto:         'My bike',
       edit_moto:       'Edit',
       try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
@@ -273,9 +288,9 @@
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       // ── Part request (frame 2a) ──
-      pr_offer:        'Would you like one of our experts to find this part for you?',
-      pr_offer_yes:    'Yes, submit',
-      pr_offer_no:     'No, thanks',
+      pr_offer:        'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your vehicle.',
+      pr_offer_yes:    'Ask an expert',
+      pr_offer_no:     'Other Parts',
       pr_part_label:   'Searched part: ',
       pr_title:        'Request this part',
       pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you.',
@@ -885,9 +900,23 @@
       height: max(100%, 44px);
     }
 
-    /* ── Zone messages ── */
+    /* ── Zone messages ──
+       #ep-conv n'existe que pour ancrer la pastille « nouveaux messages » : il
+       occupe exactement la place de la zone défilante, si bien qu'un simple
+       décalage 'bottom' positionne la pastille juste au-dessus de ce qui suit la
+       conversation — la barre « Ma moto » quand elle est visible, la zone de
+       saisie sinon — sans avoir à mesurer la hauteur de ce bas de fenêtre
+       (qui change avec la barre moto, le clavier et les safe-areas). */
+    #ep-conv {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
     #ep-messages {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
@@ -900,6 +929,67 @@
     #ep-messages::-webkit-scrollbar { width: 4px; }
     #ep-messages::-webkit-scrollbar-track { background: transparent; }
     #ep-messages::-webkit-scrollbar-thumb { background: var(--ep-grey-300); border-radius: 4px; }
+
+    /* ── Pastille « n nouveaux messages » / retour au dernier message ──
+       z-index 3 : au-dessus de la barre d'outils produits collante (2), sous les
+       feuilles modales (5). */
+    #ep-jump {
+      position: absolute;
+      z-index: 3;
+      bottom: 8px;
+      /* Centrage par la mise en page (left/right + marges auto sur une largeur
+         fit-content), PAS par translateX : la transform ne porte alors que le
+         décalage vertical du fondu, identique dans les deux formes. Un
+         changement de forme est ainsi un simple saut de position — avec
+         translate(-50%), c'était un glissement horizontal animé, et la pastille
+         rangée à droite se voyait revenir au centre pendant sa disparition. */
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      width: fit-content;
+      transform: translateY(8px);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: calc(100% - 24px);
+      height: 34px;
+      padding: 0 13px;
+      border: 1px solid #DCE6E1;
+      border-radius: 999px;
+      background: var(--ep-white);
+      box-shadow: 0 6px 16px -6px rgba(6,76,76,.4);
+      color: var(--ep-dark);
+      font-family: var(--ep-font-body);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #ep-jump.ep-visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      transition: opacity .18s ease, transform .18s ease, visibility 0s;
+    }
+    /* Aucun message non lu : la pastille n'est plus qu'un retour au dernier
+       message — ronde et rangée à droite, pour masquer le moins possible de la
+       conversation qu'on est en train de relire. */
+    #ep-jump.ep-jump-plain {
+      left: auto;
+      right: 12px;
+      margin: 0;
+      width: 34px;
+      padding: 0;
+      justify-content: center;
+    }
+    #ep-jump.ep-jump-plain #ep-jump-label { display: none; }
+    #ep-jump:hover { border-color: var(--ep-primary); }
+    #ep-jump:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    #ep-jump-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #ep-jump-icon { flex: none; color: var(--ep-primary); }
 
     /* ── Bulles ── */
     .ep-msg {
@@ -1107,7 +1197,7 @@
     /* ── Cartes produit ── */
     .ep-products { width: 100%; }
     .ep-products-toolbar {
-      display: flex;
+      display: none;
       gap: 6px;
       align-items: center;
       /* Reste collée en haut du chat pendant le scroll de la liste */
@@ -1910,6 +2000,9 @@
     @media (prefers-reduced-motion: reduce) {
       #ep-window, .ep-msg, .ep-card, .ep-card-arrow { transition: none; animation: none; }
       .ep-sheet-backdrop, .ep-sheet { transition: none; }
+      #ep-jump, #ep-jump.ep-visible { transition: none; }
+      /* Le cadrage sur le premier message neuf est un saut, pas un travelling. */
+      #ep-messages { scroll-behavior: auto; }
       /* Le voile reste — c'est lui qui signale l'attente ; seule la rotation cesse. */
       .ep-retry-spinner { animation: none; }
       .ep-dot { animation: none; }
@@ -2371,6 +2464,17 @@
     }
   }
 
+  // ── Seuils de défilement de la conversation ──
+  // Distance au bas en dessous de laquelle la conversation est considérée
+  // « collée » : un tour de réponse qui arrive alors peut déplacer la vue.
+  const AT_BOTTOM_EPS = 24;
+  // Distance au bas au-delà de laquelle la pastille de retour au dernier message
+  // apparaît, faute de nouveaux messages à annoncer.
+  const JUMP_MIN_OFFSET = 160;
+  // Tolérance de « déjà vu » : quelques pixels près, pour qu'un arrondi de mise
+  // en page ne laisse pas un bloc entièrement paru compté comme non lu.
+  const SEEN_EPS = 8;
+
   // Seuil au-delà duquel les options passent en liste verticale filtrable
   const CLARI_CHIPS_MAX = 6;
   // Seuil au-delà duquel le champ de filtre est affiché
@@ -2460,6 +2564,9 @@
     const motoLabel  = win.querySelector('#ep-moto-label');
     const motoValue  = win.querySelector('#ep-moto-value');
     const motoEdit   = win.querySelector('#ep-moto-edit');
+    // Pastille flottante « nouveaux messages » / retour au dernier message
+    const jumpBtn    = win.querySelector('#ep-jump');
+    const jumpLabel  = win.querySelector('#ep-jump-label');
     // Fiche « demander cette pièce » (frame 2a)
     // Feuille des motifs d'un avis négatif
     const rvrBackdrop = win.querySelector('#ep-rvr-backdrop');
@@ -2487,6 +2594,51 @@
     const prFormErr  = win.querySelector('#ep-pr-form-err');
     const prSubmit   = win.querySelector('#ep-pr-submit');
     const prCancel   = win.querySelector('#ep-pr-cancel');
+
+    // ── Défilement de la conversation & pastille « nouveaux messages » ───────
+    // Un tour de réponse ajoute souvent PLUSIEURS blocs d'un coup (message,
+    // liste de produits, avis de satisfaction, relance). Sauter au dernier
+    // ferait défiler par-dessus ce qu'il faut lire en premier : on cale donc le
+    // PREMIER bloc neuf en haut de la zone visible, et la pastille annonce ce
+    // qui reste en dessous.
+    //
+    // Les ajouts sont relevés par un MutationObserver plutôt qu'aux points
+    // d'appel de scrollBottom() : chaque renderer garde son unique appel, et
+    // aucun bloc à venir ne peut échapper au comptage en oubliant de se
+    // déclarer. L'indicateur de saisie est exclu — il n'est pas un message.
+    let pendingAdds = [];   // blocs ajoutés depuis la dernière décision
+    let unreadEls = [];     // blocs arrivés et pas encore parus à l'écran
+    let scrollRaf = 0;
+    let restoreScroll = false;   // rejeu de l'historique en cours
+    let userScroll = false;      // l'utilisateur vient d'envoyer un message
+    let atBottom = true;
+    let seenBottom = 0;
+    let jumpSig = '';
+
+    // Cible d'un défilement programmé, tant qu'il n'y est pas arrivé. Elle sert
+    // à deux choses, toutes deux dues au fait que `scroll-behavior: smooth`
+    // rend le défilement ASYNCHRONE :
+    //   - les événements `scroll` de notre propre animation ne doivent pas être
+    //     lus comme « l'utilisateur a quitté le bas », ni faire décroître le
+    //     compteur frame par frame ;
+    //   - l'état de la pastille se lit sur la CIBLE, pas sur la position
+    //     courante : au moment du clic, scrollTop n'a pas encore bougé, et la
+    //     pastille resterait affichée alors qu'on file déjà vers le bas.
+    // Levée dès que la cible est atteinte, sur un geste de l'utilisateur, ou au
+    // bout de PROG_SCROLL_MS si l'animation n'aboutit jamais (contenu qui
+    // rétrécit entre-temps, onglet en arrière-plan qui ne l'anime pas).
+    let progTarget = null;
+    let progUntil = 0;
+    const PROG_SCROLL_MS = 1500;
+
+    const msgObserver = new MutationObserver(records => {
+      records.forEach(rec => {
+        [...rec.addedNodes].forEach(node => {
+          if (node.nodeType === 1 && node !== typingEl) pendingAdds.push(node);
+        });
+      });
+    });
+    msgObserver.observe(messagesEl, { childList: true });
 
     // ── Événements ────────────────────────────────────────────────────────
     let isOpen = false;
@@ -2857,6 +3009,11 @@
       messagesEl.style.scrollBehavior = 'auto';
       messagesEl.scrollTop = messagesEl.scrollHeight;
       messagesEl.style.scrollBehavior = '';
+      // Ce re-collage court en boucle pendant l'animation du clavier et écrase
+      // toute cible programmée : l'état de défilement se relit donc ici sur la
+      // position réelle, sinon la pastille resterait sur un compte périmé.
+      endProgScroll();
+      syncScrollState();
     }
 
     function resetWindowGeometry() {
@@ -2970,6 +3127,7 @@
       clearState();
       renderMotoBar();       // masque la barre « Ma moto »
       messagesEl.innerHTML = '';
+      resetScrollState();
       showWelcome(); // sauvegarde la nouvelle session et démarre la nouvelle journalisation
       if (!isMobile()) inputEl.focus();   // cf. toggleWindow : pas de clavier imposé sur mobile
     }
@@ -3198,7 +3356,7 @@
         renderTryChips();
       }
 
-      scrollBottom();
+      scrollBottom(true);
     }
 
     // Ré-affiche une entrée de l'historique de conversation. Figée dans son état
@@ -3909,6 +4067,11 @@
           list.toolbar.apply(false);
         }
 
+        // Les cartes s'ajoutent DANS la liste existante : aucun bloc neuf au
+        // premier niveau, donc aucune décision de défilement — mais la
+        // conversation s'est allongée, la pastille de retour au bas s'impose.
+        updateJump();
+
         if (list.pagination.has_more) {
           btn.disabled = false;
         } else {
@@ -4231,6 +4394,7 @@
 
       const options = (data.clarification?.options || [])
         .map(option => ({ label: option, value: option }));
+      options.push({ label: t('see_all_parts'), value: t('see_all_parts') });
 
       appendOptionsGroup(options, value => {
         // Enregistrer la clarification dans le contexte
@@ -4737,7 +4901,7 @@
       content.className = 'ep-pr-offer';
 
       const p = document.createElement('p');
-      p.textContent = t('pr_offer') + " 👀";
+      p.textContent = t('pr_offer');
       content.appendChild(p);
 
       const actions = document.createElement('div');
@@ -4808,7 +4972,9 @@
         }
         telemetryMessages = Math.min(1000, telemetryMessages + 1);
       }
-      scrollBottom();
+      // force : le message de l'utilisateur n'est pas une arrivée à annoncer, il
+      // doit être visible immédiatement, où qu'il ait défilé jusque-là.
+      scrollBottom(true);
       if (!isRestoring) { transcript.push({ t: 'user', text }); saveState(); }
     }
 
@@ -4984,11 +5150,201 @@
       }
     }
 
-    function scrollBottom() {
-      requestAnimationFrame(() => {
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      });
+    // ── Défilement de la conversation & pastille « nouveaux messages » ───────
+    // Voir l'état de ce module plus haut (déclaré avant le premier rendu, que
+    // showWelcome/restoreConversation déclenchent depuis mount()).
+    function maxScroll() {
+      return Math.max(0, messagesEl.scrollHeight - messagesEl.clientHeight);
     }
+
+    function distFromBottom() {
+      return maxScroll() - messagesEl.scrollTop;
+    }
+
+    // Position d'un bloc dans le contenu défilant, comparable à scrollTop :
+    // offsetTop est mesuré depuis #ep-conv, qui coïncide avec le haut de la zone
+    // défilante et ne défile pas lui-même.
+    function blockTop(el) {
+      return el.offsetTop - messagesEl.offsetTop;
+    }
+
+    // Point le plus bas de la conversation qui ait été exposé. Monotone : le
+    // compteur ne peut donc que décroître, et reste stable pendant qu'un
+    // défilement animé descend vers sa cible.
+    function markSeen(top) {
+      seenBottom = Math.max(seenBottom, top + messagesEl.clientHeight);
+    }
+
+    // Un bloc reste « non lu » tant qu'il n'a pas paru EN ENTIER : une liste de
+    // produits de 1500px dont on ne voit que l'amorce reste à lire, et c'est
+    // précisément ce que la pastille doit annoncer. Un bloc retiré du fil
+    // (indicateur, chips d'accueil, carte d'échec) sort du compte.
+    function pruneUnread() {
+      unreadEls = unreadEls.filter(el =>
+        el.parentNode === messagesEl
+        && blockTop(el) + el.offsetHeight - SEEN_EPS > seenBottom);
+    }
+
+    function progActive() {
+      return progTarget !== null && Date.now() < progUntil;
+    }
+
+    function endProgScroll() {
+      progTarget = null;
+      progUntil = 0;
+    }
+
+    // Reprend l'état de défilement depuis la position RÉELLE de la conversation.
+    function syncScrollState() {
+      atBottom = distFromBottom() <= AT_BOTTOM_EPS;
+      markSeen(messagesEl.scrollTop);
+      pruneUnread();
+      updateJump();
+    }
+
+    function programScroll(top, instant) {
+      const max = maxScroll();
+      const target = Math.min(Math.max(0, top), max);
+      progTarget = target;
+      progUntil = Date.now() + PROG_SCROLL_MS;
+      atBottom = max - target <= AT_BOTTOM_EPS;
+      markSeen(target);
+      // Le défilement est animé par `scroll-behavior: smooth` (CSS, cf. #ep-messages) ;
+      // on ne l'écrase que pour un calage instantané — le rejeu de l'historique
+      // n'a pas à défiler devant l'utilisateur.
+      if (instant) messagesEl.style.scrollBehavior = 'auto';
+      messagesEl.scrollTop = target;
+      if (instant) messagesEl.style.scrollBehavior = '';
+      pruneUnread();
+      updateJump();
+    }
+
+    // Point d'entrée unique des renderers : coalesce la rafale d'appels d'un
+    // même tour de réponse en une seule décision de défilement.
+    // force : geste explicite de l'utilisateur (son message part) — il ramène au
+    // fil, où qu'on ait défilé, et il n'y a rien à lui annoncer comme non lu.
+    function scrollBottom(force) {
+      // Le rejeu de l'historique se déclare ICI, à l'appel : la rafale ne se
+      // résout qu'après la fin de restoreConversation(), où isRestoring est déjà
+      // repassé à false.
+      if (isRestoring) restoreScroll = true;
+      else if (force) userScroll = true;
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => { scrollRaf = 0; applyScroll(); });
+    }
+
+    function applyScroll() {
+      const added = pendingAdds.filter(el => el.parentNode === messagesEl);
+      const restore = restoreScroll;
+      const userTurn = userScroll;
+      pendingAdds = [];
+      restoreScroll = userScroll = false;
+
+      // Historique rejoué : le fil entier est « ajouté » d'un coup, il n'y a
+      // aucun premier message neuf à cadrer — la conversation s'ouvre en bas,
+      // sans animation et sans rien annoncer comme non lu.
+      if (restore) {
+        unreadEls = [];
+        programScroll(messagesEl.scrollHeight, true);
+        return;
+      }
+
+      // Le geste de l'utilisateur ramène au fil : son message doit être visible
+      // où qu'il ait défilé, et ce qu'il a laissé plus bas n'est plus « non lu ».
+      // Le cadrage reste celui du cas général : si une réponse arrive dans la
+      // même frame que son message, c'est SON message qui se cale en haut.
+      if (userTurn) {
+        unreadEls = [];
+        atBottom = true;
+      }
+
+      // Rien de neuf au premier niveau (indicateur de saisie, cartes greffées
+      // dans une liste existante) : on ne suit le bas que si on y était.
+      if (!added.length) {
+        if (atBottom) programScroll(messagesEl.scrollHeight, false);
+        else updateJump();
+        return;
+      }
+
+      if (atBottom) {
+        // Le premier bloc neuf se cale en haut ; ce qui déborde en dessous
+        // devient les « nouveaux messages » restants. Le défilement étant borné
+        // au bas de la conversation, un tour qui tient à l'écran se comporte
+        // exactement comme avant : il descend simplement au bas.
+        unreadEls = added;
+        programScroll(blockTop(added[0]) - 8, false);
+      } else {
+        // L'utilisateur lit plus haut : sa vue ne bouge pas, la pastille
+        // annonce ce qui vient d'arriver.
+        unreadEls = unreadEls.concat(added);
+        updateJump();
+      }
+    }
+
+    // Trois états : « n nouveaux messages » (centrée, du neuf hors champ),
+    // retour au dernier message (ronde, à droite, quand on s'est éloigné du
+    // bas), ou absente.
+    function updateJump() {
+      const n = unreadEls.length;
+      // Défilement programmé en vol : c'est sa cible qui compte. Sinon un clic
+      // sur la pastille la laisserait affichée — au moment du clic, scrollTop
+      // n'a pas encore bougé, et rien ne viendra le relire une fois l'animation
+      // finie (le dernier événement `scroll` tombe dans la fenêtre ignorée).
+      const dist = progActive() ? maxScroll() - progTarget : distFromBottom();
+      const mode = n > 0
+        ? 'count'
+        : (dist > JUMP_MIN_OFFSET ? 'plain' : 'none');
+      const sig = mode + n;
+      if (sig === jumpSig) return;   // pas d'écriture DOM à chaque frame de défilement
+      jumpSig = sig;
+      jumpBtn.classList.toggle('ep-visible', mode !== 'none');
+      // Disparition : on ne retouche NI la forme NI le libellé. La pastille doit
+      // s'effacer telle qu'elle était ; la remettre à l'état « centrée, vide »
+      // la ferait revenir au centre en plein fondu, bien visible.
+      if (mode === 'none') return;
+      jumpBtn.classList.toggle('ep-jump-plain', mode === 'plain');
+      const label = mode === 'count'
+        ? (n === 1 ? t('new_message_one') : t('new_messages', { n }))
+        : '';
+      jumpLabel.textContent = label;
+      jumpBtn.setAttribute('aria-label', label || t('scroll_to_end'));
+    }
+
+    // Remise à zéro : les offsets repartent de 0 après un vidage du fil, un
+    // seenBottom hérité marquerait tout comme déjà lu.
+    function resetScrollState() {
+      pendingAdds = [];
+      unreadEls = [];
+      seenBottom = 0;
+      atBottom = true;
+      endProgScroll();
+      updateJump();
+    }
+
+    messagesEl.addEventListener('scroll', () => {
+      // Notre propre animation : on n'en lit rien avant qu'elle soit arrivée —
+      // l'état a déjà été posé sur la cible par programScroll().
+      if (progActive()) {
+        if (Math.abs(messagesEl.scrollTop - progTarget) > 2) return;
+        endProgScroll();
+      }
+      syncScrollState();
+    }, { passive: true });
+
+    // Geste de l'utilisateur : il reprend la main sur un défilement programmé
+    // encore en cours, ses propres événements `scroll` redeviennent la vérité.
+    // `mousedown` couvre le glissement de l'ascenseur, qui n'émet ni `wheel` ni
+    // `touchstart` et pourrait s'achever avant la fin de la fenêtre programmée.
+    // Ces écoutes sont sur la zone défilante, dont la pastille n'est pas
+    // descendante (elle vit dans #ep-conv) : la cliquer ne les déclenche pas.
+    ['wheel', 'touchstart', 'mousedown', 'keydown'].forEach(type => {
+      messagesEl.addEventListener(type, endProgScroll, { passive: true });
+    });
+
+    jumpBtn.addEventListener('click', () => {
+      unreadEls = [];
+      programScroll(messagesEl.scrollHeight, false);
+    });
   }
 
   // ── HTML interne de la fenêtre ─────────────────────────────────────────────
@@ -5014,7 +5370,17 @@
           </button>
         </div>
       </div>
-      <div id="ep-messages" role="log" aria-live="polite" aria-label="${t('aria_conversation')}"></div>
+      <div id="ep-conv">
+        <div id="ep-messages" role="log" aria-live="polite" aria-label="${t('aria_conversation')}"></div>
+        <!-- Pastille flottante : « n nouveaux messages » quand un tour de reponse
+             s'est affiche hors champ, simple retour au dernier message sinon. -->
+        <button id="ep-jump" type="button" aria-label="${t('scroll_to_end')}">
+          <span id="ep-jump-label"></span>
+          <svg id="ep-jump-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v13M6.5 12.5 12 18l5.5-5.5"></path>
+          </svg>
+        </button>
+      </div>
       <div id="ep-typing" aria-live="polite" aria-label="${t('typing')}">
         <div class="ep-typing-bubble">
           <span class="ep-dot"></span>
