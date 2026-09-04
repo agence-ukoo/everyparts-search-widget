@@ -4402,7 +4402,9 @@
 
       const options = (data.clarification?.options || [])
         .map(option => ({ label: option, value: option }));
-      options.push({ label: t('see_all_parts'), value: t('see_all_parts') });
+      if (lastClarificationField === 'part_type') {
+        options.push({ label: t('see_all_parts'), value: t('see_all_parts') });
+      }
 
       appendOptionsGroup(options, value => {
         // Enregistrer la clarification dans le contexte
