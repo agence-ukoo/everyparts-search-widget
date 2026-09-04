@@ -37,7 +37,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const TOKEN = 'ep_live_REVIEW_RESTORE_TOKEN';
 try { localStorage.clear(); } catch (e) {}
 localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
-  v: 3, token: TOKEN, sessionId: 'sess-1', isOpen: true, lastActive: Date.now(),
+  v: 4, token: TOKEN, sessionId: 'sess-1', isOpen: true, lastActive: Date.now(),
   conversationContext: { previous_clarifications: [] },
   identifiedVehicle: null, identifiedPart: null,
   transcript: [

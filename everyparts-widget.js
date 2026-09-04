@@ -101,10 +101,12 @@
       teaser_dismiss:  'Masquer',
       // ── Demande de pièce (frame 2a) ──
       pr_offer:        'Vous pouvez soumettre votre recherche à un expert qui vous recontactera.',
-      pr_offer_other_parts: 'Vous pouvez soumettre votre recherche à un expert qui vous recontactera, ou bien consulter nos autres pièces compatibles avec votre véhicule.',
+      // Variante employée quand la réponse joint d'autres pièces compatibles :
+      // refuser l'expert, c'est alors demander à les voir.
+      pr_offer_other_parts:    'Vous pouvez soumettre votre recherche à un expert qui vous recontactera, ou bien consulter nos autres pièces compatibles avec votre véhicule.',
       pr_offer_yes:    'Demander à un expert',
       pr_offer_no:     'Non merci',
-      pr_offer_no_other_parts:     'Autres pièces',
+      pr_offer_no_other_parts: 'Autres pièces',
       pr_part_label:   'Pièce recherchée : ',
       pr_title:        'Demander cette pièce',
       pr_subtitle:     'Notre équipe recherche la référence pour {vehicle} et vous recontacte.',
@@ -195,9 +197,11 @@
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       // ── Part request (frame 2a) ──
-      pr_offer:        'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your vehicle.',
+      pr_offer:        'You can submit your search to an expert, who will get back to you.',
+      pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your vehicle.',
       pr_offer_yes:    'Ask an expert',
-      pr_offer_no:     'Other Parts',
+      pr_offer_no:     'No thanks',
+      pr_offer_no_other_parts: 'Other parts',
       pr_part_label:   'Searched part: ',
       pr_title:        'Request this part',
       pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you.',
@@ -288,9 +292,11 @@
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       // ── Part request (frame 2a) ──
-      pr_offer:        'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your vehicle.',
+      pr_offer:        'You can submit your search to an expert, who will get back to you.',
+      pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your vehicle.',
       pr_offer_yes:    'Ask an expert',
-      pr_offer_no:     'Other Parts',
+      pr_offer_no:     'No thanks',
+      pr_offer_no_other_parts: 'Other parts',
       pr_part_label:   'Searched part: ',
       pr_title:        'Request this part',
       pr_subtitle:     'Our team will look up the reference for {vehicle} and get back to you.',
@@ -2484,7 +2490,9 @@
   // Version du schema JSON de stockage de l'historique de conversation
   // Tout changement au sein de ce schéma doit induire une incrémentation de ce numéro de version afin d'invalider
   // les caches utilisateurs lors du déploiement
-  const STORAGE_SCHEMA_VERSION = 3;
+  // 4 : l'entrée pr_offer porte les autres pièces compatibles jointes à l'échec
+  //     (otherParts / otherPagination).
+  const STORAGE_SCHEMA_VERSION = 4;
 
   // ── Montage du widget ──────────────────────────────────────────────────────
   function mount() {
@@ -4559,6 +4567,13 @@
     function renderNoResults(data) {
       appendAssistantMessageEl(buildNoResults(data.message, data.suggestions));
 
+      // La pièce demandée est introuvable, mais le serveur peut joindre les AUTRES
+      // pièces compatibles avec le véhicule identifié (mêmes champs que sur un
+      // `results` : results + pagination). Elles ne remplacent pas l'échec et ne
+      // s'affichent pas d'office — elles alimentent la proposition ci-dessous.
+      const otherParts = data.results || [];
+      const otherPagination = data.pagination || null;
+
       if (!isRestoring) {
         transcript.push({
           t: 'no_results',
@@ -4572,12 +4587,17 @@
       // Frame 2a : la recherche infructueuse enchaîne sur une proposition de
       // demande de pièce. L'utilisateur y entre explicitement — rien ne s'ouvre seul.
       if (CONFIG.partsRequest) {
-        renderPartsRequestOffer();
+        renderPartsRequestOffer(null, { products: otherParts, pagination: otherPagination });
       } else {
         // Demandes éteintes : sans relance, la conversation resterait suspendue sur
         // l'échec. Elle sort donc tout de suite, à la place de la proposition — et
         // sans entrée à laquelle s'adosser, d'où l'appel avec null : renderNoResults()
         // ne s'exécute qu'une fois par réponse, il n'y a rien à dédoublonner.
+        // Les autres pièces, elles, restent dues : c'est la DEMANDE qui est éteinte,
+        // pas l'affichage de produits, et plus aucun bouton ne les révélerait.
+        if (otherParts.length) {
+          renderOtherParts(otherParts, otherPagination, sessionId);
+        }
         showAfterPartsRequest(null);
       }
     }
@@ -4888,20 +4908,39 @@
     // autres échanges : son statut (pending/declined/sent) survit à la navigation,
     // et le session_id est capturé ICI — c'est la recherche infructueuse qu'on
     // rattache à la demande, pas la session courante (startNewSession a pu passer).
-    function renderPartsRequestOffer(reuseEntry) {
+    // offer : { products, pagination } — les autres pièces compatibles avec le
+    // véhicule, jointes par le serveur à la réponse infructueuse. Elles ne
+    // s'affichent PAS d'emblée : elles sont l'alternative que porte la
+    // proposition, et « Autres pièces » les révèle (cf. le clic sur « non »).
+    function renderPartsRequestOffer(reuseEntry, offer) {
       let logEntry = reuseEntry || null;
       if (!logEntry && !isRestoring) {
-        logEntry = { t: 'pr_offer', status: 'pending', sessionId, vehicle: identifiedVehicle, part: identifiedPart, query: lastUserQuery() };
+        logEntry = {
+          t: 'pr_offer', status: 'pending', sessionId,
+          vehicle: identifiedVehicle, part: identifiedPart, query: lastUserQuery(),
+          // Capturées sur l'entrée comme la moto et la pièce : une proposition
+          // rejouée après rechargement doit garder SA copie et SON libellé, et
+          // rester révélable même si la conversation a continué depuis.
+          otherParts: (offer && offer.products) || [],
+          otherPagination: (offer && offer.pagination) || null,
+        };
         transcript.push(logEntry);
         saveState();
       }
       const status = logEntry ? logEntry.status : 'pending';
+      const otherParts = (logEntry && logEntry.otherParts)
+        || (offer && offer.products) || [];
+      const otherPagination = (logEntry && logEntry.otherPagination)
+        || (offer && offer.pagination) || null;
+      // Deux cas, décidés sur la seule présence de ces pièces : sans elles, refuser
+      // l'expert ne fait que refuser ; avec elles, c'est basculer sur la liste.
+      const hasOther = otherParts.length > 0;
 
       const content = document.createElement('div');
       content.className = 'ep-pr-offer';
 
       const p = document.createElement('p');
-      p.textContent = t('pr_offer');
+      p.textContent = t(hasOther ? 'pr_offer_other_parts' : 'pr_offer');
       content.appendChild(p);
 
       const actions = document.createElement('div');
@@ -4915,7 +4954,7 @@
       const no = document.createElement('button');
       no.type = 'button';
       no.className = 'ep-pr-btn ep-pr-btn-no';
-      no.textContent = t('pr_offer_no');
+      no.textContent = t(hasOther ? 'pr_offer_no_other_parts' : 'pr_offer_no');
 
       actions.appendChild(yes);
       actions.appendChild(no);
@@ -4941,8 +4980,31 @@
       no.addEventListener('click', () => {
         freeze('no');
         if (logEntry && !isRestoring) { logEntry.status = 'declined'; saveState(); }
+        // Décliner l'expert alors que d'autres pièces existent, c'est demander à
+        // les voir : la liste s'affiche ICI, avant la relance — qui invite à
+        // passer à autre chose et n'a donc rien à devancer.
+        if (hasOther) {
+          renderOtherParts(otherParts, otherPagination,
+            (logEntry && logEntry.sessionId) || sessionId);
+        }
         showAfterPartsRequest(logEntry);
       });
+    }
+
+    // Liste des autres pièces compatibles : une liste de produits ordinaire
+    // (barre de tri/filtre, « Voir plus », journalisation), à un détail près —
+    // la session. « Voir plus » interroge l'état paginé mémorisé côté serveur
+    // pour la recherche qui a produit la liste ; ici c'est la recherche
+    // infructueuse, pas forcément la session du moment (la conversation a pu
+    // continuer, ou la page être rechargée) — d'où le recalage explicite.
+    function renderOtherParts(products, pagination, listSessionId) {
+      renderProductList(products, pagination);
+      if (!activeList) return;
+      activeList.sessionId = listSessionId;
+      if (activeList.logEntry && !isRestoring) {
+        activeList.logEntry.sessionId = listSessionId;
+        saveState();
+      }
     }
 
     // ── Helpers DOM ────────────────────────────────────────────────────────

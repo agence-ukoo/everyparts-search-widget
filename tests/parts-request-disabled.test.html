@@ -45,7 +45,7 @@ const TOKEN = 'ep_live_DISABLED_TOKEN';
 // Conversation persistée AVANT extinction : elle contient une proposition restée
 // en attente. Semée avant que le widget (defer) ne monte, pour tester le rejeu.
 localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
-  v: 3, token: TOKEN, sessionId: 'sess-avant-extinction', lastActive: Date.now(),
+  v: 4, token: TOKEN, sessionId: 'sess-avant-extinction', lastActive: Date.now(),
   conversationContext: { previous_clarifications: [] },
   identifiedVehicle: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1985 },
   identifiedPart: 'guidon',
