@@ -36,6 +36,7 @@
       send:            'Envoyer',
       welcome_p1:      'Bonjour 👋 Je suis l\'assistant IA de recherche EveryParts.',
       welcome_p2:      'Décrivez-moi votre moto (marque, modèle, cylindrée et année) et la pièce recherchée, et je vous aiderai à la trouver.',
+      welcome_p3:      'Pour toute autre demande, merci de passer par notre [link]formulaire de contact[/link].',
       typing:          'En train de répondre',
       error_unknown:   'Erreur inconnue.',
       error_unexpected:'La recherche est momentanément indisponible. Merci de réessayer dans quelques instants.',
@@ -134,6 +135,7 @@
       send:            'Send',
       welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
       welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
+      welcome_p3:      'For any other inquiries, please use our [link]contact form[/link].',
       typing:          'Typing',
       error_unknown:   'Unknown error.',
       error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
@@ -229,6 +231,7 @@
       send:            'Send',
       welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
       welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
+      welcome_p3:      'For any other inquiries, please use our [link]contact form[/link].',
       typing:          'Typing',
       error_unknown:   'Unknown error.',
       error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
@@ -383,6 +386,7 @@
     logo:     SCRIPT_EL?.getAttribute('data-logo')  || '',
     title:    SCRIPT_EL?.getAttribute('data-title') || '',
     subtitle: SCRIPT_EL?.getAttribute('data-subtitle') || '',
+    contact_page_url: SCRIPT_EL?.getAttribute('data-contact-page-url') || '',
     // Demande de pièce sur recherche infructueuse (frame 2a). Activée sauf
     // data-enable-parts-request="false" : une boutique qui n'a personne pour traiter
     // ces demandes peut l'éteindre sans toucher au reste de l'intégration.
@@ -3173,6 +3177,17 @@
 
       bubble.appendChild(p1);
       bubble.appendChild(p2);
+
+      if (CONFIG.contact_page_url) {
+        const p3 = document.createElement('p');
+        p3.className = 'ep-welcome-sub';
+        p3.textContent = t('welcome_p3');
+        p3.innerHTML = p3.innerHTML.replace('[link]', `<a href="${CONFIG.contact_page_url}">`);
+        p3.innerHTML = p3.innerHTML.replace('[/link]', '</a>');
+
+        bubble.appendChild(p3);
+      }
+
       div.appendChild(avatar);
       div.appendChild(bubble);
       messagesEl.appendChild(div);
