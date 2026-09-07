@@ -47,7 +47,7 @@ try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
 // Conversation persistée avec le panneau resté OUVERT — comme après une navigation
 // interne sans fermeture volontaire. Semée avant que le widget (defer) ne monte.
 localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
-  v: 4, token: TOKEN, sessionId: 'sess-restee-ouverte', isOpen: true, lastActive: Date.now(),
+  v: 5, token: TOKEN, sessionId: 'sess-restee-ouverte', isOpen: true, lastActive: Date.now(),
   conversationContext: { previous_clarifications: [] },
   identifiedVehicle: null,
   identifiedPart: null,

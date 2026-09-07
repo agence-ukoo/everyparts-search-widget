@@ -1027,6 +1027,20 @@
       color: #EAF7F3;
       border-bottom-right-radius: 4px;
     }
+    /* Lien posé par une balise [link] du serveur ou d'un libellé i18n : sans
+       cette règle, il sortirait au bleu par défaut du navigateur, au milieu de la
+       palette du widget. Souligné : c'est ce qui le signale comme cliquable, la
+       couleur seule ne suffit pas (WCAG 1.4.1). */
+    .ep-bubble a {
+      color: var(--ep-primary);
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .ep-bubble a:hover { color: var(--ep-dark); }
+    .ep-bubble a:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
+    .ep-msg-user .ep-bubble a { color: #9FF0D2; }
+
     .ep-msg-assistant .ep-bubble {
       background: var(--ep-white);
       color: #12312D;
@@ -2496,7 +2510,9 @@
   // les caches utilisateurs lors du déploiement
   // 4 : l'entrée pr_offer porte les autres pièces compatibles jointes à l'échec
   //     (otherParts / otherPagination).
-  const STORAGE_SCHEMA_VERSION = 4;
+  // 5 : les entrées assistant et no_results portent le contact_url de leur
+  //     réponse (contactUrl), cible du lien de leur balise [link].
+  const STORAGE_SCHEMA_VERSION = 5;
 
   // ── Montage du widget ──────────────────────────────────────────────────────
   function mount() {
@@ -3181,10 +3197,7 @@
       if (CONFIG.contact_page_url) {
         const p3 = document.createElement('p');
         p3.className = 'ep-welcome-sub';
-        p3.textContent = t('welcome_p3');
-        p3.innerHTML = p3.innerHTML.replace('[link]', `<a href="${CONFIG.contact_page_url}">`);
-        p3.innerHTML = p3.innerHTML.replace('[/link]', '</a>');
-
+        setLinkedText(p3, t('welcome_p3'));
         bubble.appendChild(p3);
       }
 
@@ -3397,7 +3410,7 @@
           appendUserMessage(entry.text);
           break;
         case 'assistant':
-          appendAssistantMessage(entry.text);
+          appendAssistantMessage(entry.text, entry.contactUrl);
           break;
         case 'products':
           renderProductList(entry.products || [], entry.pagination || null);
@@ -3437,7 +3450,7 @@
           break;
         }
         case 'no_results':
-          appendAssistantMessageEl(buildNoResults(entry.message, entry.suggestions));
+          appendAssistantMessageEl(buildNoResults(entry.message, entry.suggestions, entry.contactUrl));
           break;
         case 'pr_offer':
           // Éteinte entre-temps : une conversation journalisée quand la fonctionnalité
@@ -3578,7 +3591,7 @@
           break;
         case 'error':
           if (data.error?.code === 'pagination_expired' && data.error?.message) {
-            appendErrorMessage(data.error.message);
+            appendErrorMessage(data.error.message, data.contact_url);
           } else {
             console.error(data.error || t('error_unknown'));
             renderSearchFailure();
@@ -3592,7 +3605,7 @@
     function renderResults(data) {
       const products = data.results || [];
 
-      appendAssistantMessage(data.message);
+      appendAssistantMessage(data.message, data.contact_url);
 
       if (products.length > 0) {
         renderProductList(products, data.pagination || null);
@@ -4129,7 +4142,7 @@
       if (data.refinement.questions.length) {
         message += '\n\n' + data.refinement.questions[0].question;
       }
-      appendAssistantMessage(message);
+      appendAssistantMessage(message, data.contact_url);
       askRefinementQuestion();
     }
 
@@ -4138,7 +4151,8 @@
       const question = p.questions[p.answers.length];
 
       // first question has already been included in assistant refinement message
-      if (p.answers.length > 0) appendAssistantMessage(question.question);
+      // Les questions suivantes viennent de la MÊME réponse que la première.
+      if (p.answers.length > 0) appendAssistantMessage(question.question, p.data.contact_url);
 
       const options = (question.options || []).map(o => ({ label: o, value: o }));
       options.push({ label: t('refine_dont_know'), value: null });
@@ -4411,13 +4425,17 @@
      * comme un message utilisateur.
      */
     function renderClarification(data) {
-      appendAssistantMessage(data.message);
+      appendAssistantMessage(data.message, data.contact_url);
 
       lastClarificationField = data.clarification?.field || null;
 
       const options = (data.clarification?.options || [])
         .map(option => ({ label: option, value: option }));
-      if (lastClarificationField === 'part_type') {
+      // « Toutes les pièces » élargit la recherche au catalogue. Le serveur qui
+      // renvoie contact_url a justement décidé l'inverse — que cette demande
+      // relève du contact avec la boutique : lui adjoindre cette option irait
+      // contre la réponse qu'il vient de donner.
+      if (lastClarificationField === 'part_type' && !data.contact_url) {
         options.push({ label: t('see_all_parts'), value: t('see_all_parts') });
       }
 
@@ -4563,11 +4581,11 @@
     }
 
     // Construit la bulle « aucun résultat » (message + suggestions éventuelles).
-    function buildNoResults(message, suggestions) {
+    function buildNoResults(message, suggestions, contactUrl) {
       const container = document.createElement('div');
 
       const msgDiv = document.createElement('div');
-      msgDiv.textContent = message;
+      setLinkedText(msgDiv, message, contactUrl);
       container.appendChild(msgDiv);
 
       if (suggestions && suggestions.length > 0) {
@@ -4582,7 +4600,7 @@
     }
 
     function renderNoResults(data) {
-      appendAssistantMessageEl(buildNoResults(data.message, data.suggestions));
+      appendAssistantMessageEl(buildNoResults(data.message, data.suggestions, data.contact_url));
 
       // La pièce demandée est introuvable, mais le serveur peut joindre les AUTRES
       // pièces compatibles avec le véhicule identifié (mêmes champs que sur un
@@ -4596,6 +4614,7 @@
           t: 'no_results',
           message: data.message,
           suggestions: data.suggestions || [],
+          contactUrl: data.contact_url || undefined,
         });
         conversationContext = { previous_clarifications: [] };
         saveState();
@@ -5057,9 +5076,21 @@
       if (!isRestoring) { transcript.push({ t: 'user', text }); saveState(); }
     }
 
-    function appendAssistantMessage(text) {
-        // security guard to avoid duplicate assistant messages
-        if (transcript[transcript.length - 1].text === text) {
+    // contactUrl : celui de la réponse qui a produit ce message. Il est persisté
+    // AVEC lui : le lien appartient à ce message-là, pas à la conversation — une
+    // réponse ultérieure peut pointer ailleurs, et le rejeu doit rendre à chaque
+    // bulle son propre lien.
+    function appendAssistantMessage(text, contactUrl) {
+        // Garde anti-doublon : deux chemins peuvent viser la même relance (le
+        // minuteur de finalizeResults et une issue terminale), et la répéter mot
+        // pour mot n'apporterait rien.
+        // JAMAIS pendant un rejeu : l'historique y EST la source, et l'entrée
+        // qu'on rejoue est justement celle à laquelle on se comparerait — la
+        // dernière bulle assistant d'une conversation restaurée disparaissait
+        // donc (typiquement la relance « une autre recherche ? », qui la termine
+        // le plus souvent).
+        const last = transcript.length ? transcript[transcript.length - 1] : null;
+        if (!isRestoring && last && last.text === text) {
           return;
         }
 
@@ -5071,12 +5102,17 @@
         avatar.innerHTML = MARK_SVG;
         const bubble = document.createElement('div');
         bubble.className = 'ep-bubble';
-        bubble.textContent = text;
+        // Le texte brut (balise comprise) est ce qui part dans l'historique : le
+        // rejeu repasse par ici et reconstruit le même lien.
+        setLinkedText(bubble, text, contactUrl);
         div.appendChild(avatar);
         div.appendChild(bubble);
         messagesEl.appendChild(div);
         scrollBottom();
-        if (!isRestoring) { transcript.push({ t: 'assistant', text }); saveState(); }
+        if (!isRestoring) {
+          transcript.push({ t: 'assistant', text, contactUrl: contactUrl || undefined });
+          saveState();
+        }
     }
 
     function appendAssistantMessageWithDelay(text, delay = 0) {
@@ -5199,7 +5235,7 @@
       });
     }
 
-    function appendErrorMessage(text) {
+    function appendErrorMessage(text, contactUrl) {
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-assistant ep-msg-error';
       const avatar = document.createElement('div');
@@ -5208,7 +5244,7 @@
       avatar.innerHTML = MARK_SVG;
       const bubble = document.createElement('div');
       bubble.className = 'ep-bubble';
-      bubble.textContent = text;
+      setLinkedText(bubble, text, contactUrl);
       div.appendChild(avatar);
       div.appendChild(bubble);
       messagesEl.appendChild(div);
@@ -5605,6 +5641,50 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  // ── Balise de lien « [link]libellé[/link] » ────────────────────────────────
+  // Le serveur peut baliser un lien dans le texte qu'il renvoie (« passez par
+  // notre [link]formulaire de contact[/link] »), tout comme les libellés i18n.
+  // Il ne pose QUE le libellé : l'URL, elle, appartient à la boutique
+  // (data-contact-page-url) et lui est inconnue.
+  const LINK_RE = /\[link\]([\s\S]*?)\[\/link\]/g;
+
+  function hasLinkTag(text) {
+    return typeof text === 'string'
+      && text.indexOf('[link]') !== -1 && text.indexOf('[/link]') !== -1;
+  }
+
+  // Cible du lien, par ordre de priorité : le `contact_url` de la RÉPONSE qui
+  // porte le message — le serveur sait mieux que la configuration où envoyer
+  // cette demande-là — puis, à défaut, la page de contact de la boutique.
+  // Rien des deux : cf. linkTagHtml, le libellé reste en texte.
+  function linkHref(contactUrl) {
+    return contactUrl || CONFIG.contact_page_url;
+  }
+
+  // Texte → HTML, la balise devenant un <a>. L'ordre est ce qui compte ici : on
+  // échappe D'ABORD (ce texte vient du serveur, cf. la note de sécurité), on
+  // remplace ENSUITE — l'inverse ferait neutraliser par escHtml() le <a> qu'on
+  // vient de poser. L'échappement ne touche pas aux crochets, la balise traverse
+  // donc intacte et reste repérable.
+  // Sans aucune URL, la balise disparaît et le libellé reste en texte : la
+  // phrase se lit toujours, elle n'est simplement pas cliquable — plutôt que
+  // d'afficher un « [link] » brut sur la page d'une boutique. Une balise mal
+  // formée (non refermée), elle, ne correspond à rien et ressort telle quelle :
+  // c'est au message de se corriger, pas au widget de le maquiller.
+  function linkTagHtml(text, contactUrl) {
+    const href = linkHref(contactUrl);
+    return escHtml(text).replace(LINK_RE, (m, label) =>
+      href ? `<a href="${escHtml(href)}">${label}</a>` : label);
+  }
+
+  // Pose un texte dans un élément. innerHTML seulement s'il y a une balise à
+  // convertir : du texte ordinaire n'a aucune raison d'y passer.
+  // contactUrl : celui de la réponse qui a apporté ce texte, quand elle en a un.
+  function setLinkedText(el, text, contactUrl) {
+    if (hasLinkTag(text)) el.innerHTML = linkTagHtml(text, contactUrl);
+    else el.textContent = text;
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
