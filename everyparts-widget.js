@@ -1030,16 +1030,16 @@
     /* Lien posé par une balise [link] du serveur ou d'un libellé i18n : sans
        cette règle, il sortirait au bleu par défaut du navigateur, au milieu de la
        palette du widget. Souligné : c'est ce qui le signale comme cliquable, la
-       couleur seule ne suffit pas (WCAG 1.4.1). */
-    .ep-bubble a {
+       couleur seule ne suffit pas (WCAG 1.4.1). La classe sert aussi de point
+       d'accroche au clic (télémétrie contact_click). */
+    .ep-contact-link {
       color: var(--ep-primary);
       font-weight: 700;
       text-decoration: underline;
       text-underline-offset: 2px;
     }
-    .ep-bubble a:hover { color: var(--ep-dark); }
-    .ep-bubble a:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
-    .ep-msg-user .ep-bubble a { color: #9FF0D2; }
+    .ep-contact-link:hover { color: var(--ep-dark); }
+    .ep-contact-link:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
 
     .ep-msg-assistant .ep-bubble {
       background: var(--ep-white);
@@ -2141,6 +2141,11 @@
                             price: num(0), currency: exactLen(3), name: str(255),
                             brand: str(191), url: url(2048) },
       samples_click:      { '!sample': str(191), position: int(1, 50), sample_count: int(1, 50) },
+      // `url` est tout l'événement : sans elle il ne resterait qu'un clic sur
+      // rien, d'où le champ requis (même règle que product_ref ou sample).
+      // C'est l'URL RÉELLEMENT ouverte, donc toujours absolue — la propriété
+      // href d'un lien résout aussi bien un chemin relatif qu'un mailto:.
+      contact_click:      { '!url': url(2048) },
       // with_comment : second review_submit émis quand le motif d'un avis négatif
       // est effectivement soumis (canné ou texte libre)
       review_submit:      { '!rating': oneOf(['up', 'down']), with_comment: bool() },
@@ -2675,6 +2680,20 @@
     closeBtn.addEventListener('click', () => toggleWindow(false));
     resetBtn.addEventListener('click', newConversation);
     motoEdit.addEventListener('click', editMoto);
+
+    // Lien de contact (balise [link], accueil ou réponse du serveur) : écoute
+    // DÉLÉGUÉE sur le fil plutôt qu'un écouteur par lien — les bulles naissent
+    // d'un innerHTML, y compris au rejeu de l'historique, et un lien à venir
+    // n'aura rien à déclarer pour être compté.
+    // Vidage immédiat : le lien s'ouvre dans le MÊME onglet, la file n'aurait
+    // jamais le temps de partir d'elle-même — même raison que pour une carte
+    // produit (keepalive, sans attendre la réponse).
+    messagesEl.addEventListener('click', e => {
+      const link = e.target.closest('.ep-contact-link');
+      if (!link) return;
+      Telemetry.track('contact_click', { url: link.href });
+      Telemetry.flush();
+    });
 
     // Amorce / aperçu : cliquer la bulle ouvre le chat ; la croix la masque seulement.
     let teaserTimer = null;
@@ -5676,7 +5695,7 @@
   function linkTagHtml(text, contactUrl) {
     const href = linkHref(contactUrl);
     return escHtml(text).replace(LINK_RE, (m, label) =>
-      href ? `<a href="${escHtml(href)}">${label}</a>` : label);
+      href ? `<a class="ep-contact-link" href="${escHtml(href)}">${label}</a>` : label);
   }
 
   // Pose un texte dans un élément. innerHTML seulement s'il y a une balise à

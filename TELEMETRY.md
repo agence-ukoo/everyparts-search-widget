@@ -16,6 +16,7 @@ Aucun `fetch` de télémétrie ailleurs dans le widget. Le module vit dans
 | `widget_close` | `toggleWindow(false)`, et sur `pagehide` si le panneau était ouvert. **Pas** sur un changement d'onglet. | `open_ms`, `url` |
 | `product_click` | Clic sur une carte produit | `product_ref` *(requis)*, `position`, `page`, `query`, `interpreted`, `model_confirmed`, `result_count` (= `pagination.total`), `price`, `currency`, `name`, `brand`, `url` |
 | `samples_click` | Clic sur une suggestion « Essayez » de l'accueil | `sample` *(requis)*, `position`, `sample_count` |
+| `contact_click` | Clic sur un lien de contact — celui de l'accueil (`welcome_p3`) comme celui d'une balise `[link]` d'une réponse. Écoute déléguée sur le fil : un lien à venir n'a rien à déclarer pour être compté. **Vidé tout de suite**, comme `product_click` : le lien s'ouvre dans le même onglet, la file n'aurait jamais le temps de partir. | `url` *(requis)* — celle réellement ouverte : le `contact_url` de la réponse s'il y en a un, sinon `data-contact-page-url` |
 | `review_submit` | Clic sur un pouce (haut ou bas). **Repart une seconde fois**, avec `with_comment: true`, quand le motif d'un avis négatif est réellement soumis (canné ou texte libre) — le premier envoi ne le sait pas encore. Jamais le libellé ni le texte du motif. | `rating` *(requis)*, `with_comment` |
 | `parts_request_open` | Ouverture de la fiche de demande de pièce | `query`, `reason` |
 | `parts_request_close` | Fermeture **sans** avoir soumis | `filled` |
@@ -158,8 +159,9 @@ l'événement abandonné plutôt que parti incomplet.
 Le comptage est **par requête**, pas par événement : un lot de 20 coûte un crédit,
 comme un envoi unitaire. Le groupage est donc réellement moins cher pour la
 boutique — d'où le debounce plutôt qu'un envoi immédiat, sauf pour
-`product_click` qui est vidé tout de suite (en keepalive, sans attendre la
-réponse, pour ne pas retarder l'ouverture du lien).
+`product_click` et `contact_click`, vidés tout de suite (en keepalive, sans
+attendre la réponse, pour ne pas retarder l'ouverture du lien — et parce que la
+page est sur le point d'être quittée).
 
 ## Tests
 
