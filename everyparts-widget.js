@@ -44,7 +44,7 @@
     'fr-FR': {
       placeholder:     'Rechercher une pièce compatible…',
       send:            'Envoyer',
-      welcome_p1:      'Bonjour 👋 je suis l\'agent IA EveryParts. Je vous aide à trouver les pièces compatibles avec votre moto.',
+      welcome_p1:      '👋 Bonjour, je suis l\'agent IA EveryParts. Je vous aide à trouver les pièces compatibles avec votre moto.',
       welcome_p2:      'Pour quel véhicule cherchez-vous une pièce ?\n' + '(marque, modèle, cylindrée, année)',
       welcome_p3:      'Votre demande ne concerne pas la recherche de pièces ?\n' +
           'Passez par notre [link]formulaire de contact[/link].',
@@ -144,7 +144,7 @@
     'en-US': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      'Hello 👋 I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your motorcycle.',
+      welcome_p1:      '👋 Hello, I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your motorcycle.',
       welcome_p2:      'What vehicle are you looking for a part for?\n' + '(make, model, engine displacement, year)',
       welcome_p3:      'Is your request not related to finding parts?\n' +
           'Please use our [link]contact form[/link].',
@@ -241,7 +241,7 @@
     'en-GB': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      'Hello 👋 I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your motorcycle.',
+      welcome_p1:      '👋 Hello, I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your motorcycle.',
       welcome_p2:      'What vehicle are you looking for a part for?\n' + '(make, model, engine displacement, year)',
       welcome_p3:      'Is your request not related to finding parts?\n' +
           'Please use our [link]contact form[/link].',
