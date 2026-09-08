@@ -44,9 +44,10 @@
     'fr-FR': {
       placeholder:     'Rechercher une pièce compatible…',
       send:            'Envoyer',
-      welcome_p1:      'Bonjour 👋 Je suis l\'assistant IA de recherche EveryParts.',
-      welcome_p2:      'Décrivez-moi votre moto (marque, modèle, cylindrée et année) et la pièce recherchée, et je vous aiderai à la trouver.',
-      welcome_p3:      'Pour toute autre demande, merci de passer par notre [link]formulaire de contact[/link].',
+      welcome_p1:      'Bonjour 👋 je suis l\'agent IA EveryParts. Je vous aide à trouver les pièces compatibles avec votre moto.',
+      welcome_p2:      'Pour quel véhicule cherchez-vous une pièce ?\n' + '(marque, modèle, cylindrée, année)',
+      welcome_p3:      'Votre demande ne concerne pas la recherche de pièces ?\n' +
+          'Passez par notre [link]formulaire de contact[/link].',
       typing:          'En train de répondre',
       error_unknown:   'Erreur inconnue.',
       error_unexpected:'La recherche est momentanément indisponible. Merci de réessayer dans quelques instants.',
@@ -143,9 +144,10 @@
     'en-US': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
-      welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
-      welcome_p3:      'For any other inquiries, please use our [link]contact form[/link].',
+      welcome_p1:      'Hello 👋 I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your motorcycle.',
+      welcome_p2:      'What vehicle are you looking for a part for?\n' + '(make, model, engine displacement, year)',
+      welcome_p3:      'Is your request not related to finding parts?\n' +
+          'Please use our [link]contact form[/link].',
       typing:          'Typing',
       error_unknown:   'Unknown error.',
       error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
@@ -239,9 +241,10 @@
     'en-GB': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      'Hello 👋 I\'m EveryParts\' AI research assistant.',
-      welcome_p2:      'Tell me about your motorcycle (make, model, engine displacement, and year) and the part you\'re looking for, and I\'ll help you find it.',
-      welcome_p3:      'For any other inquiries, please use our [link]contact form[/link].',
+      welcome_p1:      'Hello 👋 I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your motorcycle.',
+      welcome_p2:      'What vehicle are you looking for a part for?\n' + '(make, model, engine displacement, year)',
+      welcome_p3:      'Is your request not related to finding parts?\n' +
+          'Please use our [link]contact form[/link].',
       typing:          'Typing',
       error_unknown:   'Unknown error.',
       error_unexpected:'The search function is temporarily unavailable. Please try again in a few moments.',
