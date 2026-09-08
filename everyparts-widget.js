@@ -29,6 +29,16 @@
     return scripts[scripts.length - 1];
   })();
 
+  // Config par site servie par le hub AVEC le loader (branche
+  // feat/widget-config-delivery) : `attributes` et `theme` sont déjà appliqués à ce
+  // stade (le loader les pose sur la balise <script> / dans une règle de la page)
+  // et n'ont rien à faire ici. Seul `wordings` — le dictionnaire i18n que le serveur
+  // ne peut pas atteindre autrement — regarde le moteur. Le global est posé par un
+  // tiers (le loader généré par le hub) : jamais garanti présent (intégration
+  // ancienne) ni bien formé, d'où la vérification de type avant de s'en servir.
+  const REMOTE_CONFIG = (typeof window.__PARTSMIND_CONFIG__ === 'object' && window.__PARTSMIND_CONFIG__) || {};
+  const REMOTE_WORDINGS = (typeof REMOTE_CONFIG.wordings === 'object' && REMOTE_CONFIG.wordings) || {};
+
   // ── Traductions (i18n) — clés par locale BCP 47 ────────────────────────────
   const I18N = {
     'fr-FR': {
@@ -394,20 +404,41 @@
     // Journalise meta.ignored des events : c'est ainsi qu'on attrape un nom de
     // champ mal orthographie. A laisser eteint en production.
     debug: boolAttr('data-debug', false),
+    // Réécritures i18n servies par le hub (cf. REMOTE_WORDINGS ci-dessus) : une
+    // carte locale → clé → texte, consultée par t()/tList() PAR-DESSUS I18N. Objet
+    // vide par défaut — absent ou vide, le comportement actuel ne change pas.
+    wordings: REMOTE_WORDINGS,
   };
+
+  // Réécriture serveur pour (locale, clé), si le hub en a servi une pour ce site —
+  // cf. CONFIG.wordings. Sous CONFIG.wordings[CONFIG.locale], jamais sous une autre
+  // locale : le repli vers fr-FR reste celui d'I18N, une langue à la fois ne mélange
+  // pas des textes réécrits d'une locale avec des textes d'origine d'une autre.
+  function wordingOverride(key) {
+    const w = CONFIG.wordings[CONFIG.locale];
+    return (w && typeof w === 'object') ? w[key] : undefined;
+  }
 
   function t(key, vars = {}) {
     const dict = I18N[CONFIG.locale] || I18N[DEFAULT_LOCALE];
-    let str = dict[key] || I18N[DEFAULT_LOCALE][key] || key;
+    const override = wordingOverride(key);
+    // Le repli silencieux vers fr-FR est celui d'ORIGINE (dict, ligne du dessus) ;
+    // la réécriture serveur passe AU-DESSUS de tout, jamais à sa place.
+    let str = (typeof override === 'string' ? override : undefined)
+      ?? dict[key] ?? I18N[DEFAULT_LOCALE][key] ?? key;
     for (const [k, v] of Object.entries(vars)) {
       str = str.replace(`{${k}}`, v);
     }
     return str;
   }
 
-  // Variante de t() pour les valeurs tableau (ex. suggestions d'accueil).
+  // Variante de t() pour les valeurs tableau (ex. suggestions d'accueil). Une
+  // réécriture n'est retenue que si c'est un tableau — un serveur qui enverrait une
+  // chaîne pour une clé-liste ne doit pas casser tList(), juste être ignoré.
   function tList(key) {
     const dict = I18N[CONFIG.locale] || I18N[DEFAULT_LOCALE];
+    const override = wordingOverride(key);
+    if (Array.isArray(override)) return override;
     const val = dict[key] || I18N[DEFAULT_LOCALE][key];
     return Array.isArray(val) ? val : [];
   }
@@ -2571,7 +2602,7 @@
     teaser.setAttribute('role', 'button');
     teaser.setAttribute('tabindex', '0');
     teaser.setAttribute('aria-label', t('open'));
-    teaser.innerHTML = `<button id="ep-teaser-close" type="button" aria-label="${t('teaser_dismiss')}" title="${t('teaser_dismiss')}">${TEASER_CLOSE_ICON}</button><span id="ep-teaser-text"></span>`;
+    teaser.innerHTML = `<button id="ep-teaser-close" type="button" aria-label="${escHtml(t('teaser_dismiss'))}" title="${escHtml(t('teaser_dismiss'))}">${TEASER_CLOSE_ICON}</button><span id="ep-teaser-text"></span>`;
     shadow.appendChild(teaser);
     const teaserText = teaser.querySelector('#ep-teaser-text');
     const teaserClose = teaser.querySelector('#ep-teaser-close');
@@ -4441,7 +4472,7 @@
         <div class="ep-card-body">
           <div class="ep-card-topline">
             <span class="ep-card-brand">${escHtml(product.brand || '')}</span>
-            <span class="ep-card-ref">${t('ref_label')} ${escHtml(product.product_ref || '')}</span>
+            <span class="ep-card-ref">${escHtml(t('ref_label'))} ${escHtml(product.product_ref || '')}</span>
           </div>
           <div class="ep-card-name">${escHtml(product.name || '')}</div>
           <div class="ep-card-bottomline">
@@ -5508,13 +5539,13 @@
           </div>
         </div>
         <div id="ep-header-actions">
-          <button id="ep-reset-btn" class="ep-header-btn" aria-label="${t('new_conversation')}" title="${t('new_conversation')}">
+          <button id="ep-reset-btn" class="ep-header-btn" aria-label="${escHtml(t('new_conversation'))}" title="${escHtml(t('new_conversation'))}">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M20.5 11.4c0 4.03-3.8 7.3-8.5 7.3-.92 0-1.8-.12-2.63-.36l-4.62 1.51 1.36-3.42C4.6 15.11 3.5 13.36 3.5 11.4c0-4.03 3.8-7.3 8.5-7.3s8.5 3.27 8.5 7.3Z"></path>
               <path d="M12 8.6v5.2M9.4 11.2h5.2"></path>
             </svg>
           </button>
-          <button id="ep-close-btn" class="ep-header-btn" aria-label="${t('close')}" title="${t('close')}">
+          <button id="ep-close-btn" class="ep-header-btn" aria-label="${escHtml(t('close'))}" title="${escHtml(t('close'))}">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
               <path d="M7 7l10 10M17 7 7 17"></path>
             </svg>
@@ -5522,22 +5553,22 @@
         </div>
       </div>
       <div id="ep-conv">
-        <div id="ep-messages" role="log" aria-live="polite" aria-label="${t('aria_conversation')}"></div>
+        <div id="ep-messages" role="log" aria-live="polite" aria-label="${escHtml(t('aria_conversation'))}"></div>
         <!-- Pastille flottante : « n nouveaux messages » quand un tour de reponse
              s'est affiche hors champ, simple retour au dernier message sinon. -->
-        <button id="ep-jump" type="button" aria-label="${t('scroll_to_end')}">
+        <button id="ep-jump" type="button" aria-label="${escHtml(t('scroll_to_end'))}">
           <span id="ep-jump-label"></span>
           <svg id="ep-jump-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 5v13M6.5 12.5 12 18l5.5-5.5"></path>
           </svg>
         </button>
       </div>
-      <div id="ep-typing" aria-live="polite" aria-label="${t('typing')}">
+      <div id="ep-typing" aria-live="polite" aria-label="${escHtml(t('typing'))}">
         <div class="ep-typing-bubble">
           <span class="ep-dot"></span>
           <span class="ep-dot"></span>
           <span class="ep-dot"></span>
-          <span class="ep-typing-text">${t('typing')}</span>
+          <span class="ep-typing-text">${escHtml(t('typing'))}</span>
         </div>
       </div>
       <div id="ep-moto-bar" role="group">
@@ -5546,22 +5577,22 @@
           <span id="ep-moto-label"></span>
           <span id="ep-moto-value"></span>
         </div>
-        <button id="ep-moto-edit" type="button">${t('edit_moto')}</button>
+        <button id="ep-moto-edit" type="button">${escHtml(t('edit_moto'))}</button>
       </div>
       <div id="ep-input-area">
         <div class="ep-input-row">
           <input
             id="ep-input"
             type="text"
-            placeholder="${t('placeholder')}"
+            placeholder="${escHtml(t('placeholder'))}"
             autocomplete="off"
             autocapitalize="off"
             autocorrect="off"
             enterkeyhint="send"
-            aria-label="${t('placeholder')}"
+            aria-label="${escHtml(t('placeholder'))}"
             maxlength="300"
           />
-          <button id="ep-send-btn" aria-label="${t('send')}" title="${t('send')}">
+          <button id="ep-send-btn" aria-label="${escHtml(t('send'))}" title="${escHtml(t('send'))}">
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M20.3 4.4 3.9 10.6c-.7.26-.66 1.28.06 1.48l6.06 1.7 1.7 6.06c.2.72 1.22.76 1.48.06L20.3 4.4Z"></path>
               <path d="M10.02 13.78 20.3 4.4"></path>
@@ -5569,7 +5600,7 @@
           </button>
         </div>
         <div id="ep-footer">
-          <span id="ep-footer-text">${t('powered_by')}</span>
+          <span id="ep-footer-text">${escHtml(t('powered_by'))}</span>
           <a id="ep-footer-brand" href="${escHtml(t('brand_url'))}" target="_blank" rel="noopener noreferrer" aria-label="EveryParts">${LOGO_GREEN_SVG}</a>
         </div>
       </div>
