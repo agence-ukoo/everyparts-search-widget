@@ -2732,6 +2732,9 @@
       if (!link) return;
       Telemetry.track('contact_click', { url: link.href });
       Telemetry.flush();
+      // Même best-effort que product_click : link.href porte déjà les UTM,
+      // posés une fois à la génération du <a> par linkTagHtml.
+      pushDataLayer({ event: 'everyparts_contact_click', url: link.href });
     }
     messagesEl.addEventListener('click', trackContactClick);
     messagesEl.addEventListener('auxclick', trackContactClick);
@@ -4425,7 +4428,7 @@
         if (e.type === 'auxclick' && e.button !== 1) return; // clic milieu seulement
         const list = activeList;
         const idx = list ? list.entries.findIndex(e => e.product === product) : -1;
-        Telemetry.track('product_click', {
+        const detail = {
           product_ref: product.product_ref,
           position: idx >= 0 ? idx + 1 : undefined,
           page: list && list.pagination ? list.pagination.page : undefined,
@@ -4449,10 +4452,16 @@
           name: product.name,
           brand: product.brand,
           url: product.url,
-        }, list && list.sessionId ? list.sessionId : undefined);
+        };
+        Telemetry.track('product_click', detail, list && list.sessionId ? list.sessionId : undefined);
         Telemetry.flush();
+        // Même clic, second destinataire best-effort : le dataLayer de la
+        // boutique, si elle en a un. `card.href` porte déjà les UTM (posés une
+        // fois à la construction de la carte) — c'est la vraie destination,
+        // pas `product.url` brut.
+        pushDataLayer({ event: 'everyparts_product_click', ...detail, url: card.href });
       }
-      card.href = product.url || '#';
+      card.href = withUtm(product.url, 'product_click') || '#';
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
       card.setAttribute('aria-label', `${product.name || ''} – ${t('view_product')}`);
@@ -5702,6 +5711,58 @@
     `;
   }
 
+  // ── Attribution externe (UTM + dataLayer) ───────────────────────────────────
+  // Un clic sur une carte produit ou sur le lien de contact fait QUITTER le
+  // widget : la boutique perd alors toute trace que cette visite — et, plus
+  // loin, la commande ou le contact envoyé — vient d'ici. Deux mécanismes
+  // indépendants et best-effort comblent ce trou sans jamais faire échouer la
+  // navigation qui, sans eux, aurait marché :
+  //  - des paramètres UTM posés sur l'URL de sortie, pour que le GA4 DE LA
+  //    BOUTIQUE (pas le nôtre) rattache la session — et donc une conversion
+  //    ultérieure sur son propre site — à la source « everyparts_widget » ;
+  //  - un push dans `window.dataLayer`, pour les boutiques qui pilotent déjà
+  //    leur GA4/GTM par ce canal et veulent un événement au clic plutôt que
+  //    d'attendre le rapport d'attribution par source/support.
+  const UTM_SOURCE = 'everyparts_widget';
+  const UTM_MEDIUM = 'widget';
+  const UTM_CAMPAIGN = 'everyparts';
+
+  // N'écrase jamais un utm_* déjà présent sur l'URL (product.url ou
+  // data-contact-page-url peuvent porter le tracking propre de la boutique) —
+  // on complète, on ne remplace pas. `content` distingue les deux points de
+  // sortie du widget (« product_click » / « contact_click ») dans les
+  // rapports de la boutique, en écho au nom de l'événement de télémétrie
+  // interne. Une URL non parsable (vide, malformée) ressort inchangée : mieux
+  // vaut un lien sans UTM qu'un lien cassé.
+  function withUtm(rawUrl, content) {
+    if (!rawUrl) return rawUrl;
+    try {
+      const url = new URL(rawUrl, location.href);
+      if (!url.searchParams.has('utm_source'))   url.searchParams.set('utm_source', UTM_SOURCE);
+      if (!url.searchParams.has('utm_medium'))   url.searchParams.set('utm_medium', UTM_MEDIUM);
+      if (!url.searchParams.has('utm_campaign')) url.searchParams.set('utm_campaign', UTM_CAMPAIGN);
+      if (content && !url.searchParams.has('utm_content')) url.searchParams.set('utm_content', content);
+      return url.toString();
+    } catch (e) {
+      return rawUrl;
+    }
+  }
+
+  // Événement préfixé `everyparts_` pour ne jamais entrer en collision avec un
+  // `product_click`/`contact_click` déjà défini par la boutique dans son
+  // propre dataLayer (nom générique, schéma potentiellement différent).
+  // N'initialise PAS `window.dataLayer` s'il n'existe pas : une boutique sans
+  // GTM/gtag.js ne doit récupérer aucun global qu'elle n'a jamais demandé, et
+  // une qui l'installera plus tard le (re)créera elle-même via son propre
+  // snippet, avant que ce widget n'ait la moindre chance d'être cliqué.
+  function pushDataLayer(payload) {
+    try {
+      if (Array.isArray(window.dataLayer)) window.dataLayer.push(payload);
+    } catch (e) {
+      // best-effort : jamais de page cassée pour un dataLayer hostile/gelé.
+    }
+  }
+
   // ── Utilitaire XSS ────────────────────────────────────────────────────────
   function escHtml(str) {
     if (typeof str !== 'string') str = String(str ?? '');
@@ -5744,7 +5805,7 @@
   // formée (non refermée), elle, ne correspond à rien et ressort telle quelle :
   // c'est au message de se corriger, pas au widget de le maquiller.
   function linkTagHtml(text, contactUrl) {
-    const href = linkHref(contactUrl);
+    const href = withUtm(linkHref(contactUrl), 'contact_click');
     return escHtml(text).replace(LINK_RE, (m, label) =>
       href ? `<a class="ep-contact-link" href="${escHtml(href)}">${label}</a>` : label);
   }
