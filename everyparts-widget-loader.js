@@ -63,8 +63,8 @@
   'use strict';
 
   /* @generated-begin — régénéré par tools/release.sh */
-  var WIDGET_URL = 'https://cdn.jsdelivr.net/gh/agence-ukoo/everyparts-search-widget@1.3.0/everyparts-widget.min.js';
-  var WIDGET_SRI = 'sha384-/Yny0GmNfz8NIgOrvbIbLisaRGpwqQqrb3pgnQ2tDxTKh5dVmqp7nF59833GlA15';
+  var WIDGET_URL = 'https://cdn.jsdelivr.net/gh/agence-ukoo/everyparts-search-widget@1.3.1/everyparts-widget.min.js';
+  var WIDGET_SRI = 'sha384-DYFVPzjEbBVWmUZNoFDyXYOrM4SXIJDRKTg7X2W/eOQvW5LiZWKQVBi901UqcP5y';
   /* @generated-end */
 
   // Snippet présent deux fois sur la page : on ne charge qu'une instance, mais on
