@@ -2688,12 +2688,19 @@
     // Vidage immédiat : le lien s'ouvre dans le MÊME onglet, la file n'aurait
     // jamais le temps de partir d'elle-même — même raison que pour une carte
     // produit (keepalive, sans attendre la réponse).
-    messagesEl.addEventListener('click', e => {
+    // 'click' ET 'auxclick' : même raison que buildProductCard — le clic milieu
+    // (nouvel onglet) ne déclenche que 'auxclick' (button 1). Un clic droit →
+    // « Ouvrir dans un nouvel onglet » depuis le menu contextuel ne déclenche
+    // rien du tout côté page ; ça reste hors de portée de tout écouteur JS.
+    function trackContactClick(e) {
+      if (e.type === 'auxclick' && e.button !== 1) return; // clic milieu seulement
       const link = e.target.closest('.ep-contact-link');
       if (!link) return;
       Telemetry.track('contact_click', { url: link.href });
       Telemetry.flush();
-    });
+    }
+    messagesEl.addEventListener('click', trackContactClick);
+    messagesEl.addEventListener('auxclick', trackContactClick);
 
     // Amorce / aperçu : cliquer la bulle ouvre le chat ; la croix la masque seulement.
     let teaserTimer = null;
@@ -4371,7 +4378,17 @@
       // On empile puis on vide la file en keepalive, SANS attendre la reponse :
       // le lien s'ouvre immediatement. Le rang et la page viennent de la liste
       // reellement affichee ; le reste est l'echo de la reponse /search.
-      card.addEventListener('click', () => {
+      // 'click' ET 'auxclick' : le clic milieu (nouvel onglet) ne déclenche PAS
+      // 'click' mais 'auxclick' (button 1) — sans cette seconde écoute, ouvrir
+      // une carte au clic milieu ne serait jamais compté. Un clic droit → « Ouvrir
+      // dans un nouvel onglet » depuis le menu contextuel, en revanche, ne
+      // déclenche AUCUN événement de la famille click : le navigateur traite ce
+      // choix lui-même, sans jamais notifier la page de l'option retenue dans son
+      // propre menu (limitation de plateforme, pas un bug corrigible ici).
+      card.addEventListener('click', trackProductClick);
+      card.addEventListener('auxclick', trackProductClick);
+      function trackProductClick(e) {
+        if (e.type === 'auxclick' && e.button !== 1) return; // clic milieu seulement
         const list = activeList;
         const idx = list ? list.entries.findIndex(e => e.product === product) : -1;
         Telemetry.track('product_click', {
@@ -4400,7 +4417,7 @@
           url: product.url,
         }, list && list.sessionId ? list.sessionId : undefined);
         Telemetry.flush();
-      });
+      }
       card.href = product.url || '#';
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
