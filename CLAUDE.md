@@ -24,8 +24,8 @@ Tags carry **no `v` prefix** (`1.0.9`, `1.1.1`, …): the version is used litera
 Release order matters — the import references a tag that must already be published:
 1. `./tools/release.sh <version>` (names the next free version if you guess wrong)
 2. commit, `git tag <version>`, `git push origin <version>`
-3. `./tools/release.sh verify <version>` — fetches the published file from GitHub and asserts the SRI matches
-4. on the hub: `widget:engine:import <version>` then `widget:engine:enable <version>` — or pin it to a single site as a canary
+3. `./tools/release.sh verify <version>` — fetches the published file from GitHub, asserts the SRI matches, then calls `notify_hub` to trigger the import over HTTP, reading `HUB_ENGINE_IMPORT_URL` / `HUB_ENGINE_IMPORT_SECRET` from `.env.release` (untracked — copy `.env.release.example`) or the environment; neither set, it just prints the command to run by hand
+4. on the hub: `widget:engine:enable <version>` — or pin it to a single site as a canary
 
 A shop's widget goes stale for at most one page load. Don't ship a breaking `/search` contract change and a widget release in the same instant.
 

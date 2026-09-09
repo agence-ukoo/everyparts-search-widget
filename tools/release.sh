@@ -20,10 +20,16 @@
 #   1. ./tools/release.sh 1.2.3
 #   2. git add -A && git commit && git tag 1.2.3 && git push origin 1.2.3
 #   3. ./tools/release.sh verify 1.2.3        ← le tag doit exister sur GitHub
-#   4. côté hub : widget:engine:import 1.2.3 puis widget:engine:enable 1.2.3
-#      (ou l'épingler sur un seul site pour canari)
+#   4. côté hub : widget:engine:enable 1.2.3 (ou l'épingler sur un seul site
+#      pour canari) — `verify` a déjà déclenché l'import lui-même
 #
-# L'étape 4 vient en dernier : l'import référence un tag qui doit déjà être publié.
+# `verify` notifie le hub une fois le tag confirmé — voir notify_hub.
+# HUB_ENGINE_IMPORT_URL et HUB_ENGINE_IMPORT_SECRET viennent de .env.release, à
+# la racine du dépôt (non versionné — voir .env.release.example), ou de
+# l'environnement s'il est déjà exporté. Ni l'un ni l'autre : la commande
+# d'import à lancer à la main s'affiche à la place, sans faire échouer le
+# script — cette étape reste facultative pour qui n'a pas accès au hub depuis
+# cette machine.
 
 set -euo pipefail
 
@@ -31,6 +37,8 @@ REPO_SLUG="agence-ukoo/everyparts-search-widget"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC="$ROOT/everyparts-widget.js"
 MIN="$ROOT/everyparts-widget.min.js"
+
+[[ -f "$ROOT/.env.release" ]] && source "$ROOT/.env.release"
 
 die() { printf '\033[31merreur :\033[0m %s\n' "$1" >&2; exit 1; }
 ok()  { printf '\033[32m✓\033[0m %s\n' "$1"; }
@@ -81,6 +89,34 @@ next_version() {
   sort -V <<<"$1" | tail -1 | awk -F. '{printf "%d.%d.%d", $1, $2, $3 + 1}'
 }
 
+# Déclenche l'import de cette version côté hub, une fois le tag confirmé par
+# `verify`. Le secret voyage dans un en-tête, jamais dans l'URL ni les logs
+# curl par défaut. Un échec ici (hub injoignable, secret absent) est un
+# avertissement : le tag est publié et vérifié, l'import reste possible à la
+# main.
+notify_hub() {
+  local version="$1" http_code body
+  if [[ -z "${HUB_ENGINE_IMPORT_URL:-}" ]]; then
+    printf '\033[33m!\033[0m HUB_ENGINE_IMPORT_URL non défini — importer à la main :\n'
+    printf '    widget:engine:import %s && widget:engine:enable %s\n' "$version" "$version"
+    return 0
+  fi
+
+  body="$(mktemp)"
+  http_code="$(curl -sS --max-time 30 -o "$body" -w '%{http_code}' -X POST "$HUB_ENGINE_IMPORT_URL" \
+    -H "X-Widget-Webhook-Secret: ${HUB_ENGINE_IMPORT_SECRET:-}" \
+    -H 'Content-Type: application/json' \
+    -d "{\"version\":\"${version}\"}")" || http_code="000"
+
+  if [[ "$http_code" == "200" ]]; then
+    ok "hub notifié : $(cat "$body")"
+  else
+    printf '\033[33m!\033[0m notification du hub échouée (HTTP %s) : %s\n' "$http_code" "$(cat "$body")"
+    printf '    importer à la main : widget:engine:import %s && widget:engine:enable %s\n' "$version" "$version"
+  fi
+  rm -f "$body"
+}
+
 cmd_build() {
   local version="$1"
   [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "version attendue au format X.Y.Z, sans préfixe « v » (reçu : « $version »)."
@@ -103,7 +139,7 @@ résout l'URL ci-dessus, tout comme widget:engine:import côté hub) :
   git add -A && git commit -m "release: $version"
   git tag $version && git push origin $version
   ./tools/release.sh verify $version
-  puis, côté hub de livraison : widget:engine:import $version && widget:engine:enable $version
+  puis, côté hub de livraison : widget:engine:enable $version
 EOF
 }
 
@@ -135,6 +171,8 @@ cmd_verify() {
   cmp -s "$tmp" "$MIN" && ok "fichier publié identique au .min.js local" \
                        || printf '\033[33m!\033[0m publié et local diffèrent hors SRI (encodage ?)\n'
   rm -f "$tmp"
+
+  notify_hub "$version"
 }
 
 case "${1:-}" in
