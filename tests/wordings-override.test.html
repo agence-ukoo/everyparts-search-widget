@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — réécriture i18n servie par le hub (window.__PARTSMIND_CONFIG__)</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Réécriture i18n par site (<code>window.__PARTSMIND_CONFIG__.wordings</code>)</h1>
+<p class="sub">
+  Le hub sert la config du site AVEC le loader et peut réécrire des libellés i18n
+  sans toucher au moteur (<code>wordings</code> : locale → clé → texte). Cinq
+  scénarios, chacun rechargeant la page avec un <code>__PARTSMIND_CONFIG__</code>
+  différent posé AVANT le chargement du moteur : absent (aucune régression),
+  réécriture appliquée, clé absente (repli I18N), locale absente (repli complet),
+  et une valeur d'injection dans <code>placeholder</code> — qui doit rester du
+  texte, jamais un attribut.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const SCENARIO = new URLSearchParams(location.search).get('scenario') || 'none';
+const TOKEN = 'ep_live_WORDINGS_TOKEN_' + SCENARIO;
+try { localStorage.clear(); } catch (e) {}
+
+// Textes d'origine (I18N['fr-FR']), copiés ici pour vérifier qu'ils n'ont PAS
+// bougé dans les scénarios qui ne les réécrivent pas — le test ne doit rien
+// supposer, il compare à la source du moteur.
+const ORIG_P1 = 'Bonjour 👋 Je suis l\'assistant IA de recherche EveryParts.';
+const ORIG_P2 = 'Décrivez-moi votre moto (marque, modèle, cylindrée et année) et la pièce recherchée, et je vous aiderai à la trouver.';
+const ORIG_PLACEHOLDER = 'Rechercher une pièce compatible…';
+const REWRITTEN_P1 = 'Bienvenue sur Bike-Eco 🏍️ — assistant de recherche de pièces';
+const INJECTION_PLACEHOLDER = '" onfocus="alert(1)';
+
+// AVANT de charger le moteur : c'est le contrat (« expose
+// window.__PARTSMIND_CONFIG__ avant de charger le moteur »). Chaque scénario
+// pose un global différent, ou aucun.
+switch (SCENARIO) {
+  case 'none':
+    // Rien : simule une intégration ancienne / une page sans config hub.
+    break;
+  case 'override':
+    window.__PARTSMIND_CONFIG__ = { wordings: { 'fr-FR': { welcome_p1: REWRITTEN_P1 } } };
+    break;
+  case 'partial':
+    // welcome_p1 réécrit, welcome_p2 absent de la réécriture : doit retomber
+    // sur I18N pour welcome_p2 uniquement.
+    window.__PARTSMIND_CONFIG__ = { wordings: { 'fr-FR': { welcome_p1: REWRITTEN_P1 } } };
+    break;
+  case 'other-locale':
+    // La réécriture existe, mais pour une AUTRE locale que celle du widget
+    // (fr-FR ici) : repli complet sur I18N, aucune contamination croisée.
+    window.__PARTSMIND_CONFIG__ = { wordings: { 'en-US': { welcome_p1: 'Hijacked' } } };
+    break;
+  case 'injection':
+    window.__PARTSMIND_CONFIG__ = { wordings: { 'fr-FR': { placeholder: INJECTION_PLACEHOLDER } } };
+    break;
+  case 'malformed':
+    // Un global malformé (pas un objet) ne doit rien casser : simple absence.
+    window.__PARTSMIND_CONFIG__ = 'not-an-object';
+    break;
+  case 'wrong-type-tlist':
+    // Réécriture d'une clé-liste (try_chips) par une chaîne : ignorée, pas de
+    // crash, repli sur le tableau I18N.
+    window.__PARTSMIND_CONFIG__ = { wordings: { 'fr-FR': { try_chips: 'not-an-array' } } };
+    break;
+}
+
+window.fetch = async (url) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+  await until(() => !!$('.ep-welcome'), 2000);
+
+  const p1 = $('.ep-welcome p');
+  const p2 = $('.ep-welcome .ep-welcome-sub');
+  const input = $('#ep-input');
+
+  switch (SCENARIO) {
+    case 'none':
+      check('sans config hub, le message d\'accueil reste celui d\'origine',
+            p1 && p1.textContent === ORIG_P1, p1 && p1.textContent);
+      check('le placeholder de la saisie reste celui d\'origine',
+            input.getAttribute('placeholder') === ORIG_PLACEHOLDER,
+            input.getAttribute('placeholder'));
+      break;
+
+    case 'override':
+      check('la réécriture fr-FR remplace le texte d\'origine',
+            p1 && p1.textContent === REWRITTEN_P1, p1 && p1.textContent);
+      break;
+
+    case 'partial':
+      check('la clé réécrite est bien appliquée',
+            p1 && p1.textContent === REWRITTEN_P1, p1 && p1.textContent);
+      check('la clé ABSENTE de la réécriture retombe sur I18N',
+            p2 && p2.textContent === ORIG_P2, p2 && p2.textContent);
+      break;
+
+    case 'other-locale':
+      check('une réécriture pour une AUTRE locale ne contamine pas fr-FR',
+            p1 && p1.textContent === ORIG_P1, p1 && p1.textContent);
+      break;
+
+    case 'injection':
+      check('la valeur d\'injection est posée comme attribut, pas interprétée',
+            input.getAttribute('placeholder') === INJECTION_PLACEHOLDER,
+            input.getAttribute('placeholder'));
+      check('aucun attribut onfocus n\'a été injecté sur le champ',
+            !input.hasAttribute('onfocus'));
+      check('le champ ne porte qu\'un seul attribut "placeholder" (pas de balise éclatée)',
+            [...input.attributes].filter(a => a.name === 'placeholder').length === 1);
+      check('aria-label subit la même réécriture, sans casser l\'attribut non plus',
+            input.getAttribute('aria-label') === INJECTION_PLACEHOLDER,
+            input.getAttribute('aria-label'));
+      break;
+
+    case 'malformed':
+      check('un global malformé (pas un objet) ne casse rien : accueil inchangé',
+            p1 && p1.textContent === ORIG_P1, p1 && p1.textContent);
+      break;
+
+    case 'wrong-type-tlist':
+      // Les suggestions « Essayez » utilisent tList('try_chips').
+      await until(() => !!$('#ep-try-chips'), 2000);
+      const chips = [...shadow.querySelectorAll('.ep-chip')];
+      check('une réécriture non-tableau d\'une clé-liste est ignorée (repli I18N)',
+            chips.length > 0, `chips=${chips.length}`);
+      break;
+  }
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = `[${SCENARIO}] ` + (bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`);
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+
+// Chargé APRÈS avoir posé __PARTSMIND_CONFIG__ ci-dessus : c'est le contrat.
+const el = document.createElement('script');
+el.src = '../everyparts-widget.js';
+el.setAttribute('data-token', TOKEN);
+el.setAttribute('data-locale', 'fr-FR');
+el.setAttribute('data-position', 'bottom-right');
+el.setAttribute('data-api', 'https://api.test.local/api/v1');
+el.defer = true;
+document.body.appendChild(el);
+
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 400);
+</script>
+</body>
+</html>

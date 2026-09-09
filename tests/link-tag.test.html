@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — balise [link] dans les textes du serveur</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>« [link]libellé[/link] » → <code>&lt;a&gt;</code></h1>
+<p class="sub">
+  Le serveur balise un lien dans son texte ; l'URL, elle, vient de la boutique
+  (<code>data-contact-page-url</code>). Le lien doit se poser dans la bulle, le
+  reste du texte rester échappé, et le <code>&lt;a&gt;</code> survivre à un
+  rechargement. Sans URL configurée, la balise disparaît et le libellé reste en
+  texte. Une balise mal formée ressort telle quelle.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+// Deux variantes du même scénario : avec et sans data-contact-page-url. Le
+// snippet est écrit ici même pour que le mode « sans URL » soit exactement le
+// même code, à un attribut près.
+const NO_URL = new URLSearchParams(location.search).get('nourl') === '1';
+const RESTORE = new URLSearchParams(location.search).get('restore') === '1';
+const TOKEN = 'ep_live_LINK_TAG_TOKEN' + (NO_URL ? '_NOURL' : '');
+const CONTACT = 'https://boutique.test/nous-contacter?x=1&y=2';
+try { localStorage.clear(); } catch (e) {}
+
+const MSG = 'Rien trouvé. Pour toute autre demande, passez par notre [link]formulaire de contact[/link].';
+const MSG_ASSIST = 'Autre chose ? Voir notre [link]formulaire de contact[/link] pour le reste.';
+// contact_url de la réponse : le serveur sait mieux que la configuration où
+// envoyer CETTE demande — il doit primer sur data-contact-page-url.
+const CONTACT_SERVEUR = 'https://boutique.test/sav/ticket';
+const MSG_SERVEUR = 'Ce cas relève du SAV : ouvrez un [link]ticket[/link].';
+// Balise non refermée + texte à échapper : ni l'un ni l'autre ne doit produire de HTML.
+const MSG_BANCAL = 'Message <b>brut</b> & [link]balise non refermée.';
+
+// La variante « restauration » sème elle-même son historique : dépendre d'une
+// exécution précédente rendrait le test tributaire de l'ordre des variantes.
+// Les deux chemins de rejeu d'un texte serveur y figurent — l'entrée no_results
+// (buildNoResults) et l'entrée assistant (appendAssistantMessage).
+if (RESTORE) {
+  localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
+    v: 5, token: TOKEN, sessionId: 'sess-1', isOpen: true, lastActive: Date.now(),
+    conversationContext: { previous_clarifications: [] },
+    identifiedVehicle: null, identifiedPart: null,
+    transcript: [
+      // L'accueil aussi est rejoué : son lien doit revenir avec lui.
+      { t: 'welcome' },
+      { t: 'user', text: 'guidon introuvable' },
+      { t: 'no_results', message: MSG, suggestions: [] },
+      { t: 'assistant', text: MSG_ASSIST },
+      // Message dont le lien pointait ailleurs : il doit retrouver SA cible,
+      // pas celle de la boutique ni celle du message précédent.
+      { t: 'assistant', text: MSG_SERVEUR, contactUrl: CONTACT_SERVEUR },
+    ],
+  }));
+}
+
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    const q = JSON.parse(opts.body).query || '';
+    await sleep(80);
+    if (/bancal/.test(q)) {
+      return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+        type: 'results', message: MSG_BANCAL, results: [], pagination: null, meta: {},
+      }) };
+    }
+    if (/sav/.test(q)) {
+      return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+        type: 'results', message: MSG_SERVEUR, results: [], pagination: null,
+        contact_url: CONTACT_SERVEUR, meta: {},
+      }) };
+    }
+    return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+      type: 'no_results', message: MSG, suggestions: [], meta: {},
+    }) };
+  }
+  return { status: 200, ok: true, headers: new Headers(), json: async () => ({ ok: true }) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+  const send = text => {
+    const input = $('#ep-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    $('#ep-send-btn').click();
+  };
+  const bubbleWith = frag => $$('.ep-msg-assistant .ep-bubble')
+    .find(b => b.textContent.includes(frag));
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  // ── Accueil : le libellé i18n passe par le même chemin ──
+  const welcome = $('.ep-welcome');
+  if (NO_URL) {
+    check('sans URL de contact, le paragraphe d\'accueil n\'est pas affiché',
+          !welcome.textContent.includes('formulaire de contact'));
+  } else {
+    const wLink = welcome.querySelector('a');
+    check('l\'accueil pose un vrai lien', !!wLink);
+    check('le lien d\'accueil porte l\'URL configurée',
+          wLink && wLink.getAttribute('href') === CONTACT,
+          wLink && wLink.getAttribute('href'));
+    check('le libellé du lien d\'accueil est conservé',
+          wLink && wLink.textContent === 'formulaire de contact',
+          wLink && `"${wLink.textContent}"`);
+  }
+
+  if (RESTORE) {
+    // Conversation rejouée : c'est le texte BRUT (balise comprise) qui a été
+    // persisté, le lien doit donc être reconstruit à l'identique — sur les deux
+    // chemins de rejeu.
+    const b = bubbleWith('Rien trouvé');
+    const b2 = bubbleWith('Autre chose ?');
+    check('la bulle « aucun résultat » est rejouée', !!b);
+    check('son lien est reconstruit au rechargement', b && !!b.querySelector('a'));
+    // MSG_ASSIST est la DERNIÈRE entrée de l'historique semé : c'est le cas que
+    // la garde anti-doublon d'appendAssistantMessage escamotait au rejeu.
+    check('la dernière bulle assistant restaurée n\'est pas escamotée', !!b2);
+    check('son lien est reconstruit au rechargement', b2 && !!b2.querySelector('a'));
+    check('les deux portent toujours l\'URL configurée',
+          b && b2 && b.querySelector('a').getAttribute('href') === CONTACT
+          && b2.querySelector('a').getAttribute('href') === CONTACT);
+    const b3 = bubbleWith('Ce cas relève du SAV');
+    check('la bulle au contact_url propre est rejouée', !!b3);
+    check('elle retrouve SA cible, pas celle de la boutique',
+          b3 && b3.querySelector('a')
+          && b3.querySelector('a').getAttribute('href') === CONTACT_SERVEUR,
+          b3 && b3.querySelector('a') && b3.querySelector('a').getAttribute('href'));
+    check('aucune balise ne reste visible en texte',
+          b && b2 && !(b.textContent + b2.textContent).includes('[link'),
+          b && b2 && `textes="${b.textContent}" / "${b2.textContent}"`);
+    return done();
+  }
+
+  // ── Message du serveur ──
+  send('guidon introuvable');
+  await until(() => !!bubbleWith('Rien trouvé'), 3000);
+  const b = bubbleWith('Rien trouvé');
+  const a = b.querySelector('a');
+
+  if (NO_URL) {
+    check('sans URL configurée, aucun lien n\'est posé', !a);
+    check('le libellé reste en texte',
+          b.textContent.includes('passez par notre formulaire de contact.'),
+          `texte="${b.textContent}"`);
+  } else {
+    check('la balise du serveur devient un vrai lien', !!a);
+    check('le lien porte l\'URL de la boutique',
+          a && a.getAttribute('href') === CONTACT, a && a.getAttribute('href'));
+    check('le libellé balisé devient le texte du lien',
+          a && a.textContent === 'formulaire de contact', a && `"${a.textContent}"`);
+    check('un seul lien pour une seule balise',
+          b.querySelectorAll('a').length === 1);
+    check('la phrase reste entière autour du lien',
+          b.textContent === 'Rien trouvé. Pour toute autre demande, passez par notre formulaire de contact.',
+          `texte="${b.textContent}"`);
+    check('le lien porte la classe qui le style et sert d\'accroche au clic',
+          a && a.classList.contains('ep-contact-link'), a && a.className);
+    check('le lien est stylé par le widget, pas par le navigateur',
+          getComputedStyle(a).textDecorationLine === 'underline'
+          && getComputedStyle(a).color !== 'rgb(0, 0, 238)',
+          getComputedStyle(a).color);
+  }
+  check('la balise ne reste jamais visible en texte',
+        !b.textContent.includes('[link]') && !b.textContent.includes('[/link]'),
+        `texte="${b.textContent}"`);
+
+  // ── contact_url de la réponse : il prime sur data-contact-page-url ──
+  send('sav');
+  await until(() => !!bubbleWith('Ce cas relève du SAV'), 3000);
+  const bs = bubbleWith('Ce cas relève du SAV');
+  const as = bs.querySelector('a');
+  check('un contact_url dans la réponse pose bien un lien', !!as);
+  check('la cible vient de la réponse, pas de la configuration',
+        as && as.getAttribute('href') === CONTACT_SERVEUR,
+        as && as.getAttribute('href'));
+  check('le message précédent garde SA cible (le lien appartient au message)',
+        !NO_URL ? bubbleWith('Rien trouvé').querySelector('a').getAttribute('href') === CONTACT
+                : !bubbleWith('Rien trouvé').querySelector('a'));
+
+  // ── Échappement : le texte du serveur reste du texte ──
+  send('message bancal');
+  await until(() => !!bubbleWith('Message <b>brut</b>'), 3000);
+  const b2 = bubbleWith('Message <b>brut</b>');
+  check('le HTML envoyé par le serveur reste échappé',
+        b2 && b2.querySelector('b') === null && b2.textContent.includes('<b>brut</b>'),
+        b2 && b2.innerHTML);
+  check('une balise non refermée ne produit pas de lien',
+        b2 && b2.querySelector('a') === null);
+  check('elle ressort telle quelle, au lieu d\'être maquillée',
+        b2 && b2.textContent.includes('[link]balise non refermée.'),
+        b2 && `texte="${b2.textContent}"`);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  const mode = (NO_URL ? '[sans URL] ' : '[avec URL] ') + (RESTORE ? '[restauration] ' : '');
+  s.textContent = mode + (bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`);
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+
+// Le snippet est injecté ici pour que le mode « sans URL » soit le même code à
+// un attribut près.
+const el = document.createElement('script');
+el.src = '../everyparts-widget.js';
+el.setAttribute('data-token', TOKEN);
+el.setAttribute('data-locale', 'fr-FR');
+el.setAttribute('data-position', 'bottom-right');
+el.setAttribute('data-api', 'https://api.test.local/api/v1');
+if (!NO_URL) el.setAttribute('data-contact-page-url', CONTACT);
+el.defer = true;
+document.body.appendChild(el);
+
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 400);
+</script>
+</body>
+</html>

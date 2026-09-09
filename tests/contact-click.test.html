@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — événement contact_click</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1><code>contact_click</code> — clic sur un lien de contact</h1>
+<p class="sub">
+  Le lien peut venir de l'accueil (<code>welcome_p3</code>) ou d'une réponse du
+  serveur : l'événement doit partir dans les deux cas, avec pour seule charge
+  utile l'URL réellement ouverte. Il s'ouvre dans le MÊME onglet — la file doit
+  donc être vidée <em>tout de suite</em>, sinon rien ne part jamais. Et rien ne
+  doit partir pour un clic ailleurs dans la bulle.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_CONTACT_CLICK_TOKEN';
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+const CONTACT = 'https://boutique.test/nous-contacter';
+const CONTACT_SERVEUR = 'https://boutique.test/sav/ticket';
+const MSG = 'Ce cas relève du SAV : ouvrez un [link]ticket[/link] et joignez vos photos.';
+
+// Corps envoyés à /events, et requêtes /events en vol.
+const evBodies = [];
+let evCalls = 0;
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    evCalls++;
+    evBodies.push({ body: JSON.parse(opts.body), keepalive: !!opts.keepalive });
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    await sleep(80);
+    return { status: 200, ok: true, headers: new Headers(), json: async () => ({
+      type: 'results', message: MSG, results: [], pagination: null,
+      contact_url: CONTACT_SERVEUR, meta: {},
+    }) };
+  }
+  return { status: 200, ok: true, headers: new Headers(), json: async () => ({ ok: true }) };
+};
+
+// Tous les contact_click reçus, dans l'ordre. Le session_id n'est porté par
+// l'entrée que s'il diffère de celui de tête du lot : on le résout ici.
+const contactEvents = () => evBodies.flatMap(b =>
+  (b.body.events || [])
+    .filter(e => e.event === 'contact_click')
+    .map(e => ({ ...e, session: e.session_id || b.body.session_id })));
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+
+  // Le lien s'ouvrirait dans le même onglet et emporterait la page de test avec
+  // lui : on neutralise la navigation SANS toucher à la propagation, le widget
+  // doit voir le clic exactement comme un vrai.
+  shadow.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a');
+    if (a) e.preventDefault();
+  });
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  // ── 1. Lien de l'accueil ──
+  const welcomeLink = $('.ep-welcome a');
+  check('l\'accueil expose un lien de contact', !!welcomeLink);
+  const avant = evCalls;
+  welcomeLink.click();
+  await until(() => contactEvents().length === 1, 2000);
+  const e1 = contactEvents()[0];
+  check('un contact_click part au clic sur le lien d\'accueil', !!e1);
+  check('la file est vidée TOUT DE SUITE (le lien quitte la page)',
+        evCalls > avant, `${evCalls - avant} envoi(s) depuis le clic`);
+  check('l\'envoi est en keepalive, sans attendre la réponse',
+        evBodies.length > 0 && evBodies[evBodies.length - 1].keepalive);
+  check('l\'URL envoyée est celle réellement ouverte',
+        e1 && e1.payload && e1.payload.url === CONTACT, JSON.stringify(e1 && e1.payload));
+
+  // ── 2. Lien d'une réponse du serveur ──
+  const input = $('#ep-input');
+  input.value = 'mon guidon est cassé';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $('#ep-send-btn').click();
+  await until(() => $$('.ep-msg-assistant .ep-bubble a').length > 1, 3000);
+
+  const serverLink = $$('.ep-bubble a').pop();
+  serverLink.click();
+  await until(() => contactEvents().length === 2, 2000);
+
+  const e2 = contactEvents()[1];
+  check('un contact_click part au clic sur le lien d\'une réponse', !!e2);
+  check('l\'URL envoyée est le contact_url de la réponse',
+        e2 && e2.payload && e2.payload.url === CONTACT_SERVEUR, JSON.stringify(e2 && e2.payload));
+  check('les deux événements sont rattachés à la même session',
+        e1 && e2 && !!e1.session && e1.session === e2.session,
+        e1 && e2 && `${e1.session} / ${e2.session}`);
+
+  // ── 2 bis. Clic milieu : ouvre un nouvel onglet SANS déclencher 'click',
+  // seulement 'auxclick' (button 1) — l'événement doit quand même partir.
+  const compteAvantMilieu = contactEvents().length;
+  welcomeLink.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 }));
+  await until(() => contactEvents().length === compteAvantMilieu + 1, 2000);
+  check('un clic milieu (auxclick, button 1) est bien compté',
+        contactEvents().length === compteAvantMilieu + 1,
+        `${contactEvents().length - compteAvantMilieu} événement(s)`);
+
+  // Un autre bouton que le milieu sur 'auxclick' (ex. bouton "précédent" à 3/4
+  // boutons) ne doit rien déclencher — seul button===1 est un clic milieu.
+  const compteAvantAutre = contactEvents().length;
+  welcomeLink.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 3 }));
+  await sleep(300);
+  check('un autre bouton que le milieu sur auxclick n\'émet rien',
+        contactEvents().length === compteAvantAutre,
+        `${contactEvents().length - compteAvantAutre} événement(s) en trop`);
+
+  // ── 3. Rien d'autre ne déclenche l'événement ──
+  const compte = contactEvents().length;
+  $('.ep-msg-assistant .ep-bubble') && $('.ep-msg-assistant .ep-bubble').click();
+  $('#ep-messages').click();
+  await sleep(400);
+  check('un clic ailleurs dans une bulle n\'émet rien',
+        contactEvents().length === compte,
+        `${contactEvents().length - compte} événement(s) en trop`);
+
+  // ── 4. La forme attendue par le serveur, et rien de plus ──
+  check('la charge utile se limite à l\'URL',
+        contactEvents().every(e => Object.keys(e.payload || {}).join(',') === 'url'),
+        JSON.stringify(contactEvents().map(e => Object.keys(e.payload || {}))));
+  check('chaque entrée porte event, age_ms et payload',
+        contactEvents().every(e => e.event === 'contact_click'
+          && typeof e.age_ms === 'number' && !!e.payload),
+        JSON.stringify(contactEvents().map(e => Object.keys(e))));
+  check('le lot est enveloppé dans { session_id, events }',
+        evBodies.every(b => typeof b.body.session_id === 'string'
+          && Array.isArray(b.body.events)
+          && Object.keys(b.body).sort().join(',') === 'events,session_id'),
+        JSON.stringify(evBodies.map(b => Object.keys(b.body).sort())));
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_CONTACT_CLICK_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  data-contact-page-url="https://boutique.test/nous-contacter"
+  defer></script>
+</body>
+</html>

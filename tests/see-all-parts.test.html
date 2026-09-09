@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — « Toutes les pièces » et contact_url</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>« Toutes les pièces » s'efface devant <code>contact_url</code></h1>
+<p class="sub">
+  Une clarification sur <code>part_type</code> se voit normalement adjoindre une
+  option « Toutes les pièces », qui élargit la recherche au catalogue. Quand la
+  réponse porte <code>contact_url</code>, le serveur a décidé l'inverse — que la
+  demande relève du contact avec la boutique : l'option ne doit pas être ajoutée,
+  sans que les options du serveur, elles, changent.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_SEE_ALL_TOKEN';
+try { localStorage.clear(); } catch (e) {}
+
+const SERVER_OPTIONS = ['Plaquettes de frein', 'Disques de frein', 'Étriers'];
+const ALL_PARTS = 'Toutes les pièces';
+
+// La requête pilote la réponse : champ de clarification, et présence ou non de
+// contact_url.
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    const q = JSON.parse(opts.body).query || '';
+    await sleep(80);
+    const body = {
+      type: 'clarification',
+      message: 'Quelle pièce cherchez-vous exactement ?',
+      clarification: {
+        field: /modele/.test(q) ? 'model' : 'part_type',
+        options: SERVER_OPTIONS,
+      },
+      meta: {},
+    };
+    if (/contact/.test(q)) body.contact_url = 'https://boutique.test/nous-contacter';
+    return { status: 200, ok: true, headers: new Headers(), json: async () => body };
+  }
+  return { status: 200, ok: true, headers: new Headers(), json: async () => ({ ok: true }) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+  const send = text => {
+    const input = $('#ep-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    $('#ep-send-btn').click();
+  };
+  // Options du DERNIER groupe affiché.
+  const lastOptions = () => {
+    const groups = $$('.ep-clari');
+    if (!groups.length) return [];
+    return [...groups[groups.length - 1].querySelectorAll('.ep-clari-btn')]
+      .map(b => b.textContent.trim());
+  };
+  const nextGroup = n => until(() => $$('.ep-clari').length === n, 3000);
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  // ── 1. Sans contact_url : l'option est ajoutée (comportement d'origine) ──
+  send('frein');
+  await nextGroup(1);
+  check('sans contact_url, « Toutes les pièces » est ajoutée',
+        lastOptions().includes(ALL_PARTS), lastOptions().join(' / '));
+  check('elle vient APRÈS les options du serveur',
+        lastOptions()[lastOptions().length - 1] === ALL_PARTS,
+        lastOptions().join(' / '));
+  check('les options du serveur sont toutes là',
+        SERVER_OPTIONS.every(o => lastOptions().includes(o)),
+        lastOptions().join(' / '));
+
+  // ── 2. Avec contact_url : l'option n'est PAS ajoutée ──
+  $('#ep-reset-btn').click();
+  await sleep(60);
+  send('frein contact');
+  await nextGroup(1);
+  check('avec contact_url, « Toutes les pièces » n\'est pas ajoutée',
+        !lastOptions().includes(ALL_PARTS), lastOptions().join(' / '));
+  check('les options du serveur restent intactes',
+        lastOptions().length === SERVER_OPTIONS.length
+        && SERVER_OPTIONS.every(o => lastOptions().includes(o)),
+        lastOptions().join(' / '));
+
+  // Ce qui est journalisé est ce qui est affiché : au rechargement, la question
+  // ne doit pas retrouver une option que le serveur avait écartée.
+  const entry = (JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}').transcript || [])
+    .find(e => e.t === 'options');
+  check('l\'historique ne garde pas non plus l\'option écartée',
+        entry && !(entry.options || []).some(o => o.label === ALL_PARTS),
+        JSON.stringify(entry && entry.options));
+
+  // ── 3. contact_url sur un AUTRE champ : rien ne change de toute façon ──
+  $('#ep-reset-btn').click();
+  await sleep(60);
+  send('modele contact');
+  await nextGroup(1);
+  check('sur un autre champ que part_type, l\'option n\'était de toute façon pas proposée',
+        !lastOptions().includes(ALL_PARTS), lastOptions().join(' / '));
+  check('et les options du serveur y sont toujours',
+        lastOptions().length === SERVER_OPTIONS.length,
+        lastOptions().join(' / '));
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_SEE_ALL_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>
