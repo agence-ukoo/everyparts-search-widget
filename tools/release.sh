@@ -37,6 +37,7 @@ REPO_SLUG="agence-ukoo/everyparts-search-widget"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC="$ROOT/everyparts-widget.js"
 MIN="$ROOT/everyparts-widget.min.js"
+I18N="$ROOT/everyparts-widget.i18n.json"
 
 [[ -f "$ROOT/.env.release" ]] && source "$ROOT/.env.release"
 
@@ -60,6 +61,11 @@ minify() {
 # le segment de version étant littéralement le tag git demandé. Vérifier ICI, c'est
 # vérifier exactement ce que le hub va effectivement télécharger.
 widget_url() { echo "https://raw.githubusercontent.com/${REPO_SLUG}/${1}/everyparts-widget.min.js"; }
+
+# Le dictionnaire i18n voyage par le même chemin que le moteur, sous le même tag :
+# le hub importe les deux ensemble, et n'a donc jamais un dictionnaire décrivant
+# une autre version que le moteur qu'il sert.
+i18n_url() { echo "https://raw.githubusercontent.com/${REPO_SLUG}/${1}/everyparts-widget.i18n.json"; }
 
 # Les tags du dépôt ne portent PAS de préfixe « v » (1.0.9, 1.1.0, 1.1.1…) : ce
 # segment de version est un ref git littéral, aussi bien pour l'URL ci-dessus que
@@ -132,6 +138,12 @@ cmd_build() {
   minify "$SRC" "$MIN"
   ok "widget minifié : $(basename "$MIN") ($(wc -c < "$MIN" | tr -d ' ') octets)"
 
+  # Le dictionnaire est extrait de la source qu'on vient de minifier, jamais tenu à
+  # jour à part : le hub ne peut donc pas décrire d'autres textes que ceux du moteur.
+  node "$ROOT/tools/dump-i18n.mjs" "$SRC" "$I18N" \
+    || die "extraction du dictionnaire i18n impossible."
+
+
   local sri url
   sri="sha384-$(sri_of "$MIN")"
   url="$(widget_url "$version")"
@@ -168,6 +180,22 @@ cmd_verify() {
   Le tag pointe probablement sur un commit antérieur au dernier build."
   fi
   ok "SRI conforme : $expected"
+
+  # Le dictionnaire aussi : publié sans lui, le hub importerait un moteur dont il ne
+  # connaît pas les défauts, et servirait à chaque boutique des réécritures calculées
+  # contre le mauvais dictionnaire.
+  local i18n_tmp
+  i18n_tmp="$(mktemp)"
+  [[ -f "$I18N" ]] || die "dictionnaire i18n introuvable : $I18N — lancez d'abord le build."
+  curl -fsSL --max-time 30 "$(i18n_url "$version")" -o "$i18n_tmp" \
+    || die "GitHub ne sert pas encore $(i18n_url "$version") (dictionnaire committé ?)."
+  if cmp -s "$i18n_tmp" "$I18N"; then
+    ok "dictionnaire i18n conforme"
+  else
+    rm -f "$i18n_tmp" "$tmp"
+    die "le dictionnaire i18n publié diffère du local — le tag précède le dernier build."
+  fi
+  rm -f "$i18n_tmp"
 
   # raw.githubusercontent.com renvoie max-age=300 : l'immutabilité vient du hub,
   # qui héberge sa propre copie et refuse de réimporter une version déjà connue

@@ -32,14 +32,20 @@
   // ancienne) ni bien formé, d'où la vérification de type avant de s'en servir.
   const REMOTE_CONFIG = (typeof window.__PARTSMIND_CONFIG__ === 'object' && window.__PARTSMIND_CONFIG__) || {};
   const REMOTE_WORDINGS = (typeof REMOTE_CONFIG.wordings === 'object' && REMOTE_CONFIG.wordings) || {};
+  // Icône de la barre de contexte, servie par le hub selon l'univers du site. Deux
+  // formes, et aucune n'est du balisage : `path` est la donnée « d » d'un tracé SVG,
+  // que le moteur pose lui-même sur un <path> qu'il construit ; `url` est une adresse
+  // rendue en <img>, comme data-logo. Le serveur n'émet donc jamais de HTML, et il n'y
+  // a rien à assainir ici. `null` = pas d'icône ; absent = le glyphe du moteur.
+  const REMOTE_ICON = (typeof REMOTE_CONFIG.icon === 'object') ? REMOTE_CONFIG.icon : undefined;
 
   // ── Traductions (i18n) — clés par locale BCP 47 ────────────────────────────
   const I18N = {
     'fr-FR': {
       placeholder:     'Rechercher une pièce compatible…',
       send:            'Envoyer',
-      welcome_p1:      '👋 Bonjour, je suis l\'agent IA EveryParts. Je vous aide à trouver les pièces compatibles avec votre moto.',
-      welcome_p2:      'Pour quel véhicule cherchez-vous une pièce ?\n' + '(marque, modèle, cylindrée, année)',
+      welcome_p1:      '👋 Bonjour, je suis l\'agent IA EveryParts. Je vous aide à trouver les pièces compatibles avec votre équipement.',
+      welcome_p2:      'Pour quel équipement cherchez-vous une pièce ?\n' + '(marque, modèle, année)',
       welcome_p3:      'Votre demande ne concerne pas la recherche de pièces ?\n' +
           'Passez par notre [link]formulaire de contact[/link].',
       typing:          'En train de répondre',
@@ -84,7 +90,7 @@
       review_no:       'Non, pas satisfait',
       review_reason_prompt:  'Qu\'est-ce qui n\'a pas fonctionné ?',
       review_reason_1:       'Résultat incohérent',
-      review_reason_2:       'Véhicule ou pièce non identifié',
+      review_reason_2:       'Équipement ou pièce non identifié',
       review_reason_3:       'Temps de réponse',
       review_reason_other:   'Autre, préciser',
       review_other_title:    'Préciser votre retour',
@@ -99,17 +105,19 @@
       new_message_one: '1 nouveau message',
       new_messages:    '{n} nouveaux messages',
       scroll_to_end:   'Aller au dernier message',
-      my_moto:         'Ma moto',
-      edit_moto:       'Modifier',
-      try_chips:       ['Cache culbuteur gasgas fse 450 enduro (2006)', 'Demarreur kawasaki zzr 1100 (1991)', 'Cache lateral yamaha xp 500 t-max (2004)'],
-      launcher_examples: ['Cache culbuteur gasgas fse 450 enduro (2006)', 'Demarreur kawasaki zzr 1100 (1991)', 'Cache lateral yamaha xp 500 t-max (2004)'],
+      header_title:    'EveryParts',
+      header_subtitle: 'Recherche de pièces',
+      my_subject:      'Mon équipement',
+      edit_subject:    'Modifier',
+      try_chips:       ['Filtre à huile', 'Courroie', 'Joint'],
+      launcher_examples: ['Filtre à huile…', 'Courroie…', 'Joint…'],
       teaser:          "Vous cherchez une pièce ?\rJe la trouve pour vous !",
       teaser_dismiss:  'Masquer',
       // ── Demande de pièce (frame 2a) ──
       pr_offer:        'Vous pouvez soumettre votre recherche à un expert qui vous recontactera.',
       // Variante employée quand la réponse joint d'autres pièces compatibles :
       // refuser l'expert, c'est alors demander à les voir.
-      pr_offer_other_parts:    'Vous pouvez soumettre votre recherche à un expert qui vous recontactera, ou bien consulter nos autres pièces compatibles avec votre véhicule.',
+      pr_offer_other_parts:    'Vous pouvez soumettre votre recherche à un expert qui vous recontactera, ou bien consulter nos autres pièces compatibles avec votre équipement.',
       pr_offer_yes:    'Demander à un expert',
       pr_offer_no:     'Non merci',
       pr_offer_no_other_parts: 'Autres pièces',
@@ -138,8 +146,8 @@
     'en-US': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      '👋 Hello, I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your motorcycle.',
-      welcome_p2:      'What vehicle are you looking for a part for?\n' + '(make, model, engine displacement, year)',
+      welcome_p1:      '👋 Hello, I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your equipment.',
+      welcome_p2:      'What equipment are you looking for a part for?\n' + '(make, model, year)',
       welcome_p3:      'Is your request not related to finding parts?\n' +
           'Please use our [link]contact form[/link].',
       typing:          'Typing',
@@ -184,7 +192,7 @@
       review_no:       'No, not satisfied',
       review_reason_prompt:  'What went wrong?',
       review_reason_1:       'Inconsistent result',
-      review_reason_2:       'Vehicle or part not identified',
+      review_reason_2:       'Equipment or part not identified',
       review_reason_3:       'Response time',
       review_reason_other:   'Other, please specify',
       review_other_title:    'Tell us more',
@@ -198,15 +206,17 @@
       new_message_one: '1 new message',
       new_messages:    '{n} new messages',
       scroll_to_end:   'Go to latest message',
-      my_moto:         'My bike',
-      edit_moto:       'Edit',
-      try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
-      launcher_examples: ['Galfer brake pads…', 'Spark plug for a 1996 CBR 600…', 'Chain kit for a Yamaha MT…'],
+      header_title:    'EveryParts',
+      header_subtitle: 'Parts search',
+      my_subject:      'My equipment',
+      edit_subject:    'Edit',
+      try_chips:       ['Oil filter', 'Belt', 'Seal'],
+      launcher_examples: ['Oil filter…', 'Belt…', 'Seal…'],
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       // ── Part request (frame 2a) ──
       pr_offer:        'You can submit your search to an expert, who will get back to you.',
-      pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your vehicle.',
+      pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your equipment.',
       pr_offer_yes:    'Ask an expert',
       pr_offer_no:     'No thanks',
       pr_offer_no_other_parts: 'Other parts',
@@ -235,8 +245,8 @@
     'en-GB': {
       placeholder:     'Search for a compatible part…',
       send:            'Send',
-      welcome_p1:      '👋 Hello, I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your motorcycle.',
-      welcome_p2:      'What vehicle are you looking for a part for?\n' + '(make, model, engine displacement, year)',
+      welcome_p1:      '👋 Hello, I\'m the EveryParts AI agent. I\'m here to help you find parts that are compatible with your equipment.',
+      welcome_p2:      'What equipment are you looking for a part for?\n' + '(make, model, year)',
       welcome_p3:      'Is your request not related to finding parts?\n' +
           'Please use our [link]contact form[/link].',
       typing:          'Typing',
@@ -281,7 +291,7 @@
       review_no:       'No, not satisfied',
       review_reason_prompt:  'What went wrong?',
       review_reason_1:       'Inconsistent result',
-      review_reason_2:       'Vehicle or part not identified',
+      review_reason_2:       'Equipment or part not identified',
       review_reason_3:       'Response time',
       review_reason_other:   'Other, please specify',
       review_other_title:    'Tell us more',
@@ -295,15 +305,17 @@
       new_message_one: '1 new message',
       new_messages:    '{n} new messages',
       scroll_to_end:   'Go to latest message',
-      my_moto:         'My bike',
-      edit_moto:       'Edit',
-      try_chips:       ['Spark plug CBR 600 • 96', 'Brake pads', 'Oil filter', 'Chain kit'],
-      launcher_examples: ['Galfer brake pads…', 'Spark plug for a 1996 CBR 600…', 'Chain kit for a Yamaha MT…'],
+      header_title:    'EveryParts',
+      header_subtitle: 'Parts search',
+      my_subject:      'My equipment',
+      edit_subject:    'Edit',
+      try_chips:       ['Oil filter', 'Belt', 'Seal'],
+      launcher_examples: ['Oil filter…', 'Belt…', 'Seal…'],
       teaser:          'Looking for a part?\rI\'ll find it for you!',
       teaser_dismiss:  'Dismiss',
       // ── Part request (frame 2a) ──
       pr_offer:        'You can submit your search to an expert, who will get back to you.',
-      pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your vehicle.',
+      pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your equipment.',
       pr_offer_yes:    'Ask an expert',
       pr_offer_no:     'No thanks',
       pr_offer_no_other_parts: 'Other parts',
@@ -405,6 +417,9 @@
     // carte locale → clé → texte, consultée par t()/tList() PAR-DESSUS I18N. Objet
     // vide par défaut — absent ou vide, le comportement actuel ne change pas.
     wordings: REMOTE_WORDINGS,
+    // Icône de la barre de contexte (cf. REMOTE_ICON) : {path} ou {url}, null pour
+    // aucune, undefined pour le glyphe par défaut.
+    icon: REMOTE_ICON,
   };
 
   // Réécriture serveur pour (locale, clé), si le hub en a servi une pour ce site —
@@ -484,8 +499,15 @@
   // Petite croix du bandeau d'amorce (fermer/masquer).
   const TEASER_CLOSE_ICON = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>`;
 
-  // Icône moto pour la barre de contexte « Ma moto ».
-  const MOTO_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M11.8 3.9C16.3 3.9 20 7.5 20 12c0 1.2-.3 2-.9 2.9-.4.6-.5 1-.5 1.7 1.6.3 2.4 1 2.4 2 0 .9-.7 1.5-1.6 1.5H10.6C6.9 20.1 4 17.2 4 13.5V12C4 7.5 7.4 3.9 11.8 3.9zM13.4 9.2c-1.5 0-2.7 1-2.7 2.3s1.2 2.3 2.7 2.3h8V9.2z"></path></svg>`;
+  // Glyphe par défaut de la barre de contexte : une étiquette, qui ne suppose aucun
+  // univers. Un site en reçoit un autre du hub (cf. CONFIG.icon). Donnée « d » seule,
+  // et non du balisage, pour passer par le même chemin que l'icône servie.
+  const SUBJECT_ICON_PATH = 'M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2.59 12.6A2 2 0 0 1 2 11.18V4a2 2 0 0 1 2-2h7.17a2 2 0 0 1 1.42.59l7.99 7.99a2 2 0 0 1 .01 2.83zM7 8.5A1.5 1.5 0 1 0 7 5.5a1.5 1.5 0 0 0 0 3z';
+
+  // Tracé SVG admissible : les commandes de chemin et leurs nombres, rien d'autre.
+  // Ce que le hub sert n'est donc jamais qu'une géométrie, jamais un attribut ni
+  // une balise, quelle que soit la main qui l'a écrit.
+  const SVG_PATH_RE = /^[MmLlHhVvCcSsQqTtAaZz0-9.,\-\s]+$/;
 
   // Icône générique affichée à la place de la photo produit : absente,
   // en échec de chargement (onerror retire le <img>, révélant l'icône
@@ -506,7 +528,7 @@
   function headerBrandHtml() {
     const parts = [];
     if (!CONFIG.logo && !CONFIG.title && !CONFIG.subtitle) {
-      parts.push(`<div id="ep-header-text"><span id="ep-header-title">EveryParts ${BETA_BADGE}</span><span id="ep-header-subtitle">Recherche de pièces</span></div>`);
+      parts.push(`<div id="ep-header-text"><span id="ep-header-title">${escHtml(t('header_title'))} ${BETA_BADGE}</span><span id="ep-header-subtitle">${escHtml(t('header_subtitle'))}</span></div>`);
     } else {
       if (CONFIG.logo) {
         const alt = escHtml(CONFIG.title || 'EveryParts');
@@ -812,12 +834,12 @@
       transform: translateY(24px);
     }
     /* Châssis non défilant : touch-action none empêche le navigateur d'*amorcer* un
-       panoramique (de la page ou du viewport visuel) depuis le header, la barre moto,
+       panoramique (de la page ou du viewport visuel) depuis le header, la barre de contexte,
        la zone de saisie ou le footer. Nécessaire en plus du garde-fou JS sur
        touchmove : une fois le panoramique lancé, iOS rend l'événement non-annulable.
        Les conteneurs défilants du widget ne sont pas concernés — la règle ne
        s'applique qu'aux gestes traités par un ancêtre de la fenêtre. */
-    #ep-header, #ep-moto-bar, #ep-input-area, #ep-footer { touch-action: none; }
+    #ep-header, #ep-subject-bar, #ep-input-area, #ep-footer { touch-action: none; }
     /* Exception : le champ garde ses interactions natives (curseur, sélection). */
     #ep-input { touch-action: auto; }
 
@@ -927,8 +949,8 @@
        Pour les icônes du header (34×34, cf. #ep-header-actions), les zones des deux
        boutons se chevauchent légèrement au milieu du gap : compromis accepté plutôt
        que d'agrandir visuellement des icônes pensées pour rester discrètes. */
-    #ep-moto-edit, .ep-pr-btn, .ep-clari-btn, .ep-header-btn { position: relative; }
-    #ep-moto-edit::after, .ep-pr-btn::after, .ep-clari-btn::after, .ep-header-btn::after {
+    #ep-subject-edit, .ep-pr-btn, .ep-clari-btn, .ep-header-btn { position: relative; }
+    #ep-subject-edit::after, .ep-pr-btn::after, .ep-clari-btn::after, .ep-header-btn::after {
       content: '';
       position: absolute;
       top: 50%;
@@ -942,9 +964,9 @@
        #ep-conv n'existe que pour ancrer la pastille « nouveaux messages » : il
        occupe exactement la place de la zone défilante, si bien qu'un simple
        décalage 'bottom' positionne la pastille juste au-dessus de ce qui suit la
-       conversation — la barre « Ma moto » quand elle est visible, la zone de
+       conversation — la barre de contexte quand elle est visible, la zone de
        saisie sinon — sans avoir à mesurer la hauteur de ce bas de fenêtre
-       (qui change avec la barre moto, le clavier et les safe-areas). */
+       (qui change avec la barre de contexte, le clavier et les safe-areas). */
     #ep-conv {
       flex: 1;
       min-height: 0;
@@ -1613,8 +1635,8 @@
     .ep-suggestions ul { padding-left: 16px; }
     .ep-suggestions li { font-size: 12px; color: var(--ep-grey-600); margin-bottom: 2px; }
 
-    /* ── Barre de contexte « Ma moto » (affichée seulement si véhicule identifié) ── */
-    #ep-moto-bar {
+    /* ── Barre de contexte « Mon équipement » (affichée seulement si véhicule identifié) ── */
+    #ep-subject-bar {
       display: none;
       align-items: center;
       gap: 10px;
@@ -1626,8 +1648,8 @@
       flex-shrink: 0;
       animation: ep-appear .18s ease-out;
     }
-    #ep-moto-bar.ep-visible { display: flex; }
-    #ep-moto-icon {
+    #ep-subject-bar.ep-visible { display: flex; }
+    #ep-subject-icon {
       width: 34px;
       height: 34px;
       flex: none;
@@ -1638,8 +1660,10 @@
       justify-content: center;
       color: var(--ep-dark);
     }
-    #ep-moto-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-    #ep-moto-label {
+    /* Icône servie en image : contenue dans la boîte, sans la déformer. */
+    #ep-subject-icon img { width: 20px; height: 20px; object-fit: contain; }
+    #ep-subject-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    #ep-subject-label {
       font-size: 10.5px;
       font-weight: 700;
       letter-spacing: .09em;
@@ -1649,8 +1673,8 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    #ep-moto-label .ep-moto-year { color: var(--ep-dark); font-weight: 800; }
-    #ep-moto-value {
+    #ep-subject-label .ep-subject-year { color: var(--ep-dark); font-weight: 800; }
+    #ep-subject-value {
       font-size: 13.5px;
       font-weight: 700;
       color: #12312D;
@@ -1658,7 +1682,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    #ep-moto-edit {
+    #ep-subject-edit {
       flex: none;
       height: 30px;
       padding: 0 11px;
@@ -1673,8 +1697,8 @@
       transition: border-color .15s, background .15s;
       -webkit-tap-highlight-color: transparent;
     }
-    #ep-moto-edit:hover { border-color: var(--ep-primary); background: #F2FCF8; }
-    #ep-moto-edit:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
+    #ep-subject-edit:hover { border-color: var(--ep-primary); background: #F2FCF8; }
+    #ep-subject-edit:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
 
     /* ── Zone de saisie + footer discret ── */
     #ep-input-area {
@@ -1918,7 +1942,7 @@
       /* Base 100% : le champ prend TOUJOURS sa propre ligne sous le libellé. Une base
          plus étroite le laisserait tenir à côté (~200px) et tronquer la valeur — or
          l'utilisateur doit lire en entier ce qu'il s'apprête à envoyer. Et c'est une
-         zone de texte, pas un input : à 16px sur mobile, la valeur (requête + moto)
+         zone de texte, pas un input : à 16px sur mobile, la valeur (requête + équipement)
          dépasse une ligne, qu'un input mono-ligne rognerait. Elle s'étend toute seule. */
       flex: 1 1 100%;
       min-width: 0;
@@ -2089,8 +2113,8 @@
   // paginable à la fois — le bouton d'une liste précédente est retiré.
   let activeList = null;
   // Véhicule identifié par le serveur (champ `interpreted` des réponses). Alimente
-  // la barre de contexte « Ma moto », affichée uniquement quand marque + modèle sont
-  // connus. null tant qu'aucune moto n'est identifiée. Persisté avec la session.
+  // la barre de contexte « Mon équipement », affichée uniquement quand marque + modèle sont
+  // connus. null tant qu'aucun équipement n'est identifié. Persisté avec la session.
   // Derniere tentative de /search ({ query, extraBody }), rejouee telle quelle par le
   // bouton de la carte d'echec. Hors persistance : une panne ne se restaure pas.
   // Plafond d'essais pour UN MEME message, garde-fou anti-martelage du serveur :
@@ -2430,7 +2454,7 @@
   let identifiedVehicle = null;
   // Type de pièce interprété par le serveur (`interpreted.part_type`, ex. « guidon »).
   // Même logique que identifiedVehicle : c'est la lecture SERVEUR de la demande, pas le
-  // texte brut tapé par l'utilisateur — lequel contient souvent déjà la moto
+  // texte brut tapé par l'utilisateur — lequel contient souvent déjà l'équipement
   // (« guidon honda cbr 600 85 ») et ferait doublon avec le véhicule. Persisté aussi.
   let identifiedPart = null;
 
@@ -2621,10 +2645,11 @@
     const sendBtn    = win.querySelector('#ep-send-btn');
     const closeBtn   = win.querySelector('#ep-close-btn');
     const resetBtn   = win.querySelector('#ep-reset-btn');
-    const motoBar    = win.querySelector('#ep-moto-bar');
-    const motoLabel  = win.querySelector('#ep-moto-label');
-    const motoValue  = win.querySelector('#ep-moto-value');
-    const motoEdit   = win.querySelector('#ep-moto-edit');
+    const subjectIcon   = win.querySelector('#ep-subject-icon');
+    const subjectBar    = win.querySelector('#ep-subject-bar');
+    const subjectLabel  = win.querySelector('#ep-subject-label');
+    const subjectValue  = win.querySelector('#ep-subject-value');
+    const subjectEdit   = win.querySelector('#ep-subject-edit');
     // Pastille flottante « nouveaux messages » / retour au dernier message
     const jumpBtn    = win.querySelector('#ep-jump');
     const jumpLabel  = win.querySelector('#ep-jump-label');
@@ -2707,7 +2732,7 @@
     fab.addEventListener('click', () => toggleWindow(!isOpen));
     closeBtn.addEventListener('click', () => toggleWindow(false));
     resetBtn.addEventListener('click', newConversation);
-    motoEdit.addEventListener('click', editMoto);
+    subjectEdit.addEventListener('click', editSubject);
 
     // Lien de contact (balise [link], accueil ou réponse du serveur) : écoute
     // DÉLÉGUÉE sur le fil plutôt qu'un écouteur par lien — les bulles naissent
@@ -2765,8 +2790,9 @@
     // l'historique est rejoué dans la fenêtre (fermée) ; la conversation restaurée apparaît à
     // la réouverture. Aucun effet si rien n'est sauvegardé ou si le TTL a expiré.
     restoreConversation();
-    // Réaffiche la barre « Ma moto » si un véhicule était identifié dans la session restaurée.
-    renderMotoBar();
+    // Réaffiche la barre de contexte si un véhicule était identifié dans la session restaurée.
+    renderSubjectIcon();
+    renderSubjectBar();
     // Lanceur fermé : badge + aperçu du dernier message assistant, ou amorce générique.
     initClosedLauncher();
 
@@ -3209,7 +3235,7 @@
       identifiedPart = null;
       rotateSession('new_conversation');
       clearState();
-      renderMotoBar();       // masque la barre « Ma moto »
+      renderSubjectBar();       // masque la barre de contexte
       messagesEl.innerHTML = '';
       resetScrollState();
       showWelcome(); // sauvegarde la nouvelle session et démarre la nouvelle journalisation
@@ -3307,7 +3333,7 @@
       if (el) el.remove();
     }
 
-    // ── Barre de contexte « Ma moto » ────────────────────────────────────────
+    // ── Barre de contexte « Mon équipement » ────────────────────────────────────────
     // Met à jour le véhicule identifié depuis le champ `interpreted` d'une réponse.
     // Considéré identifié dès que marque + modèle sont connus (l'année est optionnelle).
     function updateVehicleFromData(data) {
@@ -3318,13 +3344,13 @@
         model: it.model,
         year: it.year || null,
       };
-      renderMotoBar();
+      renderSubjectBar();
       if (!isRestoring) saveState();
     }
 
     // Type de pièce interprété par le serveur. Indépendant du véhicule : une requête
-    // peut nommer la pièce sans que la moto soit encore identifiée, et inversement —
-    // d'où une fonction distincte de updateVehicleFromData(), qui sort tôt sans moto.
+    // peut nommer la pièce sans que l'équipement soit encore identifié, et inversement —
+    // d'où une fonction distincte de updateVehicleFromData(), qui sort tôt sans équipement.
     function updatePartFromData(data) {
       const part = data && data.interpreted && data.interpreted.part_type;
       if (!part) return;
@@ -3351,44 +3377,83 @@
       return s;
     }
 
+    // Pose le glyphe de la barre de contexte, une fois pour la vie du widget : il
+    // vient de la configuration, pas de l'état de la conversation.
+    //
+    // Le tracé servi est posé sur un <path> que le moteur construit lui-même, avec un
+    // viewBox et un remplissage fixes : la seule chose que le hub décide est la
+    // géométrie, et un `d` qui n'est pas une géométrie est ignoré plutôt que rendu.
+    // C'est ce qui permet de recevoir une icône d'univers sans jamais recevoir de
+    // balisage. Une URL passe par <img>, comme data-logo. `icon: null` = aucune icône,
+    // la barre gardant alors son texte seul.
+    function renderSubjectIcon() {
+      const icon = CONFIG.icon;
+      if (icon === null) { subjectIcon.remove(); return; }
+
+      if (icon && typeof icon.url === 'string' && icon.url) {
+        const img = document.createElement('img');
+        img.src = icon.url;
+        img.alt = '';
+        img.setAttribute('aria-hidden', 'true');
+        subjectIcon.appendChild(img);
+        return;
+      }
+
+      const d = (icon && typeof icon.path === 'string' && SVG_PATH_RE.test(icon.path))
+        ? icon.path
+        : SUBJECT_ICON_PATH;
+
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('width', '20');
+      svg.setAttribute('height', '20');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('fill', 'currentColor');
+      svg.setAttribute('aria-hidden', 'true');
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', d);
+      svg.appendChild(path);
+      subjectIcon.appendChild(svg);
+    }
+
     // Affiche/masque la barre selon l'état d'identification (refonte design) :
     // ligne du haut « MARQUE • ANNÉE » (année en vert foncé), ligne du bas = modèle seul.
-    function renderMotoBar() {
+    function renderSubjectBar() {
       if (identifiedVehicle) {
         const v = identifiedVehicle;
         let label = escHtml(titleCase(v.manufacturer));
-        if (v.year) label += ' • <span class="ep-moto-year">' + escHtml(String(v.year)) + '</span>';
-        motoLabel.innerHTML = label;
-        motoValue.textContent = v.model || '';
-        motoBar.setAttribute('aria-label', t('my_moto') + ' : ' + formatVehicle(v));
-        motoBar.classList.add('ep-visible');
+        if (v.year) label += ' • <span class="ep-subject-year">' + escHtml(String(v.year)) + '</span>';
+        subjectLabel.innerHTML = label;
+        subjectValue.textContent = v.model || '';
+        subjectBar.setAttribute('aria-label', t('my_subject') + ' : ' + formatVehicle(v));
+        subjectBar.classList.add('ep-visible');
       } else {
-        motoBar.classList.remove('ep-visible');
-        motoLabel.textContent = '';
-        motoValue.textContent = '';
+        subjectBar.classList.remove('ep-visible');
+        subjectLabel.textContent = '';
+        subjectValue.textContent = '';
       }
     }
 
-    // « Modifier » : réinitialise le véhicule et le contexte moto pour que l'utilisateur
-    // redécrive sa moto. Un NOUVEL identifiant de session est généré (sauf si la session
+    // « Modifier » : réinitialise le véhicule et le contexte d'équipement pour que l'utilisateur
+    // redécrive son équipement. Un NOUVEL identifiant de session est généré (sauf si la session
     // courante n'a encore servi à rien, cf. rotateSession) : le serveur tient l'état
     // conversationnel par session_id, donc vider `previous_clarifications` côté
     // widget ne suffit pas — sans nouvelle session, le serveur réutiliserait le
     // véhicule mémorisé au prochain /search.
-    function editMoto() {
+    function editSubject() {
       identifiedVehicle = null;
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
       pendingRefinement = null;
       activeList = null;
       rotateSession('model_reset');
-      renderMotoBar();
+      renderSubjectBar();
       saveState();
       inputEl.focus();
     }
 
     // Encode le véhicule identifié en liste de clarifications {field, answer} que le
-    // serveur peut rejouer pour reconstruire le contexte moto (marque / modèle / année).
+    // serveur peut rejouer pour reconstruire le contexte d'équipement (marque / modèle / année).
     function buildVehicleClarifications(v) {
       const c = [];
       if (!v) return c;
@@ -3517,7 +3582,7 @@
           // même règle que les avis, pas celle des groupes d'options. Elle cesse d'être
           // la dernière entrée dès que le message de relance est ajouté ; la figer là
           // condamnerait définitivement la demande de quiconque a ouvert la fiche puis
-          // annulé. Chaque entrée porte sa session, sa moto et sa pièce : rouvrir une
+          // annulé. Chaque entrée porte sa session, son équipement et sa pièce : rouvrir une
           // proposition ancienne reste rattaché à la bonne recherche.
           renderPartsRequestOffer(entry);
           break;
@@ -3632,7 +3697,7 @@
     // ── Rendu des réponses ─────────────────────────────────────────────────
     function renderResponse(data) {
       if (data && data.meta) lastSearchMeta = data.meta;
-      // Met à jour la barre « Ma moto » dès qu'une réponse identifie le véhicule.
+      // Met à jour la barre de contexte dès qu'une réponse identifie le véhicule.
       updateVehicleFromData(data);
       updatePartFromData(data);
       switch (data.type) {
@@ -3669,8 +3734,8 @@
 
       // Le contexte de clarification (previous_clarifications) N'EST PAS réinitialisé
       // ici : il est transmis à la session suivante (cf. startNewSession) afin que
-      // l'utilisateur puisse enchaîner sur un autre type de pièce sans repréciser sa
-      // moto. Seul le bouton « Nouvelle conversation » (newConversation) l'efface.
+      // l'utilisateur puisse enchaîner sur un autre type de pièce sans repréciser son
+      // équipement. Seul le bouton « Nouvelle conversation » (newConversation) l'efface.
 
       // Avis de satisfaction AVANT le message after_result :
       // le vote (pouce haut/bas) envoie POST /review.
@@ -3713,7 +3778,7 @@
       }
 
       // Nouvelle session logique dès l'after_result : la recherche suivante démarre
-      // sur un nouvel identifiant MAIS hérite du contexte (moto identifiée). L'avis
+      // sur un nouvel identifiant MAIS hérite du contexte (équipement identifié). L'avis
       // (renderReviewPrompt ci-dessus) et la liste paginée ont capturé l'ANCIENNE
       // session, donc restent rattachés à la recherche qui vient d'aboutir. La
       // conversation visible et l'historique, eux, persistent.
@@ -4834,7 +4899,7 @@
       // part en `message`. La requête vient de l'entrée journalisée (elle a capturé
       // celle de la recherche infructueuse), pas du dernier message en date.
       // La PIÈCE INTERPRÉTÉE, pas la requête brute : « guidon honda cbr 600 85 »
-      // suivi de « Honda CBR 600 F · 1985 » répéterait la moto. On ne retombe sur la
+      // suivi de « Honda CBR 600 F · 1985 » répéterait l'équipement. On ne retombe sur la
       // requête que si le serveur n'a pas su isoler la pièce — dans ce cas on ne
       // rajoute pas le véhicule, il y est déjà selon toute vraisemblance.
       const part = (entry && entry.part) || identifiedPart;
@@ -5025,7 +5090,7 @@
         logEntry = {
           t: 'pr_offer', status: 'pending', sessionId,
           vehicle: identifiedVehicle, part: identifiedPart, query: lastUserQuery(),
-          // Capturées sur l'entrée comme la moto et la pièce : une proposition
+          // Capturées sur l'entrée comme l'équipement et la pièce : une proposition
           // rejouée après rechargement doit garder SA copie et SON libellé, et
           // rester révélable même si la conversation a continué depuis.
           otherParts: (offer && offer.products) || [],
@@ -5575,13 +5640,13 @@
           <span class="ep-typing-text">${escHtml(t('typing'))}</span>
         </div>
       </div>
-      <div id="ep-moto-bar" role="group">
-        <div id="ep-moto-icon">${MOTO_ICON}</div>
-        <div id="ep-moto-text">
-          <span id="ep-moto-label"></span>
-          <span id="ep-moto-value"></span>
+      <div id="ep-subject-bar" role="group">
+        <div id="ep-subject-icon"></div>
+        <div id="ep-subject-text">
+          <span id="ep-subject-label"></span>
+          <span id="ep-subject-value"></span>
         </div>
-        <button id="ep-moto-edit" type="button">${escHtml(t('edit_moto'))}</button>
+        <button id="ep-subject-edit" type="button">${escHtml(t('edit_subject'))}</button>
       </div>
       <div id="ep-input-area">
         <div class="ep-input-row">

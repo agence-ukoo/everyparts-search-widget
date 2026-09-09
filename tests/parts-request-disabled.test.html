@@ -121,8 +121,8 @@ async function run() {
 
   // ── 4. Le reste du widget est intact ──
   check('la saisie reste utilisable', !!$('#ep-input') && !$('#ep-input').disabled);
-  check('la barre « Ma moto » fonctionne toujours',
-        $('#ep-moto-bar').classList.contains('ep-visible'));
+  check('la barre « Mon équipement » fonctionne toujours',
+        $('#ep-subject-bar').classList.contains('ep-visible'));
 
   done();
 }

@@ -87,7 +87,7 @@ async function run() {
   check('même habillage que la demande de pièce',
         $('#ep-rvr-backdrop').classList.contains('ep-sheet-backdrop'));
   eq('4 options proposées', reasons().map(b => b.textContent),
-     ['Résultat incohérent', 'Véhicule ou pièce non identifié', 'Temps de réponse', 'Autre, préciser']);
+     ['Résultat incohérent', 'Équipement ou pièce non identifié', 'Temps de réponse', 'Autre, préciser']);
   eq('le vote seul part d\'abord, sans comment', reviewCalls().length, 1);
   check('1er POST : rating down, pas de comment',
         reviewCalls()[0].body.rating === 'down' && !('comment' in reviewCalls()[0].body),
@@ -102,7 +102,7 @@ async function run() {
   check('un avis positif n\'ouvre pas la feuille des motifs', !reasonsOpen());
 
   // ── 2. Les trois premières options renvoient directement et ferment la feuille ──
-  for (const [i, attendu] of [[0, 'Résultat incohérent'], [1, 'Véhicule ou pièce non identifié'], [2, 'Temps de réponse']]) {
+  for (const [i, attendu] of [[0, 'Résultat incohérent'], [1, 'Équipement ou pièce non identifié'], [2, 'Temps de réponse']]) {
     await downVote();
     const downBtn = shadow.querySelector('.ep-review-down');
     calls.length = 0;
