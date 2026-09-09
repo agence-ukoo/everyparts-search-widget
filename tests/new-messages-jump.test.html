@@ -27,7 +27,7 @@
   et une pastille « n nouveaux messages » doit annoncer ce qui reste en dessous.
   Sans rien de neuf mais loin du bas, la même pastille devient un simple retour
   au dernier message : ronde, rangée à droite. Elle flotte juste au-dessus de la
-  barre « Ma moto » quand elle est là, de la zone de saisie sinon.
+  barre « Mon équipement » quand elle est là, de la zone de saisie sinon.
 </p>
 <div id="summary">Exécution…</div>
 <ul id="out"></ul>
@@ -110,7 +110,7 @@ async function run() {
   const noAnim = document.createElement('style');
   noAnim.textContent = `
     #ep-jump, #ep-jump.ep-visible { transition: none !important; }
-    .ep-msg, #ep-moto-bar { animation: none !important; }
+    .ep-msg, #ep-subject-bar { animation: none !important; }
   `;
   shadow.appendChild(noAnim);
   // Rétablissable : un pas de ce scénario a besoin du défilement ANIMÉ, donc
@@ -123,7 +123,7 @@ async function run() {
   const msgs = $('#ep-messages');
   const jump = $('#ep-jump');
   const label = $('#ep-jump-label');
-  const motoBar = $('#ep-moto-bar');
+  const subjectBar = $('#ep-subject-bar');
   const maxScroll = () => Math.max(0, msgs.scrollHeight - msgs.clientHeight);
   const distBottom = () => maxScroll() - msgs.scrollTop;
   const blockTop = el => el.offsetTop - msgs.offsetTop;
@@ -176,20 +176,20 @@ async function run() {
         Math.abs((jRect.left + jRect.right) / 2 - (mRect.left + mRect.right) / 2) < 6,
         `centre pastille=${(jRect.left + jRect.right) / 2} centre fil=${(mRect.left + mRect.right) / 2}`);
 
-  // ── 3. Ancrage : juste au-dessus de la barre « Ma moto » quand elle est là ──
-  check('la barre « Ma moto » est visible (véhicule identifié)',
-        motoBar.classList.contains('ep-visible'));
-  const gapMoto = motoBar.getBoundingClientRect().top - jRect.bottom;
-  check('la pastille flotte juste au-dessus de la barre « Ma moto », avec une marge',
-        gapMoto > 0 && gapMoto < 24, `écart=${gapMoto}`);
+  // ── 3. Ancrage : juste au-dessus de la barre « Mon équipement » quand elle est là ──
+  check('la barre « Mon équipement » est visible (véhicule identifié)',
+        subjectBar.classList.contains('ep-visible'));
+  const gapSubject = subjectBar.getBoundingClientRect().top - jRect.bottom;
+  check('la pastille flotte juste au-dessus de la barre « Mon équipement », avec une marge',
+        gapSubject > 0 && gapSubject < 24, `écart=${gapSubject}`);
 
-  // Sans barre « Ma moto », la même pastille se cale au-dessus de la saisie.
-  motoBar.classList.remove('ep-visible');
+  // Sans barre « Mon équipement », la même pastille se cale au-dessus de la saisie.
+  subjectBar.classList.remove('ep-visible');
   const gapInput = $('#ep-input-area').getBoundingClientRect().top
                  - jump.getBoundingClientRect().bottom;
-  check('sans barre « Ma moto », elle se cale au-dessus de la zone de saisie',
+  check('sans barre « Mon équipement », elle se cale au-dessus de la zone de saisie',
         gapInput > 0 && gapInput < 24, `écart=${gapInput}`);
-  motoBar.classList.add('ep-visible');
+  subjectBar.classList.add('ep-visible');
 
   // ── 4. Clic : on descend au dernier message, la pastille s'effface ──
   jump.click();

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — icône de la barre de contexte (window.__PARTSMIND_CONFIG__.icon)</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Icône d'univers servie par le hub (<code>window.__PARTSMIND_CONFIG__.icon</code>)</h1>
+<p class="sub">
+  Le hub sert l'icône de la barre de contexte selon l'univers du site, et jamais
+  sous forme de balisage : soit une donnée de tracé (<code>path</code>) que le
+  moteur pose lui-même sur un <code>&lt;path&gt;</code> qu'il construit, soit une
+  adresse (<code>url</code>) rendue en <code>&lt;img&gt;</code>. Cinq scénarios :
+  aucune config (glyphe par défaut), un tracé, une URL, un tracé irrecevable (repli
+  sur le glyphe, jamais posé tel quel) et <code>icon: null</code> (pas d'icône).
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const SCENARIO = new URLSearchParams(location.search).get('scenario') || 'default';
+const TOKEN = 'ep_live_ICON_TOKEN_' + SCENARIO;
+try { localStorage.clear(); } catch (e) {}
+
+// Le glyphe intégré au moteur (SUBJECT_ICON_PATH) : recopié ici pour vérifier
+// qu'un tracé refusé retombe bien dessus, et non sur ce que la config proposait.
+const BUILTIN_D = 'M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2.59 12.6A2 2 0 0 1 2 11.18V4a2 2 0 0 1 2-2h7.17a2 2 0 0 1 1.42.59l7.99 7.99a2 2 0 0 1 .01 2.83zM7 8.5A1.5 1.5 0 1 0 7 5.5a1.5 1.5 0 0 0 0 3z';
+const PROFILE_D = 'M4 12h16v4H4z';
+const ICON_URL  = 'https://cdn.test.local/universes/agricultural.svg';
+// Un « tracé » qui n'en est pas un : s'il était posé tel quel, le guillemet
+// refermerait l'attribut d et le reste deviendrait du balisage.
+const HOSTILE_D = 'M0 0" onload="alert(1)';
+
+switch (SCENARIO) {
+  case 'default':
+    // Aucune config : intégration ancienne, ou univers sans icône propre.
+    break;
+  case 'path':
+    window.__PARTSMIND_CONFIG__ = { icon: { path: PROFILE_D } };
+    break;
+  case 'url':
+    window.__PARTSMIND_CONFIG__ = { icon: { url: ICON_URL } };
+    break;
+  case 'hostile-path':
+    window.__PARTSMIND_CONFIG__ = { icon: { path: HOSTILE_D } };
+    break;
+  case 'none':
+    window.__PARTSMIND_CONFIG__ = { icon: null };
+    break;
+}
+
+window.fetch = async (url) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $ = s => shadow.querySelector(s);
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  const box  = $('#ep-subject-icon');
+  const svg  = box && box.querySelector('svg');
+  const path = svg && svg.querySelector('path');
+  const img  = box && box.querySelector('img');
+
+  switch (SCENARIO) {
+    case 'default':
+      check('sans config, la boîte porte le glyphe intégré',
+            path && path.getAttribute('d') === BUILTIN_D, path && path.getAttribute('d'));
+      break;
+
+    case 'path':
+      check('le tracé servi est posé sur le <path> construit par le moteur',
+            path && path.getAttribute('d') === PROFILE_D, path && path.getAttribute('d'));
+      check('le viewBox et le remplissage restent ceux du moteur',
+            svg && svg.getAttribute('viewBox') === '0 0 24 24' && svg.getAttribute('fill') === 'currentColor',
+            svg && svg.outerHTML);
+      check('le tracé n\'apporte aucun autre attribut que d',
+            path && [...path.attributes].map(a => a.name).join() === 'd',
+            path && [...path.attributes].map(a => a.name).join());
+      break;
+
+    case 'url':
+      check('une URL est rendue en <img>', !!img, box && box.innerHTML);
+      check('la source de l\'image est celle servie',
+            img && img.getAttribute('src') === ICON_URL, img && img.getAttribute('src'));
+      check('aucun <svg> n\'est rendu en plus de l\'image', !svg);
+      break;
+
+    case 'hostile-path':
+      check('un tracé irrecevable est ignoré, repli sur le glyphe intégré',
+            path && path.getAttribute('d') === BUILTIN_D, path && path.getAttribute('d'));
+      check('aucun attribut onload n\'est apparu sur le tracé',
+            path && !path.hasAttribute('onload'));
+      check('aucun attribut onload n\'est apparu dans le widget',
+            !shadow.querySelector('[onload]'));
+      break;
+
+    case 'none':
+      check('icon: null ne rend aucune boîte d\'icône', !box, box && box.outerHTML);
+      check('la barre de contexte existe toujours', !!$('#ep-subject-bar'));
+      break;
+  }
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = `[${SCENARIO}] ` + (bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`);
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+
+// Chargé APRÈS avoir posé __PARTSMIND_CONFIG__ ci-dessus : c'est le contrat.
+const el = document.createElement('script');
+el.src = '../everyparts-widget.js';
+el.setAttribute('data-token', TOKEN);
+el.setAttribute('data-locale', 'fr-FR');
+el.setAttribute('data-position', 'bottom-right');
+el.setAttribute('data-api', 'https://api.test.local/api/v1');
+el.defer = true;
+document.body.appendChild(el);
+
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 400);
+</script>
+</body>
+</html>

@@ -49,9 +49,10 @@ try { localStorage.clear(); } catch (e) {}
 
 // Textes d'origine (I18N['fr-FR']), copiés ici pour vérifier qu'ils n'ont PAS
 // bougé dans les scénarios qui ne les réécrivent pas — le test ne doit rien
-// supposer, il compare à la source du moteur.
-const ORIG_P1 = 'Bonjour 👋 Je suis l\'assistant IA de recherche EveryParts.';
-const ORIG_P2 = 'Décrivez-moi votre moto (marque, modèle, cylindrée et année) et la pièce recherchée, et je vous aiderai à la trouver.';
+// supposer, il compare à la source du moteur. Les recopier à l'identique depuis
+// everyparts-widget.i18n.json, que `release.sh` engendre à chaque build.
+const ORIG_P1 = '👋 Bonjour, je suis l\'agent IA EveryParts. Je vous aide à trouver les pièces compatibles avec votre équipement.';
+const ORIG_P2 = 'Pour quel équipement cherchez-vous une pièce ?\n(marque, modèle, année)';
 const ORIG_PLACEHOLDER = 'Rechercher une pièce compatible…';
 const REWRITTEN_P1 = 'Bienvenue sur Bike-Eco 🏍️ — assistant de recherche de pièces';
 const INJECTION_PLACEHOLDER = '" onfocus="alert(1)';
