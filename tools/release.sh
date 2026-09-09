@@ -102,8 +102,12 @@ notify_hub() {
     return 0
   fi
 
+  # HUB_ENGINE_IMPORT_CACERT : uniquement en local
+  local cacert_opt=()
+  [[ -n "${HUB_ENGINE_IMPORT_CACERT:-}" ]] && cacert_opt=(--cacert "$HUB_ENGINE_IMPORT_CACERT")
+
   body="$(mktemp)"
-  http_code="$(curl -sS --max-time 30 -o "$body" -w '%{http_code}' -X POST "$HUB_ENGINE_IMPORT_URL" \
+  http_code="$(curl -sS --max-time 30 "${cacert_opt[@]}" -o "$body" -w '%{http_code}' -X POST "$HUB_ENGINE_IMPORT_URL" \
     -H "X-Widget-Webhook-Secret: ${HUB_ENGINE_IMPORT_SECRET:-}" \
     -H 'Content-Type: application/json' \
     -d "{\"version\":\"${version}\"}")" || http_code="000"
