@@ -2,23 +2,17 @@
  * everyparts-widget.js — Widget de recherche EveryParts (MVP)
  * Shadow DOM, Vanilla JS, fichier unique. Mobile-first.
  *
- * Intégration : les boutiques pointent sur le LOADER, pas sur ce fichier — voir
- * everyparts-widget-loader.js. Le loader est servi en `no-cache` et injecte ce
- * fichier depuis une URL épinglée `immutable`, ce qui rend une nouvelle version
- * active au prochain chargement de page. Pointer une boutique directement sur une
- * URL jsDelivr `@latest` la figerait 7 jours (max-age=604800 imposé par jsDelivr) ;
- * l'épingler (`@1.2.2`) fonctionne mais impose d'éditer le snippet à chaque release.
+ * Une boutique ne charge jamais ce fichier directement. Le hub de livraison
+ * (everyparts-api-hub) sert :
  *
- * <script
- *   src="https://cdn.everyparts.io/widget/v1/loader.js"
- *   data-token="[TOKEN]"
- *   data-locale="fr-FR"
- *   data-position="bottom-right"
- *   data-api="https://everyparts-api-hub.jcloud.ik-server.com/api/v1"
- *   data-logo="https://boutique.example/logo.svg"   (optionnel — remplace le logo EveryParts dans l'en-tête)
- *   data-title="Ma Boutique"                          (optionnel — titre affiché dans l'en-tête)
- *   data-subtitle="Pièces & accessoires"              (optionnel — sous-titre sous le titre, plus petit)
- *   defer></script>
+ *   1. `GET /widget/v1/w.js?t=TOKEN` (`no-cache`) — un loader généré par site,
+ *      qui injecte ce fichier depuis :
+ *   2. `GET /widget/v1/engine/{version}.js` (`immutable`) — ce fichier lui-même,
+ *      importé et hébergé par le hub (`widget:engine:import`).
+ *
+ * Le loader pose `data-token`, la locale, la position, etc. sur la balise qu'il
+ * injecte ; voir REMOTE_CONFIG plus bas pour ce que le hub ajoute en plus
+ * (thème, libellés).
  */
 (function () {
   'use strict';

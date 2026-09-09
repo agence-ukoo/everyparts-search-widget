@@ -2,23 +2,28 @@
 #
 # release.sh — prépare une release du widget EveryParts.
 #
-#   ./tools/release.sh 1.2.3          minifie le widget, calcule le SRI, régénère le loader
-#   ./tools/release.sh verify 1.2.3   vérifie que jsDelivr sert bien le fichier attendu
+#   ./tools/release.sh 1.2.3          minifie le widget et calcule le SRI
+#   ./tools/release.sh verify 1.2.3   vérifie que GitHub sert bien le fichier attendu
 #
-# Version actuellement référencée par le loader : 1.2.2 (dernier tag publié).
 # Une version déjà taguée est refusée par le script — voir assert_version_free.
 #
-# Le dispositif à deux étages (loader `no-cache` + widget épinglé `immutable`) n'est
-# correct que si l'URL et l'empreinte SRI du loader correspondent EXACTEMENT au
-# `.min.js` publié. Fait à la main, ça dérive — d'où ce script.
+# La livraison repose sur un dispositif à deux étages (loader `no-cache` +
+# widget épinglé `immutable`), tous deux possédés par le hub de livraison
+# (everyparts-api-hub) : l'étage 1 est engendré par le hub à chaque requête
+# (`WidgetLoaderScript`), et l'étage 2 est un artefact importé UNE FOIS par le
+# hub depuis `raw.githubusercontent.com` (`widget:engine:import`, dépôt public,
+# sans authentification), puis hébergé et servi par le hub lui-même. `verify`
+# ci-dessous interroge cette même URL, celle que `widget:engine:import` résout
+# côté hub.
 #
 # ORDRE DES OPÉRATIONS (important) :
 #   1. ./tools/release.sh 1.2.3
 #   2. git add -A && git commit && git tag 1.2.3 && git push origin 1.2.3
-#   3. ./tools/release.sh verify 1.2.3        ← le tag doit exister sur jsDelivr
-#   4. déployer everyparts-widget-loader.min.js sur l'host, en Cache-Control: no-cache
+#   3. ./tools/release.sh verify 1.2.3        ← le tag doit exister sur GitHub
+#   4. côté hub : widget:engine:import 1.2.3 puis widget:engine:enable 1.2.3
+#      (ou l'épingler sur un seul site pour canari)
 #
-# L'étape 4 vient en dernier : le loader référence un tag qui doit déjà être publié.
+# L'étape 4 vient en dernier : l'import référence un tag qui doit déjà être publié.
 
 set -euo pipefail
 
@@ -26,8 +31,6 @@ REPO_SLUG="agence-ukoo/everyparts-search-widget"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC="$ROOT/everyparts-widget.js"
 MIN="$ROOT/everyparts-widget.min.js"
-LOADER="$ROOT/everyparts-widget-loader.js"
-LOADER_MIN="$ROOT/everyparts-widget-loader.min.js"
 
 die() { printf '\033[31merreur :\033[0m %s\n' "$1" >&2; exit 1; }
 ok()  { printf '\033[32m✓\033[0m %s\n' "$1"; }
@@ -45,15 +48,20 @@ minify() {
   node --check "$out" || die "le fichier minifié $out est invalide."
 }
 
-widget_url() { echo "https://cdn.jsdelivr.net/gh/${REPO_SLUG}@${1}/everyparts-widget.min.js"; }
+# La même URL que `widget:engine:import` résout côté hub : `raw.githubusercontent.com`,
+# le segment de version étant littéralement le tag git demandé. Vérifier ICI, c'est
+# vérifier exactement ce que le hub va effectivement télécharger.
+widget_url() { echo "https://raw.githubusercontent.com/${REPO_SLUG}/${1}/everyparts-widget.min.js"; }
 
-# Les tags du dépôt ne portent PAS de préfixe « v » (1.0.9, 1.1.0, 1.1.1…) et
-# l'URL jsDelivr @X.Y.Z résout sur le tag du même nom : préfixer casserait tout.
+# Les tags du dépôt ne portent PAS de préfixe « v » (1.0.9, 1.1.0, 1.1.1…) : ce
+# segment de version est un ref git littéral, aussi bien pour l'URL ci-dessus que
+# pour `widget:engine:import` côté hub — préfixer casserait les deux.
 remote_tags() { git ls-remote --tags origin 2>/dev/null | awk '{print $2}' | sed 's#refs/tags/##' | grep -v '\^{}'; }
 
-# Garde-fou décisif : une URL épinglée est `immutable`. Republier un numéro déjà
-# existant ne remplace rien — le CDN et les navigateurs continueront de servir
-# l'ancien contenu pour toujours, sans le moindre message d'erreur.
+# Garde-fou décisif : le hub sert l'artefact importé en `immutable`, et refuse de
+# réimporter une version déjà connue. Republier un numéro déjà existant ne
+# remplace donc rien — les boutiques qui l'ont déjà téléchargé continueraient de
+# servir l'ancien contenu pour toujours, sans le moindre message d'erreur.
 assert_version_free() {
   local version="$1" tags
   tags="$(remote_tags)" || true
@@ -63,8 +71,8 @@ assert_version_free() {
   fi
   if grep -qx "$version" <<<"$tags"; then
     die "le tag $version existe déjà sur origin.
-  Une URL jsDelivr épinglée est immutable : la republier ne diffuserait PAS ce build,
-  les boutiques resteraient figées sur l'ancien contenu.
+  Une version importée est servie immutable par le hub : la republier ne diffuserait
+  PAS ce build, les boutiques resteraient figées sur l'ancien contenu.
   Dernier tag publié : $(sort -V <<<"$tags" | tail -1) — prochain libre : $(next_version "$tags")"
   fi
 }
@@ -88,65 +96,44 @@ cmd_build() {
   sri="sha384-$(sri_of "$MIN")"
   url="$(widget_url "$version")"
 
-  # Réécrit uniquement le bloc @generated du loader : les commentaires et la logique
-  # restent sous contrôle humain.
-  python3 - "$LOADER" "$url" "$sri" <<'PY'
-import re, sys
-path, url, sri = sys.argv[1], sys.argv[2], sys.argv[3]
-src = open(path, encoding='utf-8').read()
-block = ("/* @generated-begin — régénéré par tools/release.sh */\n"
-         "  var WIDGET_URL = '%s';\n"
-         "  var WIDGET_SRI = '%s';\n"
-         "  /* @generated-end */" % (url, sri))
-new, n = re.subn(r'/\* @generated-begin.*?@generated-end \*/', block, src, flags=re.S)
-if n != 1:
-    sys.exit("bloc @generated introuvable (ou en double) dans %s" % path)
-open(path, 'w', encoding='utf-8').write(new)
-PY
-  ok "loader régénéré → $version"
-
-  minify "$LOADER" "$LOADER_MIN"
-  ok "loader minifié : $(basename "$LOADER_MIN") ($(wc -c < "$LOADER_MIN" | tr -d ' ') octets)"
-
   printf '\n  URL widget : %s\n  SRI        : %s\n\n' "$url" "$sri"
   cat <<EOF
 Étapes suivantes (tag SANS préfixe « v » — c'est la convention du dépôt et ce que
-résout l'URL jsDelivr) :
+résout l'URL ci-dessus, tout comme widget:engine:import côté hub) :
   git add -A && git commit -m "release: $version"
   git tag $version && git push origin $version
   ./tools/release.sh verify $version
-  puis déployer everyparts-widget-loader.min.js en Cache-Control: no-cache
+  puis, côté hub de livraison : widget:engine:import $version && widget:engine:enable $version
 EOF
 }
 
 cmd_verify() {
-  local version="$1" url expected actual cc tmp
+  local version="$1" url expected actual tmp
   url="$(widget_url "$version")"
   tmp="$(mktemp)"
 
-  # Le loader minifié est la source de vérité : c'est lui qui part en production.
-  expected="$(grep -oE 'sha384-[A-Za-z0-9+/=]+' "$LOADER_MIN" | head -1)" \
-    || die "aucune empreinte SRI dans $LOADER_MIN — lancez d'abord le build."
-  grep -qF "@${version}/" "$LOADER_MIN" \
-    || die "$LOADER_MIN ne pointe pas sur @${version} — build et loader désynchronisés."
+  # Le .min.js local est la source de vérité : c'est lui que le build vient de
+  # produire, et c'est son contenu que le tag est censé publier.
+  [[ -f "$MIN" ]] || die "widget minifié introuvable : $MIN — lancez d'abord le build."
+  expected="sha384-$(sri_of "$MIN")"
 
-  curl -fsSL --max-time 30 "$url" -o "$tmp" || die "jsDelivr ne sert pas encore $url (tag poussé ?)."
+  curl -fsSL --max-time 30 "$url" -o "$tmp" || die "GitHub ne sert pas encore $url (tag poussé ?)."
   actual="sha384-$(sri_of "$tmp")"
-  cc="$(curl -sI --max-time 20 "$url" | tr -d '\r' | awk 'BEGIN{IGNORECASE=1}/^cache-control:/{$1="";print substr($0,2)}')"
 
   if [[ "$actual" != "$expected" ]]; then
     rm -f "$tmp"
-    die "SRI divergent — le fichier publié ne correspond pas au loader.
+    die "SRI divergent — le fichier publié ne correspond pas au .min.js local.
     attendu : $expected
     publié  : $actual
   Le tag pointe probablement sur un commit antérieur au dernier build."
   fi
   ok "SRI conforme : $expected"
 
+  # raw.githubusercontent.com renvoie max-age=300 : l'immutabilité vient du hub,
+  # qui héberge sa propre copie et refuse de réimporter une version déjà connue
+  # (assert_version_free ci-dessus) — pas de contrôle Cache-Control ici.
   cmp -s "$tmp" "$MIN" && ok "fichier publié identique au .min.js local" \
                        || printf '\033[33m!\033[0m publié et local diffèrent hors SRI (encodage ?)\n'
-  [[ "$cc" == *immutable* ]] && ok "cache CDN : $cc" \
-                             || printf '\033[33m!\033[0m Cache-Control inattendu sur une URL épinglée : %s\n' "$cc"
   rm -f "$tmp"
 }
 
