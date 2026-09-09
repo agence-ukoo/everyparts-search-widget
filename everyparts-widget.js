@@ -2081,8 +2081,8 @@
   let conversationContext = { previous_clarifications: [] };
   let isLoading = false;
   let lastClarificationField = null;
-  // Affinage en cours (CDC §6.6) : questions posées en chaîne, réponses
-  // accumulées localement, un seul appel API à la fin de la chaîne.
+  // Affinage en cours : questions posées en chaîne, réponses accumulées
+  // localement, un seul appel API à la fin de la chaîne.
   let pendingRefinement = null;
   // Liste de produits paginée courante (« Voir plus ») : entrées affichées,
   // bloc pagination reçu, bouton et barre d'outils. Une seule liste
@@ -2943,10 +2943,10 @@
     const vv = window.visualViewport;
     // Écart minimal entre viewport de mise en page et viewport visuel au-delà duquel
     // on considère le clavier ouvert (les barres d'outils mobiles font < 100px). Signal
-    // secondaire seulement : sur iOS 26, Safari rétrécit AUSSI window.innerHeight à
-    // l'ouverture du clavier (mesuré : innerHeight === visualViewport.height === 377),
-    // l'écart reste donc nul. Le signal primaire est le focus du champ — sur mobile, un
-    // champ focalisé signifie un clavier affiché.
+    // secondaire seulement : sur iOS, Safari rétrécit AUSSI window.innerHeight à
+    // l'ouverture du clavier, jusqu'à égaler visualViewport.height, donc l'écart reste
+    // nul. Le signal primaire est le focus du champ — sur mobile, un champ focalisé
+    // signifie un clavier affiché.
     const KEYBOARD_MIN_INSET = 120;
     // Durée de re-calage après un changement de viewport : couvre l'animation du
     // clavier iOS (~350ms) et son amortissement.
@@ -3078,9 +3078,8 @@
 
       // Un re-collage unique ne tient pas : WebKit iOS restaure l'offset de
       // défilement du conteneur ~1 frame APRÈS son redimensionnement, écrasant toute
-      // écriture synchrone (mesuré : correct à 20ms, revenu à l'ancien offset à
-      // 60ms). On maintient donc le bas pendant PIN_HOLD_MS, ce que les pas de
-      // settleViewport couvrent largement.
+      // écriture synchrone. On maintient donc le bas pendant PIN_HOLD_MS, ce que les
+      // pas de settleViewport couvrent largement.
       if (pinDeadline) {
         if (Date.now() <= pinDeadline) pinToBottom();
         else pinDeadline = 0;
@@ -3373,8 +3372,8 @@
     // « Modifier » : réinitialise le véhicule et le contexte moto pour que l'utilisateur
     // redécrive sa moto. Un NOUVEL identifiant de session est généré (sauf si la session
     // courante n'a encore servi à rien, cf. rotateSession) : le serveur tient l'état
-    // conversationnel par session_id (CDC §8), donc vider `previous_clarifications`
-    // côté widget ne suffit pas — sans nouvelle session, le serveur réutiliserait le
+    // conversationnel par session_id, donc vider `previous_clarifications` côté
+    // widget ne suffit pas — sans nouvelle session, le serveur réutiliserait le
     // véhicule mémorisé au prochain /search.
     function editMoto() {
       identifiedVehicle = null;
@@ -3401,7 +3400,7 @@
 
     // Démarre une nouvelle session logique SANS effacer la conversation visible ni
     // l'historique. Appelé après l'after_result (cf. renderResults).
-    // Le serveur tient l'état conversationnel par session_id (CDC §8) : le nouveau
+    // Le serveur tient l'état conversationnel par session_id : le nouveau
     // session_id ne connaît donc PAS encore le véhicule. On (re)construit
     // `previous_clarifications` depuis le véhicule identifié pour que la nouvelle
     // session en hérite au prochain /search — y compris quand l'identification venait
@@ -3679,9 +3678,8 @@
         renderReviewPrompt();
       }
 
-      // Affinage serveur (CDC §6.6) : trop de produits → un second temps,
-      // greffé APRÈS la liste (déjà affichée ci-dessus), propose d'affiner la
-      // sélection. Ce n'est plus une porte qui retient les résultats : la
+      // Affinage serveur : trop de produits → un second temps, greffé APRÈS la
+      // liste (déjà affichée ci-dessus), propose d'affiner la sélection. La
       // liste reste utilisable telle quelle pendant que l'utilisateur répond
       // ou l'ignore. finishRefinement() referme ce second temps (nouvel appel
       // /search, ou — si tout est resté « je ne sais pas » — le simple
@@ -4178,7 +4176,7 @@
       }
     }
 
-    // ── Affinage des résultats (CDC §6.6) ──────────────────────────────────
+    // ── Affinage des résultats ──────────────────────────────────────────────
     // Le serveur joint `refinement.questions` quand la liste est trop longue.
     // La liste est déjà affichée (renderResults) quand ce second temps démarre ;
     // il ne la remplace ni ne la retient, il propose juste de l'affiner. Chaque
