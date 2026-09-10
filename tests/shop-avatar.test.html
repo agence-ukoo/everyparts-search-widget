@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — avatar de la boutique (window.__PARTSMIND_CONFIG__.avatar)</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Avatar de l'assistant servi par la boutique (<code>window.__PARTSMIND_CONFIG__.avatar</code>)</h1>
+<p class="sub">
+  L'avatar posé sur chaque message de l'assistant peut porter le logo du
+  marchand. Le BOUTON FLOTTANT, lui, garde la marque EveryParts : il annonce le
+  produit, pas le marchand. Trois scénarios : aucune configuration (la marque),
+  une URL (une image), et une valeur d'injection — qui doit rester une adresse,
+  jamais du balisage.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const SCENARIO = new URLSearchParams(location.search).get('scenario') || 'default';
+const TOKEN = 'ep_live_AVATAR_TOKEN_' + SCENARIO;
+try { localStorage.clear(); } catch (e) {}
+
+const AVATAR_URL = 'https://cdn.test.local/boutique/logo.png';
+// Si cette valeur était interpolée sans échappement, le guillemet refermerait
+// l'attribut src et le reste deviendrait du balisage.
+const INJECTION = 'https://cdn.test.local/x.png" onerror="alert(1)';
+
+switch (SCENARIO) {
+  case 'default':
+    break;
+  case 'url':
+    window.__PARTSMIND_CONFIG__ = { avatar: AVATAR_URL };
+    break;
+  case 'injection':
+    window.__PARTSMIND_CONFIG__ = { avatar: INJECTION };
+    break;
+}
+
+window.fetch = async (url) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $ = s => shadow.querySelector(s);
+
+  // Le bouton flottant est peint AVANT l'ouverture : on le lit d'abord.
+  const fab = $('#ep-fab');
+  check('le bouton flottant garde la marque EveryParts',
+        !!fab && !!fab.querySelector('svg') && !fab.querySelector('img'),
+        fab && fab.innerHTML.slice(0, 120));
+
+  fab.click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+  await until(() => !!$('.ep-msg-avatar'), 2000);
+
+  const avatar = $('.ep-msg-avatar');
+  const img = avatar && avatar.querySelector('img');
+
+  switch (SCENARIO) {
+    case 'default':
+      check('sans configuration, l\'avatar porte la marque EveryParts',
+            !!avatar && !!avatar.querySelector('svg') && !img, avatar && avatar.innerHTML.slice(0, 120));
+      check('la pastille garde son fond',
+            !!avatar && !avatar.classList.contains('ep-avatar-custom'));
+      break;
+
+    case 'url':
+      check('une URL est rendue en <img>', !!img, avatar && avatar.innerHTML.slice(0, 120));
+      check('la source est celle servie', img && img.getAttribute('src') === AVATAR_URL, img && img.getAttribute('src'));
+      check('la marque EveryParts n\'est plus dans l\'avatar', !!avatar && !avatar.querySelector('svg'));
+      check('la pastille perd son fond sombre', !!avatar && avatar.classList.contains('ep-avatar-custom'));
+      check('TOUS les avatars de la conversation la portent',
+            [...shadow.querySelectorAll('.ep-msg-avatar')].every(a => !!a.querySelector('img')));
+      break;
+
+    case 'injection':
+      check('la valeur reste une adresse, posée en attribut',
+            img && img.getAttribute('src') === INJECTION, img && img.getAttribute('src'));
+      check('aucun attribut onerror n\'a été injecté', !!img && !img.hasAttribute('onerror'));
+      check('aucun onerror nulle part dans le widget', !shadow.querySelector('[onerror]'));
+      break;
+  }
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = `[${SCENARIO}] ` + (bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`);
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+
+// Chargé APRÈS avoir posé __PARTSMIND_CONFIG__ ci-dessus : c'est le contrat.
+const el = document.createElement('script');
+el.src = '../everyparts-widget.js';
+el.setAttribute('data-token', TOKEN);
+el.setAttribute('data-locale', 'fr-FR');
+el.setAttribute('data-position', 'bottom-right');
+el.setAttribute('data-api', 'https://api.test.local/api/v1');
+el.defer = true;
+document.body.appendChild(el);
+
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 400);
+</script>
+</body>
+</html>
