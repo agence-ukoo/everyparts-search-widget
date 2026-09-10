@@ -123,7 +123,7 @@
       // Variante employée quand la réponse joint d'autres pièces compatibles :
       // refuser l'expert, c'est alors demander à les voir.
       pr_offer_other_parts:    'Vous pouvez soumettre votre recherche à un expert qui vous recontactera, ou bien consulter nos autres pièces compatibles avec votre équipement.',
-      model_no_parts:          'Nous n\'avons aucune pièce référencée pour ce modèle. Un expert peut la rechercher pour vous.',
+      model_no_parts:          'Nous n\'avons aucune pièce référencée pour ce modèle.',
       pr_offer_yes:    'Demander à un expert',
       pr_offer_no:     'Non merci',
       pr_offer_no_other_parts: 'Autres pièces',
@@ -223,7 +223,7 @@
       // ── Part request (frame 2a) ──
       pr_offer:        'You can submit your search to an expert, who will get back to you.',
       pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your equipment.',
-      model_no_parts:          'We have no parts listed for this model. An expert can look one up for you.',
+      model_no_parts:          'We have no parts listed for this model.',
       pr_offer_yes:    'Ask an expert',
       pr_offer_no:     'No thanks',
       pr_offer_no_other_parts: 'Other parts',
@@ -323,7 +323,7 @@
       // ── Part request (frame 2a) ──
       pr_offer:        'You can submit your search to an expert, who will get back to you.',
       pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your equipment.',
-      model_no_parts:          'We have no parts listed for this model. An expert can look one up for you.',
+      model_no_parts:          'We have no parts listed for this model.',
       pr_offer_yes:    'Ask an expert',
       pr_offer_no:     'No thanks',
       pr_offer_no_other_parts: 'Other parts',
@@ -4627,7 +4627,7 @@
         // que la réponse précédente portait déjà. On ouvre donc la demande de
         // pièce tout de suite.
         if (withoutParts.indexOf(value) !== -1 && CONFIG.partsRequest) {
-          openPartsRequestForModel(value, data);
+          offerPartsRequestForModel(value, data);
           return;
         }
 
@@ -4918,32 +4918,28 @@
 
     // Le client vient de choisir un modèle dont le serveur a dit que le
     // catalogue n'a aucune pièce. Le renvoyer vers /search ne ferait que lui
-    // faire relire la même absence, un tour plus tard : on ouvre la demande de
-    // pièce, en lui disant d'abord pourquoi.
+    // faire relire la même absence, un tour plus tard : on lui dit l'absence, et
+    // on lui PROPOSE l'expert — comme après une recherche infructueuse. Le
+    // formulaire reste strictement sur acceptation : rien ne s'ouvre tout seul.
     //
     // L'équipement retenu est CELUI QU'IL A CHOISI, non un modèle confirmé par
     // le catalogue — il ne l'a pas été et ne le sera pas. Il ne sert donc qu'à
     // nommer la machine dans le formulaire, jamais à lancer une recherche.
-    function openPartsRequestForModel(label, data) {
+    function offerPartsRequestForModel(label, data) {
       appendAssistantMessage(t('model_no_parts'));
 
       const interpreted = (data && data.interpreted) || {};
-      const vehicle = {
-        manufacturer: interpreted.manufacturer || '',
-        model: label,
-        year: interpreted.year || null,
-      };
 
-      openPartsRequest({
-        t: 'pr_offer',
-        status: 'pending',
-        sessionId,
-        vehicle,
-        part: identifiedPart,
-        query: interpreted.part_type || lastUserQuery(),
-        otherParts: [],
-        otherPagination: null,
-      }, null, 'model_without_parts');
+      renderPartsRequestOffer(null, {
+        vehicle: {
+          manufacturer: interpreted.manufacturer || '',
+          model: label,
+          year: interpreted.year || null,
+        },
+        // Le motif suit la proposition jusqu'au formulaire : c'est à
+        // l'ouverture qu'il est mesuré, et elle vient d'un clic plus tard.
+        reason: 'model_without_parts',
+      });
     }
 
     function openPartsRequest(entry, trigger, reason) {
@@ -5160,8 +5156,11 @@
     // autres échanges : son statut (pending/declined/sent) survit à la navigation,
     // et le session_id est capturé ICI — c'est la recherche infructueuse qu'on
     // rattache à la demande, pas la session courante (startNewSession a pu passer).
-    // offer : { products, pagination } — les autres pièces compatibles avec le
-    // véhicule, jointes par le serveur à la réponse infructueuse. Elles ne
+    // offer : { products, pagination, vehicle, reason } — les autres pièces
+    // compatibles avec le véhicule, jointes par le serveur à la réponse
+    // infructueuse ; `vehicle` et `reason` ne servent qu'à la proposition faite
+    // sur un modèle sans pièces, qui n'a ni recherche ni équipement identifié
+    // derrière elle. Elles ne
     // s'affichent PAS d'emblée : elles sont l'alternative que porte la
     // proposition, et « Autres pièces » les révèle (cf. le clic sur « non »).
     function renderPartsRequestOffer(reuseEntry, offer) {
@@ -5169,7 +5168,14 @@
       if (!logEntry && !isRestoring) {
         logEntry = {
           t: 'pr_offer', status: 'pending', sessionId,
-          vehicle: identifiedVehicle, part: identifiedPart, query: lastUserQuery(),
+          // Le véhicule vient de la proposition quand elle en porte un — le
+          // modèle que le client vient de choisir, que le serveur n'a pas
+          // confirmé et ne confirmera pas. Sinon, l'équipement identifié.
+          vehicle: (offer && offer.vehicle) || identifiedVehicle,
+          part: identifiedPart, query: lastUserQuery(),
+          // Pourquoi la proposition a été faite, retenu jusqu'à l'ouverture du
+          // formulaire — et rejoué tel quel après un rechargement.
+          reason: (offer && offer.reason) || null,
           // Capturées sur l'entrée comme l'équipement et la pièce : une proposition
           // rejouée après rechargement doit garder SA copie et SON libellé, et
           // rester révélable même si la conversation a continué depuis.
@@ -5227,7 +5233,7 @@
       // n'ajoute AUCUN message : la relance appartient aux issues terminales, refus
       // ou envoi confirmé — cf. showAfterPartsRequest().
       yes.addEventListener('click', () => {
-        openPartsRequest(logEntry, yes);
+        openPartsRequest(logEntry, yes, logEntry && logEntry.reason);
       });
       no.addEventListener('click', () => {
         freeze('no');

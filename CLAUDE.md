@@ -139,10 +139,13 @@ The example queries cycle from the `launcher_examples` i18n array (3 entries per
 ### A model the catalogue has no part for
 
 `clarification.options_without_parts` names, beside the model list, the options the
-catalogue holds nothing for. Clicking one of them opens the **parts request straight
-away** (`openPartsRequestForModel()`) instead of calling `/search`: the server has
-already answered for that model, and asking again would cost the visitor a turn to
-re-read the same absence.
+catalogue holds nothing for. Clicking one of them states the absence and **offers the
+expert** (`offerPartsRequestForModel()` → `renderPartsRequestOffer()`) instead of
+calling `/search`: the server has already answered for that model, and asking again
+would cost the visitor a turn to re-read the same absence. **Nothing opens by itself** —
+the modal sheet stays strictly opt-in, exactly as after a `no_results`. The
+`model_no_parts` line states only the absence; the offer bubble supplies the rest, and
+saying it twice would read as a stutter.
 
 The field is **additive and optional** — an older server omits it, and every option
 then behaves as before. Two more conditions guard the shortcut: `CONFIG.partsRequest`
@@ -154,7 +157,9 @@ The vehicle carried into the form is **the one the visitor picked**, not a
 catalogue-confirmed model — it never was one and never will be. It names the machine in
 the form and nothing else; no search is run from it. Telemetry says why the form
 opened: `parts_request_open` with `reason: model_without_parts`, distinct from
-`no_results`, so a spared turn is not counted as a failed search. That value exists in
+`no_results`, so a spared turn is not counted as a failed search. The reason rides on
+the offer's transcript entry, not on a variable — the form opens on a click that comes
+later, and a reloaded conversation must still know why it was offered. That value exists in
 the hub's `EventCatalog` first — a reason the server does not know is dropped at
 validation, silently, which is exactly how this was caught in testing.
 
