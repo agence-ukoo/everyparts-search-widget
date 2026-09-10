@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — modèle sans pièces au catalogue (options_without_parts)</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Modèle sans pièces au catalogue (<code>clarification.options_without_parts</code>)</h1>
+<p class="sub">
+  Le serveur nomme, à côté de la liste des modèles, ceux dont le catalogue n'a
+  aucune pièce. Cliquer l'un d'eux ne doit PAS repartir vers l'API : le tour est
+  connu d'avance. Quatre scénarios : le modèle sans pièces ouvre la demande de
+  pièce, un modèle ordinaire poursuit normalement, la demande de pièce éteinte
+  fait retomber sur l'appel serveur, et une réponse sans le champ se comporte
+  comme avant.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const SCENARIO = new URLSearchParams(location.search).get('scenario') || 'sans-pieces';
+const TOKEN = 'ep_live_NOPARTS_' + SCENARIO;
+try { localStorage.clear(); } catch (e) {}
+
+if (SCENARIO === 'demande-eteinte') {
+  window.__PARTSMIND_CONFIG__ = { attributes: { 'data-enable-parts-request': 'false' } };
+}
+
+const searchCalls = [];
+const eventCalls = [];
+
+function clarification(withField) {
+  const body = {
+    type: 'clarification',
+    message: 'Lequel est le vôtre ?',
+    interpreted: { manufacturer: 'HUSQVARNA', model: null, year: null, part_type: 'lame' },
+    clarification: {
+      field: 'model',
+      question: 'Lequel est le vôtre ?',
+      options: ['AUTOMOWER 305', 'AUTOMOWER 310', 'Aucun de ces modèles'],
+    },
+    meta: { took_ms: 3 },
+  };
+  if (withField) body.clarification.options_without_parts = ['AUTOMOWER 310'];
+  return body;
+}
+
+window.fetch = async (url, init) => {
+  const u = String(url);
+  const payload = init && init.body ? JSON.parse(init.body) : {};
+
+  if (/\/events$/.test(u)) {
+    eventCalls.push(payload);
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+
+  if (/\/search$/.test(u)) {
+    searchCalls.push(payload);
+    return {
+      status: 200, ok: true, headers: new Headers(),
+      json: async () => clarification(SCENARIO !== 'champ-absent'),
+    };
+  }
+
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $ = s => shadow.querySelector(s);
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  // Tour 1 : une recherche quelconque, à laquelle le serveur répond par la
+  // liste des modèles.
+  $('#ep-input').value = 'lame pour automower';
+  $('#ep-send-btn').click();
+  await until(() => shadow.querySelectorAll('.ep-clari-btn').length >= 3, 3000);
+
+  const callsBefore = searchCalls.length;
+  const boutons = [...shadow.querySelectorAll('.ep-clari-btn')];
+  const cible = SCENARIO === 'modele-ordinaire' ? 'AUTOMOWER 305' : 'AUTOMOWER 310';
+  const bouton = boutons.find(b => b.textContent.trim() === cible);
+
+  check('le modèle visé est proposé', !!bouton, boutons.map(b => b.textContent).join(' | '));
+  if (!bouton) return done();
+
+  bouton.click();
+  await sleep(700);
+
+  // La feuille s'ouvre par son fond : c'est lui qui porte ep-visible.
+  const backdrop = $('#ep-pr-backdrop');
+  const visible = !!backdrop && backdrop.classList.contains('ep-visible');
+  const appels = searchCalls.length - callsBefore;
+
+  switch (SCENARIO) {
+    case 'sans-pieces':
+      check('la demande de pièce s\'ouvre', visible, backdrop && backdrop.className);
+      check('AUCUN appel /search n\'est fait', appels === 0, 'appels=' + appels);
+      // La télémétrie part par lots, après un débounce d'inactivité : on
+      // attend le vidage plutôt que de le provoquer, pour éprouver le chemin
+      // réel plutôt qu'un raccourci de test.
+      const motifVu = () => eventCalls.some(p => (p.events || [p]).some(e =>
+        e.event === 'parts_request_open' && e.payload && e.payload.reason === 'model_without_parts'));
+
+      await until(motifVu, 8000);
+
+      const vus = [];
+      eventCalls.forEach(p => (p.events || [p]).forEach(e =>
+        vus.push(e.event + (e.payload && e.payload.reason ? ':' + e.payload.reason : ''))));
+
+      check('le motif d\'ouverture est model_without_parts', motifVu(), vus.join(', '));
+      check('le modèle choisi est nommé dans le formulaire',
+            (($('#ep-pr-sub') || {}).textContent || '').includes('AUTOMOWER 310'),
+            ($('#ep-pr-sub') || {}).textContent);
+      break;
+
+    case 'modele-ordinaire':
+      check('un modèle ordinaire repart vers le serveur', appels === 1, 'appels=' + appels);
+      check('la demande de pièce ne s\'ouvre pas', !visible);
+      break;
+
+    case 'demande-eteinte':
+      // La boutique n'a personne pour traiter ces demandes : mieux vaut le tour
+      // perdu qu'un formulaire qui ne mène nulle part.
+      check('sans demande de pièce, on repart vers le serveur', appels === 1, 'appels=' + appels);
+      check('aucun formulaire n\'est ouvert', !visible);
+      break;
+
+    case 'champ-absent':
+      check('sans le champ, le comportement est celui d\'avant', appels === 1, 'appels=' + appels);
+      check('aucun formulaire n\'est ouvert', !visible);
+      break;
+  }
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = `[${SCENARIO}] ` + (bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`);
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+
+const el = document.createElement('script');
+el.src = '../everyparts-widget.js';
+el.setAttribute('data-token', TOKEN);
+el.setAttribute('data-locale', 'fr-FR');
+el.setAttribute('data-position', 'bottom-right');
+el.setAttribute('data-api', 'https://api.test.local/api/v1');
+if (SCENARIO === 'demande-eteinte') el.setAttribute('data-enable-parts-request', 'false');
+el.defer = true;
+document.body.appendChild(el);
+
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 400);
+</script>
+</body>
+</html>

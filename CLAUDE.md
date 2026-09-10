@@ -136,6 +136,28 @@ The example queries cycle from the `launcher_examples` i18n array (3 entries per
 - `no_results` → `renderNoResults()`: message plus optional suggestions list, then the part-request offer. The response may also carry the **other parts compatible with the identified vehicle** (`results` + `pagination`, same fields as a `results` payload) — they are not shown on arrival; they become the offer's alternative, see below. No `startNewSession()` runs here, so the `pr_offer` entry (and the products entry, if the list is revealed) capture the same session as the search.
 - `error` → inline error bubble.
 
+### A model the catalogue has no part for
+
+`clarification.options_without_parts` names, beside the model list, the options the
+catalogue holds nothing for. Clicking one of them opens the **parts request straight
+away** (`openPartsRequestForModel()`) instead of calling `/search`: the server has
+already answered for that model, and asking again would cost the visitor a turn to
+re-read the same absence.
+
+The field is **additive and optional** — an older server omits it, and every option
+then behaves as before. Two more conditions guard the shortcut: `CONFIG.partsRequest`
+must be on (a shop with nobody to answer these requests is better served by the wasted
+turn than by a form leading nowhere), and the escape label `Aucun de ces modèles` is
+never listed by the server, so it can never be diverted.
+
+The vehicle carried into the form is **the one the visitor picked**, not a
+catalogue-confirmed model — it never was one and never will be. It names the machine in
+the form and nothing else; no search is run from it. Telemetry says why the form
+opened: `parts_request_open` with `reason: model_without_parts`, distinct from
+`no_results`, so a spared turn is not counted as a failed search. That value exists in
+the hub's `EventCatalog` first — a reason the server does not know is dropped at
+validation, silently, which is exactly how this was caught in testing.
+
 ### Part request on `no_results` (frame 2a)
 
 When `/search` answers `no_results`, `renderNoResults()` chains into
