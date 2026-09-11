@@ -123,7 +123,7 @@
       // Variante employée quand la réponse joint d'autres pièces compatibles :
       // refuser l'expert, c'est alors demander à les voir.
       pr_offer_other_parts:    'Vous pouvez soumettre votre recherche à un expert qui vous recontactera, ou bien consulter nos autres pièces compatibles avec votre équipement.',
-      model_no_parts:          'Nous n\'avons aucune pièce référencée pour ce modèle.',
+      model_no_parts:          'Nous avons bien identifié votre modèle, mais nous n\'avons aucune pièce référencée pour celui-ci.',
       pr_offer_yes:    'Demander à un expert',
       pr_offer_no:     'Non merci',
       pr_offer_no_other_parts: 'Autres pièces',
@@ -223,7 +223,7 @@
       // ── Part request (frame 2a) ──
       pr_offer:        'You can submit your search to an expert, who will get back to you.',
       pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your equipment.',
-      model_no_parts:          'We have no parts listed for this model.',
+      model_no_parts:          'We have correctly identified your model, but we do not have any parts listed for it.',
       pr_offer_yes:    'Ask an expert',
       pr_offer_no:     'No thanks',
       pr_offer_no_other_parts: 'Other parts',
@@ -323,7 +323,7 @@
       // ── Part request (frame 2a) ──
       pr_offer:        'You can submit your search to an expert, who will get back to you.',
       pr_offer_other_parts:    'You can submit your search to an expert, who will get back to you, or browse our other parts that are compatible with your equipment.',
-      model_no_parts:          'We have no parts listed for this model.',
+      model_no_parts:          'We have correctly identified your model, but we do not have any parts listed for it.',
       pr_offer_yes:    'Ask an expert',
       pr_offer_no:     'No thanks',
       pr_offer_no_other_parts: 'Other parts',
