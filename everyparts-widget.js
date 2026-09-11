@@ -4537,7 +4537,7 @@
             : (lastSearchMeta ? lastSearchMeta.result_count : undefined),
           // L'API peut renvoyer le prix en chaine (« 5.90 ») — le widget lui-meme
           // le parse ailleurs. Un test de type strict le faisait disparaitre.
-          price: toPrice(product.price),
+          price: product.price ? toPrice(product.price) : null,
           currency: 'EUR',
           name: product.name,
           brand: product.brand,
@@ -4578,7 +4578,7 @@
           </div>
           <div class="ep-card-name">${escHtml(product.name || '')}</div>
           <div class="ep-card-bottomline">
-            <span class="ep-card-price">${escHtml(formatPrice(product.price))}</span>
+            <span class="ep-card-price">${product.price ? escHtml(formatPrice(product.price)) : ''}</span>
             <span class="ep-badge" title="${escHtml(tip)}">${escHtml(badgeLabel)}</span>
           </div>
         </div>
