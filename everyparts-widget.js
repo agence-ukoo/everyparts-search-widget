@@ -614,6 +614,13 @@
       --ep-font-body:  'Inter', system-ui, sans-serif;
       --ep-radius:    12px;
       --ep-shadow:    0 8px 32px rgba(6,76,76,.18);
+      /* Jetons optionnels, volontairement non déclarés ici : leur absence est
+         ce qui rend aux deux boutons leur dégradé et leur vert d'origine, qui
+         sont les valeurs de repli de chaque var(). Une page (le loader du hub)
+         peut les poser :
+           --ep-send  fond du bouton d'envoi, son halo et son anneau pulsé ;
+           --ep-edit  texte du bouton « Modifier » de la barre véhicule, et le
+                      fond de son survol. */
     }
 
     /* ── Bouton flottant (frames 5a / 4a) ──
@@ -1724,7 +1731,7 @@
       border: 1px solid #DCE6E1;
       border-radius: 9px;
       background: var(--ep-white);
-      color: #00A76F;
+      color: var(--ep-edit, #00A76F);
       font-family: inherit;
       font-size: 12.5px;
       font-weight: 700;
@@ -1732,7 +1739,7 @@
       transition: border-color .15s, background .15s;
       -webkit-tap-highlight-color: transparent;
     }
-    #ep-subject-edit:hover { border-color: var(--ep-primary); background: #F2FCF8; }
+    #ep-subject-edit:hover { border-color: var(--ep-primary); background: color-mix(in srgb, var(--ep-edit, #00A76F) 5%, white); }
     #ep-subject-edit:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
 
     /* ── Zone de saisie + footer discret ── */
@@ -1778,13 +1785,13 @@
       flex: none;
       border: 0;
       border-radius: 14px;
-      background: linear-gradient(150deg, #00D695, #00A76F);
+      background: var(--ep-send, linear-gradient(150deg, #00D695, #00A76F));
       color: var(--ep-white);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 6px 16px -6px rgba(0,167,111,.75);
+      box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-send, #00A76F) 75%, transparent);
       transition: filter .15s;
       -webkit-tap-highlight-color: transparent;
     }
@@ -1799,8 +1806,8 @@
       animation: ep-send-ring 2.6s ease-out infinite;
     }
     @keyframes ep-send-ring {
-      0%   { box-shadow: 0 6px 16px -6px rgba(0,167,111,.75), 0 0 0 0 rgba(0,190,130,.45); }
-      100% { box-shadow: 0 6px 16px -6px rgba(0,167,111,.75), 0 0 0 14px rgba(0,190,130,0); }
+      0%   { box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-send, #00A76F) 75%, transparent), 0 0 0 0 color-mix(in srgb, var(--ep-send, #00BE82) 45%, transparent); }
+      100% { box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-send, #00A76F) 75%, transparent), 0 0 0 14px color-mix(in srgb, var(--ep-send, #00BE82) 0%, transparent); }
     }
 
     #ep-footer {
