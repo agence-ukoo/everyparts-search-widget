@@ -2065,6 +2065,14 @@
     .ep-sheet-submit:hover:not(:disabled) { filter: brightness(1.06); }
     .ep-sheet-submit:disabled { opacity: .45; cursor: default; }
     #ep-pr-submit { background: linear-gradient(150deg, color-mix(in srgb, var(--ep-secondary) 82%, white), var(--ep-secondary)); }
+    /* Le texte suit la luminosité de --ep-secondary, que le hub peut régler :
+       presque noir quand le fond est clair, presque blanc quand il est sombre
+       (seuil de clarté OKLCH 0,6, où le contraste noir/blanc s'équilibre ; la
+       teinte du fond est conservée, à faible chroma). Un navigateur sans couleurs
+       relatives garde le texte foncé de .ep-sheet-submit. */
+    @supports (color: oklch(from red l c h)) {
+      #ep-pr-submit { color: oklch(from var(--ep-secondary) clamp(0.22, (l - 0.6) * -1000, 0.98) 0.03 h); }
+    }
     .ep-sheet-submit:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
     .ep-sheet-cancel {
       height: 20px;
