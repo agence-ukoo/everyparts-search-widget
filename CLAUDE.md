@@ -66,6 +66,8 @@ window.__PARTSMIND_CONFIG__ = {
 };
 ```
 
+`theme` is made of the engine's `--ep-*` tokens, chiefly the two brand colors: `--ep-primary`, the dominant one (header, launcher, user bubbles, avatar), and `--ep-secondary`, the accent (send and *Modifier* buttons, focus rings, hover borders). Anything the engine derives from them — the input's focus halo, the send button's glow — is computed with `color-mix()` from the token, never a literal copy of its default.
+
 Of the five keys, **only `wordings`, `icon` and `avatar` are the engine's concern** — `attributes` and `theme` are already in effect by the time this script runs, and re-applying either here would be a second place to maintain a single effect. `wordings` is what the server *can't* reach any other way: a locale → i18n-key → text map layered on top of the built-in `I18N` dictionary, read into `CONFIG.wordings` (empty object if the global is absent, not an object, or has no `wordings` key — an old integration, or a page with no hub-delivered config, must behave exactly as before).
 
 `t(key, vars)` and `tList(key)` consult `CONFIG.wordings[CONFIG.locale][key]` **above** `I18N`, never instead of it: a key the server didn't rewrite still falls through to `I18N[CONFIG.locale]`, then to `I18N['fr-FR']`, then to the bare key — the existing fallback chain is untouched, just given a new head. `tList()` only accepts a rewrite that is itself an array; anything else (a server sending a string for a list-shaped key) is ignored, not coerced. Since the server can add rewritten keys at any time without telling the engine, `wordings` must be treated as a generic override layer — never hard-coded to the handful of keys it happens to rewrite today (`welcome_p1`, `welcome_p2`, `placeholder`, at last count).

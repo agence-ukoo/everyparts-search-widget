@@ -592,10 +592,10 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root, :host {
-      --ep-primary:   #00BE82;
-      --ep-dark:      #064C4C;
+      --ep-primary:   #064C4C;
+      --ep-secondary: #00BE82;
       --ep-body:      #5B5A59;
-      --ep-green:     #3CD179;
+      --ep-green:     #00A76F;
       --ep-blue:      #0154F9;
       --ep-red:       #FF4869;
       --ep-orange:    #FF7848;
@@ -614,13 +614,11 @@
       --ep-font-body:  'Inter', system-ui, sans-serif;
       --ep-radius:    12px;
       --ep-shadow:    0 8px 32px rgba(6,76,76,.18);
-      /* Jetons optionnels, volontairement non déclarés ici : leur absence est
-         ce qui rend aux deux boutons leur dégradé et leur vert d'origine, qui
-         sont les valeurs de repli de chaque var(). Une page (le loader du hub)
-         peut les poser :
-           --ep-send  fond du bouton d'envoi, son halo et son anneau pulsé ;
-           --ep-edit  texte du bouton « Modifier » de la barre véhicule, et le
-                      fond de son survol. */
+      /* Deux couleurs de marque, toutes deux posées par le hub par site :
+           --ep-primary    la couleur dominante — en-tête, lanceur, bulles de
+                           l'utilisateur, avatar ;
+           --ep-secondary  l'accent — bouton d'envoi et « Modifier », bordures et
+                           anneaux de focus ou de survol, puces, pouce positif. */
     }
 
     /* ── Bouton flottant (frames 5a / 4a) ──
@@ -642,7 +640,7 @@
          le fondu croisé ne laisse jamais voir la page à travers la pilule — c'est
          la seule entorse au frame, qui superpose deux couches opaques sur un fond
          de canvas et se retrouve à ~25 % de transparence à mi-course. */
-      background: var(--ep-dark);
+      background: var(--ep-primary);
       border: none;
       cursor: pointer;
       display: block;
@@ -658,7 +656,7 @@
     #ep-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(6,76,76,.45); }
     /* Déployé, la pilule fait 372px : la mettre à l'échelle au survol jurerait. */
     #ep-fab.ep-fab-expanded:hover { transform: none; box-shadow: 0 16px 34px -14px rgba(6,76,76,.6); }
-    #ep-fab:focus-visible { outline: 3px solid var(--ep-primary); outline-offset: 3px; }
+    #ep-fab:focus-visible { outline: 3px solid var(--ep-secondary); outline-offset: 3px; }
     #ep-fab svg { display: block; }
 
     @keyframes ep-fab-enter {
@@ -679,8 +677,8 @@
        qui bascule. La façade est en overflow:hidden car ses ~113 px de contenu
        minimum ne tiennent pas dans la pilule encore étroite : sans cela la pastille
        déborderait du bord ancré pendant les ~400 premières ms. */
-    #ep-fab .ep-fab-closed  { opacity: 1; transition: opacity .54s ease-in-out; border-radius: 29px; background: var(--ep-dark); }
-    #ep-fab .ep-fab-face    { opacity: 0; transition: opacity .54s ease-in-out; justify-content: flex-start; gap: 12px; padding: 0 8px 0 18px; border-radius: 29px; background: var(--ep-white); border: 1.5px solid var(--ep-dark); overflow: hidden; }
+    #ep-fab .ep-fab-closed  { opacity: 1; transition: opacity .54s ease-in-out; border-radius: 29px; background: var(--ep-primary); }
+    #ep-fab .ep-fab-face    { opacity: 0; transition: opacity .54s ease-in-out; justify-content: flex-start; gap: 12px; padding: 0 8px 0 18px; border-radius: 29px; background: var(--ep-white); border: 1.5px solid var(--ep-primary); overflow: hidden; }
     #ep-fab .ep-fab-chevron { opacity: 0; transition: opacity .2s ease; }
     /* Compteur de la façade : couche NON rognée. Il déborde volontairement du coin
        arrondi — à 1 px du haut, un rayon de 29 px ne laisse la pilule s'étendre que
@@ -743,7 +741,7 @@
       width: 46px;
       height: 46px;
       border-radius: 23px;
-      background: var(--ep-dark);
+      background: var(--ep-primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -761,8 +759,8 @@
       height: 17px;
       padding: 0 5px;
       border-radius: 7px;
-      background: var(--ep-primary);
-      color: #fff;
+      background: var(--ep-secondary);
+      color: var(--ep-white);
       font-family: var(--ep-font-title);
       font-size: 9.5px;
       font-weight: 800;
@@ -777,7 +775,7 @@
     .ep-fab-badge-bubble { top: -4px; right: -2px; border: 2px solid var(--ep-white); }
     /* Ancré sur la pilule (sa couche fait inset:0), plus sur le disque : 1px/2px
        reproduisent le -5px/-6px du frame, mesurés depuis le disque de 46px centré. */
-    .ep-fab-badge-disc   { top: 1px; right: 2px; border: 2px solid #fff; }
+    .ep-fab-badge-disc   { top: 1px; right: 2px; border: 2px solid var(--ep-white); }
     /* Déployé, le compteur n'appartient qu'à la pastille de la façade. Sans cette
        règle il apparaîtrait aussi sur la bulle au tout début du déploiement — le
        temps que la couche fermée s'efface — car showBadge() et .ep-fab-expanded
@@ -834,9 +832,9 @@
       box-shadow: 0 2px 6px rgba(6,76,76,.16);
       -webkit-tap-highlight-color: transparent;
     }
-    #ep-teaser-close:hover { color: var(--ep-dark); border-color: var(--ep-grey-400); }
-    #ep-teaser-close:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
-    #ep-teaser:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    #ep-teaser-close:hover { color: var(--ep-primary); border-color: var(--ep-grey-400); }
+    #ep-teaser-close:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 1px; }
+    #ep-teaser:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; }
     /* Position au-dessus (lanceurs bas) ou au-dessous (lanceurs haut) du lanceur,
        aligné sur le même bord ; coin pointu orienté vers le lanceur. */
     #ep-teaser.ep-pos-bottom-right { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); border-radius: 14px 14px 4px 14px; }
@@ -882,7 +880,7 @@
 
     /* ── Header ── */
     #ep-header {
-      background: var(--ep-dark);
+      background: var(--ep-primary);
       padding: calc(13px + env(safe-area-inset-top, 0px)) 14px 14px 16px;
       display: flex;
       align-items: center;
@@ -900,7 +898,7 @@
       height: 38px;
       flex: none;
       border-radius: 12px;
-      background: linear-gradient(160deg, #00D695, #00A76F);
+      background: linear-gradient(160deg, #00D695, var(--ep-green));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -920,7 +918,7 @@
       height: 11px;
       border-radius: 50%;
       background: var(--ep-green);
-      border: 2px solid var(--ep-dark);
+      border: 2px solid var(--ep-primary);
     }
     #ep-header-logo { display: flex; align-items: center; gap: 8px; min-width: 0; }
     #ep-header-logo-img { height: 28px; width: auto; max-width: 150px; display: block; object-fit: contain; }
@@ -952,8 +950,8 @@
       font-size: 9px;
       font-weight: 800;
       letter-spacing: .1em;
-      color: #9FF0D2;
-      border: 1px solid rgba(159, 240, 210, .45);
+      color: var(--ep-white);
+      border: 1px solid rgba(255, 255, 255, .45);
       border-radius: 5px;
       padding: 1.5px 5px;
       line-height: 1;
@@ -977,7 +975,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     .ep-header-btn:hover { background: rgba(255,255,255,.20); }
-    .ep-header-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
+    .ep-header-btn:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 1px; }
 
     /* Cibles tactiles ≥44×44 (Apple HIG / WCAG 2.5.5) sans agrandir la taille VISUELLE
        de ces contrôles compacts : une zone invisible centrée sur chacun, via ::after,
@@ -1055,7 +1053,7 @@
       border-radius: 999px;
       background: var(--ep-white);
       box-shadow: 0 6px 16px -6px rgba(6,76,76,.4);
-      color: var(--ep-dark);
+      color: var(--ep-primary);
       font-family: var(--ep-font-body);
       font-size: 12.5px;
       font-weight: 700;
@@ -1083,10 +1081,10 @@
       justify-content: center;
     }
     #ep-jump.ep-jump-plain #ep-jump-label { display: none; }
-    #ep-jump:hover { border-color: var(--ep-primary); }
-    #ep-jump:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    #ep-jump:hover { border-color: var(--ep-secondary); }
+    #ep-jump:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; }
     #ep-jump-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #ep-jump-icon { flex: none; color: var(--ep-primary); }
+    #ep-jump-icon { flex: none; color: var(--ep-secondary); }
 
     /* ── Bulles ── */
     .ep-msg {
@@ -1110,7 +1108,7 @@
       word-break: break-word;
     }
     .ep-msg-user .ep-bubble {
-      background: var(--ep-dark);
+      background: var(--ep-primary);
       color: #EAF7F3;
       border-bottom-right-radius: 4px;
     }
@@ -1120,13 +1118,13 @@
        couleur seule ne suffit pas (WCAG 1.4.1). La classe sert aussi de point
        d'accroche au clic (télémétrie contact_click). */
     .ep-contact-link {
-      color: var(--ep-primary);
+      color: var(--ep-secondary);
       font-weight: 700;
       text-decoration: underline;
       text-underline-offset: 2px;
     }
-    .ep-contact-link:hover { color: var(--ep-dark); }
-    .ep-contact-link:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
+    .ep-contact-link:hover { color: var(--ep-primary); }
+    .ep-contact-link:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; border-radius: 3px; }
 
     .ep-msg-assistant .ep-bubble {
       background: var(--ep-white);
@@ -1189,7 +1187,7 @@
     }
     .ep-retry-btn:hover:not(:disabled) { filter: brightness(1.06); }
     .ep-retry-btn:disabled { opacity: .5; cursor: default; }
-    .ep-retry-btn:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
+    .ep-retry-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
 
     /* Chargement du reessai : voile PAR-DESSUS la carte, qui reste en place. Le
        contenu doit rester lisible dessous — on ne remplace pas, on couvre. */
@@ -1223,7 +1221,7 @@
       height: 28px;
       flex: none;
       border-radius: 9px;
-      background: var(--ep-dark);
+      background: var(--ep-primary);
       color: var(--ep-green);
       display: flex;
       align-items: center;
@@ -1272,9 +1270,9 @@
       transition: border-color .15s, background .15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .ep-chip::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--ep-primary); flex: none; }
-    .ep-chip:hover { border-color: var(--ep-primary); background: #F2FCF8; }
-    .ep-chip:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
+    .ep-chip::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--ep-secondary); flex: none; }
+    .ep-chip:hover { border-color: var(--ep-secondary); background: #F2FCF8; }
+    .ep-chip:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 1px; }
 
     /* ── Indicateur « en cours » : INLINE dans le fil (défile avec les messages),
        aligné sous les bulles de l'assistant (décalage avatar 28px + gap 10px). ── */
@@ -1302,7 +1300,7 @@
       color: #93A19E;
       padding-left: 2px;
     }
-    .ep-dot { width: 6px; height: 6px; background: var(--ep-primary); border-radius: 50%; animation: ep-pulse 1.1s ease-in-out infinite; }
+    .ep-dot { width: 6px; height: 6px; background: var(--ep-secondary); border-radius: 50%; animation: ep-pulse 1.1s ease-in-out infinite; }
     .ep-dot:nth-child(2) { animation-delay: .15s; }
     .ep-dot:nth-child(3) { animation-delay: .3s; }
     @keyframes ep-pulse {
@@ -1341,7 +1339,7 @@
       outline: none;
       transition: border-color .15s;
     }
-    .ep-products-filter:focus { border-color: var(--ep-primary); }
+    .ep-products-filter:focus { border-color: var(--ep-secondary); }
     .ep-products-filter::placeholder { color: var(--ep-grey-400); }
     .ep-products-sort {
       flex-shrink: 0;
@@ -1358,7 +1356,7 @@
       cursor: pointer;
       transition: border-color .15s;
     }
-    .ep-products-sort:focus { border-color: var(--ep-primary); }
+    .ep-products-sort:focus { border-color: var(--ep-secondary); }
     .ep-products-count {
       font-size: 11px;
       color: var(--ep-grey-400);
@@ -1380,14 +1378,14 @@
       font-family: var(--ep-font-body);
       font-size: 14px;
       font-weight: 600;
-      color: var(--ep-primary);
+      color: var(--ep-secondary);
       background: var(--ep-white);
       cursor: pointer;
       transition: border-color .15s ease, box-shadow .15s ease;
       -webkit-tap-highlight-color: transparent;
     }
     .ep-load-more:hover:not(:disabled) {
-      border-color: var(--ep-primary);
+      border-color: var(--ep-secondary);
       box-shadow: 0 1px 4px rgba(0,0,0,.06);
     }
     .ep-load-more:disabled { opacity: .6; cursor: wait; }
@@ -1443,11 +1441,11 @@
       -webkit-tap-highlight-color: transparent;
     }
     .ep-card:hover, .ep-card:focus-visible {
-      border-color: var(--ep-primary);
+      border-color: var(--ep-secondary);
       box-shadow: 0 4px 14px rgba(0,190,130,.18);
       transform: translateY(-1px);
     }
-    .ep-card:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    .ep-card:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; }
     .ep-card-img {
       width: 64px;
       height: 64px;
@@ -1511,7 +1509,7 @@
     .ep-card-price {
       font-family: var(--ep-font-title);
       font-weight: 800;
-      color: var(--ep-dark);
+      color: var(--ep-primary);
       font-size: 16px;
       white-space: nowrap;
     }
@@ -1520,12 +1518,12 @@
       color: var(--ep-grey-300);
       transition: color .15s ease, transform .15s ease;
     }
-    .ep-card:hover .ep-card-arrow { color: var(--ep-primary); transform: translateX(2px); }
+    .ep-card:hover .ep-card-arrow { color: var(--ep-secondary); transform: translateX(2px); }
     .ep-badge {
       display: inline-flex;
       align-items: center;
       background: #EAFBF4;
-      color: #00A76F;
+      color: var(--ep-green);
       font-size: 9.5px;
       font-weight: 800;
       letter-spacing: .08em;
@@ -1568,15 +1566,15 @@
       width: 5px;
       height: 5px;
       border-radius: 50%;
-      background: var(--ep-primary);
+      background: var(--ep-secondary);
       flex: none;
     }
-    .ep-clari-btn:hover:not(:disabled) { border-color: var(--ep-primary); background: #F2FCF8; }
-    .ep-clari-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
+    .ep-clari-btn:hover:not(:disabled) { border-color: var(--ep-secondary); background: #F2FCF8; }
+    .ep-clari-btn:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 1px; }
     .ep-clari-btn:disabled { cursor: default; opacity: .45; }
     .ep-clari-btn.ep-selected {
-      background: var(--ep-primary);
-      border-color: var(--ep-primary);
+      background: var(--ep-secondary);
+      border-color: var(--ep-secondary);
       color: var(--ep-white);
       opacity: 1;
     }
@@ -1596,7 +1594,7 @@
       margin-bottom: 8px;
       transition: border-color .15s;
     }
-    .ep-clari-filter:focus { border-color: var(--ep-primary); }
+    .ep-clari-filter:focus { border-color: var(--ep-secondary); }
     .ep-clari-filter::placeholder { color: var(--ep-grey-400); }
     .ep-clari-count {
       font-size: 11px;
@@ -1625,13 +1623,13 @@
       min-height: 40px;
     }
     .ep-clari-list .ep-clari-btn:hover:not(:disabled) {
-      border-color: var(--ep-primary);
+      border-color: var(--ep-secondary);
       background: #F2FCF8;
       color: #12312D;
     }
     .ep-clari-list .ep-clari-btn.ep-selected {
-      background: var(--ep-primary);
-      border-color: var(--ep-primary);
+      background: var(--ep-secondary);
+      border-color: var(--ep-secondary);
       color: var(--ep-white);
     }
     .ep-clari-empty {
@@ -1663,12 +1661,12 @@
       -webkit-tap-highlight-color: transparent;
     }
     .ep-review-btn svg { display: block; }
-    .ep-review-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
-    .ep-review-up:hover:not(:disabled)   { border-color: var(--ep-primary); color: var(--ep-primary); }
+    .ep-review-btn:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; }
+    .ep-review-up:hover:not(:disabled)   { border-color: var(--ep-secondary); color: var(--ep-secondary); }
     .ep-review-down:hover:not(:disabled) { border-color: var(--ep-red); color: var(--ep-red); }
     .ep-review-btn:disabled { cursor: default; opacity: .4; }
     .ep-review-btn.ep-selected { opacity: 1; }
-    .ep-review-up.ep-selected   { background: var(--ep-primary); border-color: var(--ep-primary); color: var(--ep-white); }
+    .ep-review-up.ep-selected   { background: var(--ep-secondary); border-color: var(--ep-secondary); color: var(--ep-white); }
     .ep-review-down.ep-selected { background: var(--ep-red); border-color: var(--ep-red); color: var(--ep-white); }
 
     /* ── Suggestions (no_results) ── */
@@ -1700,7 +1698,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--ep-dark);
+      color: var(--ep-primary);
     }
     /* Icône servie en image : contenue dans la boîte, sans la déformer. */
     #ep-subject-icon img { width: 20px; height: 20px; object-fit: contain; }
@@ -1715,7 +1713,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    #ep-subject-label .ep-subject-year { color: var(--ep-dark); font-weight: 800; }
+    #ep-subject-label .ep-subject-year { color: var(--ep-primary); font-weight: 800; }
     #ep-subject-value {
       font-size: 13.5px;
       font-weight: 700;
@@ -1731,7 +1729,7 @@
       border: 1px solid #DCE6E1;
       border-radius: 9px;
       background: var(--ep-white);
-      color: var(--ep-edit, #00A76F);
+      color: var(--ep-secondary);
       font-family: inherit;
       font-size: 12.5px;
       font-weight: 700;
@@ -1739,8 +1737,8 @@
       transition: border-color .15s, background .15s;
       -webkit-tap-highlight-color: transparent;
     }
-    #ep-subject-edit:hover { border-color: var(--ep-primary); background: color-mix(in srgb, var(--ep-edit, #00A76F) 5%, white); }
-    #ep-subject-edit:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 1px; }
+    #ep-subject-edit:hover { border-color: var(--ep-secondary); background: color-mix(in srgb, var(--ep-secondary) 5%, white); }
+    #ep-subject-edit:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 1px; }
 
     /* ── Zone de saisie + footer discret ── */
     #ep-input-area {
@@ -1773,9 +1771,9 @@
       transition: border-color .15s, box-shadow .15s, background .15s;
     }
     #ep-input:focus {
-      border-color: var(--ep-primary);
+      border-color: var(--ep-secondary);
       background: var(--ep-white);
-      box-shadow: 0 0 0 3px rgba(0,190,130,.14);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ep-secondary) 14%, transparent);
     }
     #ep-input::placeholder { color: #9AA6A3; }
 
@@ -1785,18 +1783,18 @@
       flex: none;
       border: 0;
       border-radius: 14px;
-      background: var(--ep-send, linear-gradient(150deg, #00D695, #00A76F));
+      background: linear-gradient(150deg, color-mix(in srgb, var(--ep-secondary) 82%, white), var(--ep-secondary));
       color: var(--ep-white);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-send, #00A76F) 75%, transparent);
+      box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-secondary) 75%, transparent);
       transition: filter .15s;
       -webkit-tap-highlight-color: transparent;
     }
     #ep-send-btn:hover { filter: brightness(1.06); }
-    #ep-send-btn:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
+    #ep-send-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
     #ep-send-btn:disabled { background: var(--ep-grey-300); box-shadow: none; filter: none; cursor: not-allowed; }
     #ep-send-btn svg { display: block; }
     /* Anneau pulsé invitant à lancer la recherche (refonte 1a) : n'anime que
@@ -1806,8 +1804,8 @@
       animation: ep-send-ring 2.6s ease-out infinite;
     }
     @keyframes ep-send-ring {
-      0%   { box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-send, #00A76F) 75%, transparent), 0 0 0 0 color-mix(in srgb, var(--ep-send, #00BE82) 45%, transparent); }
-      100% { box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-send, #00A76F) 75%, transparent), 0 0 0 14px color-mix(in srgb, var(--ep-send, #00BE82) 0%, transparent); }
+      0%   { box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-secondary) 75%, transparent), 0 0 0 0 color-mix(in srgb, var(--ep-secondary) 45%, transparent); }
+      100% { box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--ep-secondary) 75%, transparent), 0 0 0 14px color-mix(in srgb, var(--ep-secondary) 0%, transparent); }
     }
 
     #ep-footer {
@@ -1830,7 +1828,7 @@
       cursor: pointer;
     }
     #ep-footer-brand svg { height: 15px; width: auto; display: block; }
-    #ep-footer-brand:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 3px; }
+    #ep-footer-brand:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; border-radius: 3px; }
 
     /* ── Motif d'un avis négatif ───────────────────────────────────────────────
        Feuille modale ouverte juste après le pouce bas (#ep-rvr-backdrop, même
@@ -1853,11 +1851,11 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
     }
-    .ep-review-reason:hover:not(:disabled) { border-color: var(--ep-primary); background: #F2FCF8; }
-    .ep-review-reason:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    .ep-review-reason:hover:not(:disabled) { border-color: var(--ep-secondary); background: #F2FCF8; }
+    .ep-review-reason:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; }
     /* Confirmation « merci » — greffée dans le même conteneur que la carte
        d'avis (cf. appendReviewThank), pas une bulle assistant à part. */
-    .ep-review-thx { color: #00A76F; font-size: 13px; }
+    .ep-review-thx { color: var(--ep-green); font-size: 13px; }
 
     /* Zone de texte de la feuille « Autre » — 16px sur mobile contre le zoom iOS,
        valeur resserrée seulement au-dessus de 641px (cf. #ep-input, #ep-pr-email, #ep-pr-phone). */
@@ -1875,7 +1873,7 @@
       color: #12312D;
     }
     #ep-rv-text::placeholder { color: #9AA6A3; }
-    #ep-rv-text:focus { outline: 2px solid var(--ep-primary); outline-offset: -1px; border-color: transparent; }
+    #ep-rv-text:focus { outline: 2px solid var(--ep-secondary); outline-offset: -1px; border-color: transparent; }
     .ep-rv-count { align-self: flex-end; font-size: 11.5px; color: #93A19E; }
 
     /* ── Demande de pièce (frame 2a) ──────────────────────────────────────────
@@ -1908,16 +1906,16 @@
     }
     /* « Oui » : blanc tant qu'on n'a pas cliqué, vert une fois la demande envoyée.
        Le vert EST la marque du choix — d'où l'absence de liseré (cf. .ep-pr-chosen). */
-    .ep-pr-btn-yes { border: 1px solid #DCE6E1; background: var(--ep-white); color: var(--ep-dark); }
-    .ep-pr-btn-yes.ep-pr-chosen { background: var(--ep-primary); color: #fff; border-color: transparent; }
+    .ep-pr-btn-yes { border: 1px solid #DCE6E1; background: var(--ep-white); color: var(--ep-primary); }
+    .ep-pr-btn-yes.ep-pr-chosen { background: var(--ep-secondary); color: var(--ep-white); border-color: transparent; }
     .ep-pr-btn-no  { border: 1px solid #DCE6E1; background: var(--ep-white); color: #5A6B68; font-weight: 600; }
     .ep-pr-btn:hover:not(:disabled) { filter: brightness(1.04); }
-    .ep-pr-btn:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    .ep-pr-btn:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; }
     /* Choix déjà fait (restauration ou après clic) : figé, l'option retenue reste lisible. */
     .ep-pr-btn:disabled { cursor: default; opacity: .5; }
     .ep-pr-btn.ep-pr-chosen:disabled { opacity: 1; }
     /* « Non » n'a pas de couleur propre pour signaler le choix : il garde un liseré. */
-    .ep-pr-btn-no.ep-pr-chosen:disabled { box-shadow: inset 0 0 0 2px var(--ep-dark); }
+    .ep-pr-btn-no.ep-pr-chosen:disabled { box-shadow: inset 0 0 0 2px var(--ep-primary); }
 
     .ep-sheet-backdrop {
       position: absolute;
@@ -1973,7 +1971,7 @@
       border: 1px solid #CDEFE1;
       border-radius: 11px;
     }
-    .ep-pr-recall svg { flex: none; }
+    .ep-pr-recall svg { flex: none; stroke: var(--ep-green); }
     .ep-pr-recall-label { flex: none; font-size: 12.5px; line-height: 1.35; color: #5A6B68; }
     /* Crayon en coin haut-droit : seul indice visuel que le rappel est modifiable
        (le texte lui-même ressemble à du contenu figé, en gras). Purement décoratif
@@ -2000,7 +1998,7 @@
       line-height: 1.35;
       color: #12312D;
     }
-    #ep-pr-message:focus { outline: 2px solid var(--ep-primary); outline-offset: 3px; border-radius: 3px; }
+    #ep-pr-message:focus { outline: 2px solid var(--ep-secondary); outline-offset: 3px; border-radius: 3px; }
     .ep-pr-recall:has(#ep-pr-message[aria-invalid="true"]) { border-color: #C0392B; background: #FDF3F2; }
 
     .ep-pr-field { display: flex; flex-direction: column; gap: 6px; }
@@ -2018,7 +2016,7 @@
       width: 100%;
     }
     #ep-pr-email::placeholder, #ep-pr-phone::placeholder { color: #9AA6A3; }
-    #ep-pr-email:focus, #ep-pr-phone:focus { outline: 2px solid var(--ep-primary); outline-offset: -1px; border-color: transparent; }
+    #ep-pr-email:focus, #ep-pr-phone:focus { outline: 2px solid var(--ep-secondary); outline-offset: -1px; border-color: transparent; }
     #ep-pr-email[aria-invalid="true"], #ep-pr-phone[aria-invalid="true"] { border-color: #C0392B; background: #FDF3F2; }
 
     /* Case de consentement : input réel (focus + clavier natifs) masqué visuellement,
@@ -2042,10 +2040,10 @@
       align-items: center;
       justify-content: center;
     }
-    .ep-pr-box svg { opacity: 0; }
-    #ep-pr-consent-input:checked ~ .ep-pr-box { border-color: #00A76F; background: #F2FCF8; }
+    .ep-pr-box svg { opacity: 0; stroke: var(--ep-green); }
+    #ep-pr-consent-input:checked ~ .ep-pr-box { border-color: var(--ep-green); background: #F2FCF8; }
     #ep-pr-consent-input:checked ~ .ep-pr-box svg { opacity: 1; }
-    #ep-pr-consent-input:focus-visible ~ .ep-pr-box { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
+    #ep-pr-consent-input:focus-visible ~ .ep-pr-box { outline: 2px solid var(--ep-secondary); outline-offset: 2px; }
     #ep-pr-consent-input[aria-invalid="true"] ~ .ep-pr-box { border-color: #C0392B; }
     .ep-pr-consent-text { font-size: 11.5px; line-height: 1.4; color: #5A6B68; }
 
@@ -2056,7 +2054,7 @@
       height: 42px;
       border: 0;
       border-radius: 12px;
-      background: linear-gradient(150deg,#00D695,#00A76F);
+      background: linear-gradient(150deg,#00D695,var(--ep-green));
       color: #04332F;
       font-family: var(--ep-font-title);
       font-size: 13.5px;
@@ -2066,7 +2064,7 @@
     }
     .ep-sheet-submit:hover:not(:disabled) { filter: brightness(1.06); }
     .ep-sheet-submit:disabled { opacity: .45; cursor: default; }
-    .ep-sheet-submit:focus-visible { outline: 2px solid var(--ep-dark); outline-offset: 2px; }
+    .ep-sheet-submit:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
     .ep-sheet-cancel {
       height: 20px;
       border: 0;
@@ -2078,7 +2076,7 @@
       cursor: pointer;
     }
     .ep-sheet-cancel:hover { color: #5A6B68; }
-    .ep-sheet-cancel:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; border-radius: 4px; }
+    .ep-sheet-cancel:focus-visible { outline: 2px solid var(--ep-secondary); outline-offset: 2px; border-radius: 4px; }
 
     /* Masquer le FAB quand la fenêtre est ouverte (mobile plein écran) */
     #ep-fab.ep-window-open { display: none; }
@@ -5812,11 +5810,11 @@
           </div>
           <div class="ep-pr-field">
             <div class="ep-pr-recall">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.35-4.35"></path></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.35-4.35"></path></svg>
               <label class="ep-pr-recall-label" for="ep-pr-message">${escHtml(t('pr_part_label'))}</label>
               <textarea id="ep-pr-message" rows="1" maxlength="5000"
                         aria-describedby="ep-pr-message-err"></textarea>
-              <svg class="ep-pr-edit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+              <svg class="ep-pr-edit-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
             </div>
             <span class="ep-pr-error" id="ep-pr-message-err" role="alert"></span>
           </div>
@@ -5841,7 +5839,7 @@
             <label class="ep-pr-consent" for="ep-pr-consent-input">
               <input type="checkbox" id="ep-pr-consent-input" required aria-describedby="ep-pr-consent-err">
               <span class="ep-pr-box" aria-hidden="true">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00A76F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 18 20 6"></path></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 18 20 6"></path></svg>
               </span>
               <span class="ep-pr-consent-text">${escHtml(t('pr_consent'))}</span>
             </label>
