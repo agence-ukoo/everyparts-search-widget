@@ -1967,11 +1967,11 @@
       /* Marge droite réservée au crayon (icône absolue, hors flux) : sans elle un
          libellé traduit plus long pourrait passer dessous. */
       padding: 9px 28px 9px 12px;
-      background: #F2FCF8;
+      background: color-mix(in srgb, var(--ep-primary) 8%, transparent);
       border: 1px solid #CDEFE1;
       border-radius: 11px;
     }
-    .ep-pr-recall svg { flex: none; stroke: var(--ep-green); }
+    .ep-pr-recall svg { flex: none; stroke: var(--ep-primary); }
     .ep-pr-recall-label { flex: none; font-size: 12.5px; line-height: 1.35; color: #5A6B68; }
     /* Crayon en coin haut-droit : seul indice visuel que le rappel est modifiable
        (le texte lui-même ressemble à du contenu figé, en gras). Purement décoratif
@@ -2040,8 +2040,8 @@
       align-items: center;
       justify-content: center;
     }
-    .ep-pr-box svg { opacity: 0; stroke: var(--ep-green); }
-    #ep-pr-consent-input:checked ~ .ep-pr-box { border-color: var(--ep-green); background: #F2FCF8; }
+    .ep-pr-box svg { opacity: 0; stroke: var(--ep-primary); }
+    #ep-pr-consent-input:checked ~ .ep-pr-box { border-color: var(--ep-primary); background: color-mix(in srgb, var(--ep-primary) 8%, white); }
     #ep-pr-consent-input:checked ~ .ep-pr-box svg { opacity: 1; }
     #ep-pr-consent-input:focus-visible ~ .ep-pr-box { outline: 2px solid var(--ep-secondary); outline-offset: 2px; }
     #ep-pr-consent-input[aria-invalid="true"] ~ .ep-pr-box { border-color: #C0392B; }
@@ -2064,6 +2064,7 @@
     }
     .ep-sheet-submit:hover:not(:disabled) { filter: brightness(1.06); }
     .ep-sheet-submit:disabled { opacity: .45; cursor: default; }
+    #ep-pr-submit { background: linear-gradient(150deg, color-mix(in srgb, var(--ep-secondary) 82%, white), var(--ep-secondary)); }
     .ep-sheet-submit:focus-visible { outline: 2px solid var(--ep-primary); outline-offset: 2px; }
     .ep-sheet-cancel {
       height: 20px;
