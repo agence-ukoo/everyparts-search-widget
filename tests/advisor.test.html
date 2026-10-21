@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — tours du conseiller</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Tours du conseiller : texte riche, session qui se poursuit</h1>
+<p class="sub">
+  Un conseiller écrit plusieurs phrases, une courte liste, un mot en gras : la
+  bulle rend ses retours à la ligne et ces deux balisages, et rien d'autre — le
+  texte est échappé avant. Une proposition qui porte
+  <code>meta.conversation_continues</code> ne fait pas tourner la session : la
+  réponse suivante part sous le même <code>session_id</code>.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+const searchCalls = [];
+const replies = [
+  {
+    type: 'results',
+    message: "Votre MT-03 part d'origine avec une **MF**.\n- la SLA est prête à monter\n- la lithium est plus légère\n<img src=x onerror=\"window.__xss=1\">",
+    results: [
+      { product_ref: '300621', name: 'BS MF BATTERY - BTX9-BS', brand: 'BS Battery', price: 49.9, compatibility: { label: 'Origine', n_sources: 1 } },
+      { product_ref: '300674', name: 'BS SLA BATTERY - BTX9 (FA)', brand: 'BS Battery', price: 59.9, compatibility: { label: 'Upgrade conseillé', n_sources: 1 } },
+    ],
+    interpreted: { manufacturer: 'YAMAHA', model: 'MT-03 300', year: 2018, part_type: null },
+    refinement: { message: 'Vous changez souvent de batterie ?', questions: [{ criterion: 'advice', question: '', options: ['Oui', 'Non'] }] },
+    meta: { advisor: { skill: 'battery-powersport', action: 'propose' }, conversation_continues: true, result_count: 2 },
+  },
+  {
+    type: 'results',
+    message: 'Alors la **SLA** : sans entretien, et elle tient mieux dans le temps.',
+    results: [
+      { product_ref: '300674', name: 'BS SLA BATTERY - BTX9 (FA)', brand: 'BS Battery', price: 59.9, compatibility: { label: 'Upgrade conseillé', n_sources: 1 } },
+    ],
+    interpreted: { manufacturer: 'YAMAHA', model: 'MT-03 300', year: 2018, part_type: null },
+    meta: { advisor: { skill: 'battery-powersport', action: 'propose' }, conversation_continues: true, result_count: 1 },
+  },
+  {
+    type: 'clarification',
+    message: 'Pour la recharger, il vous faut un chargeur compatible lithium. Vous en avez un ?',
+    clarification: { field: 'advice', question: 'Pour la recharger, il vous faut un chargeur compatible lithium. Vous en avez un ?', options: ['Oui', 'Non'] },
+    interpreted: { manufacturer: 'YAMAHA', model: 'MT-03 300', year: 2018, part_type: null },
+    meta: { advisor: { skill: 'battery-powersport', action: 'ask' }, conversation_continues: true },
+  },
+];
+
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u) || /\/review$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ ok: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    const reply = replies[searchCalls.length - 1];
+    return { status: 200, ok: true, headers: new Headers(), json: async () => reply };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  const input = $('#ep-input');
+  input.value = 'batterie yamaha mt-03 300 2018';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $('#ep-send-btn').click();
+
+  await until(() => $$('.ep-products').length > 0, 3000);
+
+  const advice = $$('.ep-msg-assistant .ep-bubble').find(b => b.textContent.includes('MT-03'));
+  check('la bulle du conseiller est rendue', !!advice);
+  check('ses retours à la ligne sont rendus (pre-line)',
+        advice && getComputedStyle(advice).whiteSpace === 'pre-line', advice && getComputedStyle(advice).whiteSpace);
+  check('le **gras** devient <strong>', advice && advice.querySelector('strong') && advice.querySelector('strong').textContent === 'MF');
+  check('le tiret de liste devient une puce', advice && advice.textContent.includes('• la SLA est prête à monter'));
+  check('le HTML venu du serveur reste du texte', advice && !advice.querySelector('img') && advice.textContent.includes('<img'));
+  await sleep(50);
+  check('aucun script n\'a pu s\'exécuter', !window.__xss);
+  check('les étiquettes de rôle s\'affichent sur les fiches',
+        $$('.ep-product-card, .ep-products *').some(e => e.textContent.trim() === 'Origine'));
+
+  await until(() => $$('.ep-clari-btn').length > 0, 2000);
+  const yes = $$('.ep-clari-btn').find(b => b.textContent.trim() === 'Oui');
+  check('la question de suivi propose ses options', !!yes);
+  yes.click();
+
+  await until(() => searchCalls.length === 2, 3000);
+  check('la réponse de suivi repart sous la MÊME session',
+        searchCalls[1] && searchCalls[1].session_id === searchCalls[0].session_id,
+        `${searchCalls[0] && searchCalls[0].session_id} → ${searchCalls[1] && searchCalls[1].session_id}`);
+
+  // Une proposition SANS suivi : elle referme le tour, mais la session reste.
+  await until(() => $$('.ep-products').length > 1, 3000);
+  input.value = 'et pour la recharger ?';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $('#ep-send-btn').click();
+  await until(() => searchCalls.length === 3, 3000);
+  check('après une proposition qui se poursuit, la session ne tourne pas',
+        searchCalls[2] && searchCalls[2].session_id === searchCalls[0].session_id,
+        `${searchCalls[0] && searchCalls[0].session_id} → ${searchCalls[2] && searchCalls[2].session_id}`);
+
+  await until(() => $$('.ep-clari-btn').length > 0 && $$('.ep-msg-assistant .ep-bubble').some(b => b.textContent.includes('chargeur')), 2000);
+  check('une question du conseiller (field advice) montre ses options',
+        $$('.ep-clari-btn').some(b => b.textContent.trim() === 'Non'));
+  check('pas de « Toutes les pièces » sous une question de conseil',
+        !$$('.ep-clari-btn').some(b => /Toutes les pi/.test(b.textContent)));
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_ADVISOR_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>

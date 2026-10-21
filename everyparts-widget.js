@@ -1107,6 +1107,10 @@
       font-size: 14.5px;
       word-break: break-word;
     }
+    /* Texte de l'assistant : ses retours à la ligne sont les siens (un
+       conseil en plusieurs phrases, une liste de deux ou trois options). */
+    .ep-bubble.ep-rich { white-space: pre-line; }
+    .ep-bubble.ep-rich strong { font-weight: 650; }
     .ep-msg-user .ep-bubble {
       background: var(--ep-primary);
       color: #EAF7F3;
@@ -3829,7 +3833,12 @@
       // (renderReviewPrompt ci-dessus) et la liste paginée ont capturé l'ANCIENNE
       // session, donc restent rattachés à la recherche qui vient d'aboutir. La
       // conversation visible et l'historique, eux, persistent.
-      if (!isRestoring) startNewSession();
+      //
+      // Sauf quand le serveur dit que la conversation SE POURSUIT
+      // (meta.conversation_continues) : un conseiller présente une batterie
+      // puis enchaîne sur le chargeur, et il ne retrouve ce qu'il vient de
+      // proposer que sous la même session.
+      if (!isRestoring && !(lastSearchMeta && lastSearchMeta.conversation_continues)) startNewSession();
     }
 
     /**
@@ -5338,7 +5347,7 @@
         bubble.className = 'ep-bubble';
         // Le texte brut (balise comprise) est ce qui part dans l'historique : le
         // rejeu repasse par ici et reconstruit le même lien.
-        setLinkedText(bubble, text, contactUrl);
+        setRichText(bubble, text, contactUrl);
         div.appendChild(avatar);
         div.appendChild(bubble);
         messagesEl.appendChild(div);
@@ -5959,6 +5968,29 @@
     const href = withUtm(linkHref(contactUrl), 'contact_click');
     return escHtml(text).replace(LINK_RE, (m, label) =>
       href ? `<a class="ep-contact-link" href="${escHtml(href)}">${label}</a>` : label);
+  }
+
+  // ── Texte d'une bulle de l'assistant ───────────────────────────────────────
+  // Le serveur n'envoie jamais de HTML : il écrit du texte, avec trois
+  // balisages au plus — le lien ci-dessus, le **gras**, et le tiret « - » en
+  // tête de ligne d'une courte liste. Même ordre que linkTagHtml : on échappe
+  // D'ABORD, on remplace ENSUITE, si bien qu'aucun caractère venu du serveur
+  // ne peut former une balise. Les retours à la ligne, eux, restent du texte :
+  // la bulle les rend (white-space: pre-line).
+  const BOLD_RE = /\*\*([^*\n]+?)\*\*/g;
+
+  function richTextHtml(text, contactUrl) {
+    const href = withUtm(linkHref(contactUrl), 'contact_click');
+    return escHtml(text)
+      .replace(LINK_RE, (m, label) =>
+        href ? `<a class="ep-contact-link" href="${escHtml(href)}">${label}</a>` : label)
+      .replace(BOLD_RE, '<strong>$1</strong>')
+      .replace(/^- /gm, '• ');
+  }
+
+  function setRichText(el, text, contactUrl) {
+    el.classList.add('ep-rich');
+    el.innerHTML = richTextHtml(typeof text === 'string' ? text : String(text ?? ''), contactUrl);
   }
 
   // Pose un texte dans un élément. innerHTML seulement s'il y a une balise à
