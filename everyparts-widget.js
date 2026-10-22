@@ -3767,6 +3767,7 @@
           break;
         case 'clarification':
           renderClarification(data);
+          closeAdvisorTurn(data);
           break;
         case 'no_results':
           renderNoResults(data);
@@ -3862,6 +3863,17 @@
         if (last.text !== t('after_result')) appendAssistantMessage(t('after_result'));
         startNewSession();
       }, CONTINUING_IDLE_MS);
+    }
+
+    // Un tour du conseiller SANS produit referme lui aussi la conversation
+    // quand il conclut (meta.conversation_continues à false) : relance « une
+    // autre recherche ? », puis nouvelle session — comme après des résultats.
+    // Quand il attend le client, c'est la clôture pour longue inactivité qui
+    // vaut. Une clarification ordinaire garde son comportement.
+    function closeAdvisorTurn(data) {
+      if (isRestoring || !data.meta || !data.meta.advisor) return;
+      if (data.meta.conversation_continues === false) finalizeResults(true);
+      else scheduleContinuingClose();
     }
 
     function finalizeResults(immediate) {
