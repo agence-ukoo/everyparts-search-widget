@@ -3819,6 +3819,9 @@
       // rattachement de session ci-dessous, sans rien réafficher).
       if (products.length > 0 && data.refinement?.questions?.length) {
         startRefinement(data);
+        // La question de suivi d'un conseiller peut rester sans réponse : la
+        // conversation se clôt alors après la même longue inactivité.
+        if (conversationContinues() && !isRestoring) scheduleContinuingClose();
         return;
       }
 
@@ -4363,8 +4366,11 @@
       };
 
       let message = data.refinement.message || data.message;
-      if (data.refinement.questions.length) {
-        message += '\n\n' + data.refinement.questions[0].question;
+      // Une question vide ne laisse pas de ligne blanche derrière elle : la
+      // bulle rend ses retours à la ligne (pre-line).
+      const firstQuestion = data.refinement.questions.length ? (data.refinement.questions[0].question || '').trim() : '';
+      if (firstQuestion) {
+        message += '\n\n' + firstQuestion;
       }
       appendAssistantMessage(message, data.contact_url);
       askRefinementQuestion();
@@ -6038,7 +6044,9 @@
 
   function setRichText(el, text, contactUrl) {
     el.classList.add('ep-rich');
-    el.innerHTML = richTextHtml(typeof text === 'string' ? text : String(text ?? ''), contactUrl);
+    // Les blancs de début et de fin ne s'affichent pas : en pre-line, ils
+    // deviendraient des lignes vides.
+    el.innerHTML = richTextHtml((typeof text === 'string' ? text : String(text ?? '')).trim(), contactUrl);
   }
 
   // Pose un texte dans un élément. innerHTML seulement s'il y a une balise à

@@ -52,6 +52,7 @@ const proposal = {
     { product_ref: '310520', name: 'BS DRY BATTERY - B38-6A (With Acid Pack)', brand: 'BS Battery', price: 47.7, compatibility: { label: 'À valider', n_sources: 1 } },
   ],
   interpreted: { manufacturer: null, model: null, year: null, part_type: null },
+  refinement: { message: "C'est bien elle ?", questions: [{ criterion: 'advice', question: '', options: ['Oui', 'Non'] }] },
   meta: { advisor: { skill: 'battery-powersport', action: 'propose' }, conversation_continues: true, result_count: 1 },
 };
 
@@ -92,6 +93,11 @@ async function run() {
   const adviceIdx = thread.findIndex(b => b.textContent.includes('vérifiez votre batterie actuelle'));
   check('le message introduit les fiches, au-dessus d\'elles', introIdx >= 0 && introIdx < listIdx, `intro=${introIdx} liste=${listIdx}`);
   check('le conseil s\'affiche sous les fiches', adviceIdx > listIdx, `liste=${listIdx} conseil=${adviceIdx}`);
+
+  // ── 1 bis. La bulle de suivi ne finit pas sur une ligne vide ──
+  await until(() => $$('.ep-clari-btn').length > 0, 2000);
+  const followBubble = $$('.ep-msg-assistant .ep-bubble').find(b => b.textContent.includes('C\'est bien elle'));
+  check('la question de suivi ne laisse pas de ligne vide', followBubble && followBubble.innerHTML === followBubble.innerHTML.trimEnd() && !/\n$/.test(followBubble.textContent), followBubble && JSON.stringify(followBubble.textContent));
 
   // ── 2. Pas de relance à 10 s quand la conversation se poursuit ──
   await sleep(15000);
