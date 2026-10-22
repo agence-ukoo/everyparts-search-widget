@@ -2174,6 +2174,12 @@
   // au-dela, s'acharner ne sert a rien. Le premier envoi compte comme un essai —
   // il reste donc SEARCH_MAX_TRIES - 1 clics sur « Reessayer ».
   const SEARCH_MAX_TRIES = 3;
+
+  // Inactivité au bout de laquelle une conversation qui se poursuit
+  // (meta.conversation_continues, un conseiller métier) est close : la relance
+  // after_result s'affiche et la session tourne. Bien plus long que la relance
+  // ordinaire (10 s) — le conseiller vient souvent de poser une question.
+  const CONTINUING_IDLE_MS = 180000;
   // ... mais « reessayez plus tard » doit rester vrai : passe ce delai sans nouvelle
   // tentative, le compteur du meme message repart de zero.
   const SEARCH_TRIES_RESET_MS = 5 * 60 * 1000;
@@ -2455,6 +2461,8 @@
   let pendingRotationReason = null;
   // Dernier `meta` de /search, repris tel quel dans les product_click.
   let lastSearchMeta = null;
+  // Minuteur de clôture d'une conversation qui se poursuit (cf. scheduleContinuingClose).
+  let continuingIdleTimer = null;
 
   function telemetryStartSession() {
     telemetrySessionAt = performance.now();
@@ -3690,6 +3698,8 @@
     // ── Appel API ──────────────────────────────────────────────────────────
     async function callSearch(query, extraBody, retryCard) {
       if (isLoading) return;
+      // Le visiteur reprend la parole : la clôture pour inactivité n'a plus lieu.
+      clearTimeout(continuingIdleTimer);
       // Memorisee pour le bouton de reessai de la carte d'echec : on rejoue la MEME
       // requete et les memes extras (affinage, pagination), sans reafficher le
       // message utilisateur — il est deja dans le fil.
@@ -3783,6 +3793,13 @@
         renderProductList(products, data.pagination || null);
       }
 
+      // Le conseil d'un conseiller métier se lit SOUS les fiches : le message
+      // ci-dessus les introduit, celui-ci dit quoi en faire (ce qu'il faut
+      // vérifier, comment choisir).
+      if (products.length > 0 && data.advice && data.advice.message) {
+        appendAssistantMessage(data.advice.message, data.contact_url);
+      }
+
       // Le contexte de clarification (previous_clarifications) N'EST PAS réinitialisé
       // ici : il est transmis à la session suivante (cf. startNewSession) afin que
       // l'utilisateur puisse enchaîner sur un autre type de pièce sans repréciser son
@@ -3816,7 +3833,40 @@
     // d'affinage — la relance n'a pas à attendre 10s d'inactivité, elle répond
     // directement à ce geste (même délai que les autres relances post-action,
     // cf. renderReviewPrompt).
+    // La conversation se poursuit-elle au-delà de ces résultats ? Le serveur le
+    // dit (meta.conversation_continues) quand un conseiller métier mène
+    // l'échange : il vient souvent de poser une question.
+    function conversationContinues() {
+      return !!(lastSearchMeta && lastSearchMeta.conversation_continues);
+    }
+
+    // Relance « une autre recherche ? » après un geste du visiteur (un avis) —
+    // sauf quand la conversation se poursuit : la question du conseiller est
+    // encore ouverte, et c'est la clôture pour inactivité qui relancera.
+    function offerAnotherSearch() {
+      if (!conversationContinues()) appendAssistantMessageWithDelay(t('after_result'), 1000);
+    }
+
+    // Une conversation qui se poursuit n'est close qu'après une longue
+    // inactivité : relance after_result, puis nouvelle session. Tout nouveau
+    // message l'annule (callSearch).
+    function scheduleContinuingClose() {
+      clearTimeout(continuingIdleTimer);
+      const sid = sessionId;
+      continuingIdleTimer = setTimeout(() => {
+        const last = transcript[transcript.length - 1];
+        if (sessionId !== sid || !last || last.t === 'user') return;
+        if (last.text !== t('after_result')) appendAssistantMessage(t('after_result'));
+        startNewSession();
+      }, CONTINUING_IDLE_MS);
+    }
+
     function finalizeResults(immediate) {
+      if (conversationContinues()) {
+        if (!isRestoring) scheduleContinuingClose();
+        return;
+      }
+
       if (immediate) {
         appendAssistantMessageWithDelay(t('after_result'), 1000);
       } else {
@@ -3833,12 +3883,10 @@
       // (renderReviewPrompt ci-dessus) et la liste paginée ont capturé l'ANCIENNE
       // session, donc restent rattachés à la recherche qui vient d'aboutir. La
       // conversation visible et l'historique, eux, persistent.
-      //
-      // Sauf quand le serveur dit que la conversation SE POURSUIT
-      // (meta.conversation_continues) : un conseiller présente une batterie
-      // puis enchaîne sur le chargeur, et il ne retrouve ce qu'il vient de
-      // proposer que sous la même session.
-      if (!isRestoring && !(lastSearchMeta && lastSearchMeta.conversation_continues)) startNewSession();
+      // Une conversation qui se poursuit, elle, ne passe pas par ici : elle
+      // garde sa session (scheduleContinuingClose), le conseiller ne retrouvant
+      // ce qu'il vient de proposer que sous le même identifiant.
+      if (!isRestoring) startNewSession();
     }
 
     /**
@@ -3921,7 +3969,7 @@
             openReviewReasons(logEntry, reviewSessionId, btn, content);
           } else {
             appendReviewThank(content);
-            appendAssistantMessageWithDelay(t('after_result'), 1000);
+            offerAnotherSearch();
           }
         });
         return btn;
@@ -4004,7 +4052,7 @@
       // feuille, cf. renderReviewPrompt) — l'utilisateur peut rouvrir plus tard.
       if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
       else if (!isMobile()) inputEl.focus({ preventScroll: true });
-      if (!opts || !opts.silent) appendAssistantMessageWithDelay(t('after_result'), 1000);
+      if (!opts || !opts.silent) offerAnotherSearch();
     }
 
     function isReviewReasonsOpen() {
@@ -4025,7 +4073,7 @@
         // Motif recueilli : plus rien à rouvrir, le pouce se fige pour de bon.
         if (ctx.trigger) ctx.trigger.disabled = true;
         closeReviewReasons({ silent: true });
-        appendAssistantMessageWithDelay(t('after_result'), 1000);
+        offerAnotherSearch();
         appendReviewThank(ctx.reviewCardEl);
       });
     });
@@ -4088,7 +4136,7 @@
       if (trigger && !trigger.disabled) trigger.focus({ preventScroll: true });
       else if (!isMobile()) inputEl.focus({ preventScroll: true });
 
-      appendAssistantMessageWithDelay(t('after_result'), 1000);
+      offerAnotherSearch();
     }
 
     function isReviewOtherOpen() {

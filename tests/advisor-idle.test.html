@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — conseil sous les fiches, clôture pour inactivité</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Conseil sous les fiches, clôture pour inactivité</h1>
+<p class="sub">
+  Une proposition du conseiller se lit en trois temps : le message au-dessus
+  des fiches, <code>advice.message</code> dessous, puis la question de suivi.
+  Quand la conversation se poursuit, aucune relance « une autre recherche ? »
+  ne vient à 10 s ni après un avis : la session n'est close, relance comprise,
+  qu'après une longue inactivité.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+const searchCalls = [];
+const proposal = {
+  type: 'results',
+  message: 'La B38-6A est une batterie 6 V conventionnelle (DRY), livrée avec son pack acide.',
+  advice: { message: "Sans votre véhicule, vérifiez votre batterie actuelle :\n- 6 V ?\n- 119 × 83 × 161 mm ?" },
+  results: [
+    { product_ref: '310520', name: 'BS DRY BATTERY - B38-6A (With Acid Pack)', brand: 'BS Battery', price: 47.7, compatibility: { label: 'À valider', n_sources: 1 } },
+  ],
+  interpreted: { manufacturer: null, model: null, year: null, part_type: null },
+  meta: { advisor: { skill: 'battery-powersport', action: 'propose' }, conversation_continues: true, result_count: 1 },
+};
+
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u) || /\/review$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ ok: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    return { status: 200, ok: true, headers: new Headers(), json: async () => proposal };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+  const afterResult = 'Souhaitez-vous faire une autre recherche ?';
+  const relaunches = () => $$('.ep-msg-assistant .ep-bubble').filter(b => b.textContent.trim() === afterResult).length;
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  const input = $('#ep-input');
+  input.value = '310520';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $('#ep-send-btn').click();
+  await until(() => $$('.ep-products').length > 0, 3000);
+
+  // ── 1. Le conseil vient SOUS les fiches, le message au-dessus ──
+  const thread = [...$$('.ep-msg-wide, .ep-msg-assistant')];
+  const introIdx = thread.findIndex(b => b.textContent.includes('La B38-6A est une batterie'));
+  const listIdx = thread.findIndex(b => b.querySelector('.ep-products'));
+  const adviceIdx = thread.findIndex(b => b.textContent.includes('vérifiez votre batterie actuelle'));
+  check('le message introduit les fiches, au-dessus d\'elles', introIdx >= 0 && introIdx < listIdx, `intro=${introIdx} liste=${listIdx}`);
+  check('le conseil s\'affiche sous les fiches', adviceIdx > listIdx, `liste=${listIdx} conseil=${adviceIdx}`);
+
+  // ── 2. Pas de relance à 10 s quand la conversation se poursuit ──
+  await sleep(15000);
+  check('aucune relance après 10 s d\'inactivité', relaunches() === 0, `${relaunches()} relance(s)`);
+
+  // ── 3. Un avis ne relance pas non plus ──
+  const up = $$('.ep-review-btns button')[0];
+  if (up) up.click();
+  await sleep(2000);
+  check('un pouce levé ne demande pas « une autre recherche ? »', relaunches() === 0, `${relaunches()} relance(s)`);
+
+  // ── 4. Après une longue inactivité, la conversation est close ──
+  await sleep(185000);
+  check('après 3 min d\'inactivité, la relance s\'affiche une fois', relaunches() === 1, `${relaunches()} relance(s)`);
+
+  input.value = 'une autre batterie';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $('#ep-send-btn').click();
+  await until(() => searchCalls.length === 2, 3000);
+  check('la recherche suivante part sous une NOUVELLE session',
+        searchCalls[1] && searchCalls[1].session_id !== searchCalls[0].session_id);
+
+  // ── 5. Un message avant l'échéance annule la clôture ──
+  await until(() => $$('.ep-products').length > 1, 3000);
+  await sleep(60000);
+  input.value = 'et en 12 V ?';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $('#ep-send-btn').click();
+  await until(() => searchCalls.length === 3, 3000);
+  await sleep(150000);
+  check('un message pendant l\'attente repousse la clôture', relaunches() === 1, `${relaunches()} relance(s)`);
+  check('et garde la session', searchCalls[2] && searchCalls[2].session_id === searchCalls[1].session_id);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_ADVISOR_IDLE_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>
