@@ -438,12 +438,35 @@
   // locale : le repli vers fr-FR reste celui d'I18N, une langue à la fois ne mélange
   // pas des textes réécrits d'une locale avec des textes d'origine d'une autre.
   function wordingOverride(key) {
-    const w = CONFIG.wordings[CONFIG.locale];
+    const w = CONFIG.wordings[uiLocale()];
     return (w && typeof w === 'object') ? w[key] : undefined;
   }
 
+  // ── Langue de la conversation ─────────────────────────────────────────────
+  // Le serveur dit dans quelle langue la conversation se tient
+  // (meta.language, sur chaque réponse de /search, erreurs comprises) : les
+  // textes du widget lui-même — carte « réessayer », avis, relances — la
+  // suivent, plutôt que la langue de la page quand le visiteur en a changé.
+  // CONFIG.locale, lui, reste la langue de la PAGE : c'est elle qui part en
+  // default_locale et qui formate les prix.
+  let conversationLocale = null;
+
+  function uiLocale() {
+    return conversationLocale || CONFIG.locale;
+  }
+
+  function setConversationLanguage(tag) {
+    if (!tag) return;
+    const primary = String(tag).toLowerCase().split(/[-_]/)[0];
+    // Même langue que la page : on garde la variante de la page (en-GB reste
+    // en-GB quand la conversation dit seulement « en »).
+    conversationLocale = CONFIG.locale.toLowerCase().split('-')[0] === primary
+      ? null
+      : (matchLocale(tag) || null);
+  }
+
   function t(key, vars = {}) {
-    const dict = I18N[CONFIG.locale] || I18N[DEFAULT_LOCALE];
+    const dict = I18N[uiLocale()] || I18N[DEFAULT_LOCALE];
     const override = wordingOverride(key);
     // Le repli silencieux vers fr-FR est celui d'ORIGINE (dict, ligne du dessus) ;
     // la réécriture serveur passe AU-DESSUS de tout, jamais à sa place.
@@ -459,7 +482,7 @@
   // réécriture n'est retenue que si c'est un tableau — un serveur qui enverrait une
   // chaîne pour une clé-liste ne doit pas casser tList(), juste être ignoré.
   function tList(key) {
-    const dict = I18N[CONFIG.locale] || I18N[DEFAULT_LOCALE];
+    const dict = I18N[uiLocale()] || I18N[DEFAULT_LOCALE];
     const override = wordingOverride(key);
     if (Array.isArray(override)) return override;
     const val = dict[key] || I18N[DEFAULT_LOCALE][key];
@@ -2590,6 +2613,7 @@
         conversationContext,
         identifiedVehicle,
         identifiedPart,
+        conversationLocale,
         transcript,
         lastActive: Date.now(),
       }));
@@ -3294,6 +3318,7 @@
       activeList = null;
       identifiedVehicle = null;
       identifiedPart = null;
+      conversationLocale = null;
       rotateSession('new_conversation');
       clearState();
       renderSubjectBar();       // masque la barre de contexte
@@ -3555,6 +3580,7 @@
       conversationContext = saved.conversationContext || { previous_clarifications: [] };
       identifiedVehicle = saved.identifiedVehicle || null;
       identifiedPart = saved.identifiedPart || null;
+      conversationLocale = saved.conversationLocale || null;
       transcript = saved.transcript;
 
       isRestoring = true;
@@ -3758,6 +3784,10 @@
     // ── Rendu des réponses ─────────────────────────────────────────────────
     function renderResponse(data) {
       if (data && data.meta) lastSearchMeta = data.meta;
+      if (data && data.meta && data.meta.language) {
+        setConversationLanguage(data.meta.language);
+        saveState();
+      }
       // Met à jour la barre de contexte dès qu'une réponse identifie le véhicule.
       updateVehicleFromData(data);
       updatePartFromData(data);
