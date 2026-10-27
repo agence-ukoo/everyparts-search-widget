@@ -119,8 +119,8 @@ async function run() {
   check('un seul appel /search a eu lieu jusqu\'ici', searchCalls.length === 1);
 
   // ── 3. Tout "je ne sais pas" → pas de second rendu, pas de second appel ──
-  const dontKnowBtn = clariButtons.find(b => b.textContent.trim() === 'Je ne sais pas');
-  check('le bouton "je ne sais pas" existe', !!dontKnowBtn);
+  const dontKnowBtn = clariButtons.find(b => b.textContent.trim() === 'Ignorer');
+  check('le bouton « Ignorer » existe', !!dontKnowBtn);
   dontKnowBtn.click();
   await sleep(200);
 

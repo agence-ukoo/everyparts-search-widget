@@ -4402,8 +4402,10 @@
     // Le serveur joint `refinement.questions` quand la liste est trop longue.
     // La liste est déjà affichée (renderResults) quand ce second temps démarre ;
     // il ne la remplace ni ne la retient, il propose juste de l'affiner. Chaque
-    // question est posée à son tour, toujours avec l'option « Je ne sais pas »
-    // (critère facultatif). À la fin de la chaîne (finishRefinement) :
+    // question est posée à son tour, avec l'option « Ignorer » sauf quand le
+    // serveur la dit impossible à passer (`skippable: false`, la question d'un
+    // conseiller : seule, sans suite à atteindre, ses options disent déjà le
+    // refus). À la fin de la chaîne (finishRefinement) :
     //   - au moins une réponse → un seul nouvel appel API avec les réponses ;
     //   - que des « je ne sais pas » → rien à refaire, la liste déjà affichée
     //     reste la réponse finale (finalizeResults() referme juste le tour).
@@ -4435,7 +4437,8 @@
       if (p.answers.length > 0) appendAssistantMessage(question.question, p.data.contact_url);
 
       const options = (question.options || []).map(o => ({ label: o, value: o }));
-      options.push({ label: t('refine_dont_know'), value: null });
+      // Sans le champ (un serveur qui ne l'envoie pas), la question se passe.
+      if (question.skippable !== false) options.push({ label: t('refine_dont_know'), value: null });
 
       // Snapshot persisté : permet de reconstruire pendingRefinement si cette
       // question reste sans réponse et doit être restaurée live (cf. resumeOptionsLive).

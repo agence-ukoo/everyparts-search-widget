@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — « Ignorer » selon refinement.questions[].skippable</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>« Ignorer » n'est proposé que sur une question qui se passe</h1>
+<p class="sub">
+  La question d'un conseiller arrive seule dans <code>refinement.questions</code>
+  avec <code>skippable: false</code> : ses options disent déjà le refus, et
+  l'ignorer n'ouvrirait aucune question suivante. Elle s'affiche donc sans
+  « Ignorer ». Une question d'affinage des résultats, avec
+  <code>skippable: true</code> ou sans le champ, le garde.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_SKIPPABLE_TOKEN';
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+const products = [
+  { id: 1, name: 'BS BTX9-BS', brand: 'BS', reference: '300621', price: 49.9 },
+  { id: 2, name: 'BS BS30', brand: 'BS', reference: '700000', price: 69.9 },
+];
+
+// Une réponse par appel /search, dans l'ordre.
+const replies = [
+  // 1. Le conseiller propose et pose sa question de suivi.
+  {
+    type: 'results',
+    message: 'Pour votre MT-07, la BTX9-BS est la batterie d’origine.',
+    results: products,
+    interpreted: { manufacturer: 'YAMAHA', model: 'MT-07 700', year: 2018, part_type: 'batterie' },
+    refinement: {
+      message: 'Avez-vous déjà un chargeur ?',
+      questions: [{ criterion: 'advice', question: '', options: ['Oui', 'Non'], skippable: false }],
+    },
+    meta: { advisor: { skill: 'battery-powersport', action: 'propose' }, conversation_continues: true },
+  },
+  // 2. Un affinage de résultats qui se passe, dit explicitement.
+  {
+    type: 'results',
+    message: 'Voici les chargeurs compatibles.',
+    results: products,
+    interpreted: { manufacturer: 'YAMAHA', model: 'MT-07 700', year: 2018, part_type: 'chargeur' },
+    refinement: {
+      message: 'Pour affiner…',
+      questions: [{ criterion: 'brand', question: 'Quelle marque ?', options: ['BS', 'NOCO'], skippable: true }],
+    },
+    meta: {},
+  },
+  // 3. Un affinage sans le champ : la question se passe, comme avant.
+  {
+    type: 'results',
+    message: 'Voici les plaquettes compatibles.',
+    results: products,
+    interpreted: { manufacturer: 'YAMAHA', model: 'MT-07 700', year: 2018, part_type: 'plaquettes' },
+    refinement: {
+      message: 'Pour affiner…',
+      questions: [{ criterion: 'position', question: 'Avant ou arrière ?', options: ['Avant', 'Arrière'] }],
+    },
+    meta: {},
+  },
+];
+
+const searchCalls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ type: 'events', recorded: true, meta: {} }) };
+  }
+  if (/\/review$/.test(u)) {
+    return { status: 200, ok: true, headers: new Headers(), json: async () => ({ ok: true }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    const reply = replies[searchCalls.length - 1];
+    return { status: 200, ok: true, headers: new Headers(), json: async () => reply };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+  const liveLabels = () => {
+    const groups = $$('.ep-clari');
+    const last = groups[groups.length - 1];
+    return last ? [...last.querySelectorAll('.ep-clari-btn')].map(b => b.textContent.trim()) : [];
+  };
+  const send = text => {
+    const input = $('#ep-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    $('#ep-send-btn').click();
+  };
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  // ── 1. La question du conseiller : pas d'« Ignorer » ──
+  send('batterie pour ma mt07 2018');
+  await until(() => $$('.ep-clari-btn').length > 0, 3000);
+  check('la question du conseiller ne propose que ses options',
+        JSON.stringify(liveLabels()) === JSON.stringify(['Oui', 'Non']),
+        `reçu ${JSON.stringify(liveLabels())}`);
+
+  // Répondre envoie la réponse au serveur, comme toute réponse d'affinage.
+  $$('.ep-clari-btn').find(b => b.textContent.trim() === 'Non').click();
+  await until(() => searchCalls.length === 2, 3000);
+  check('cliquer une option du conseiller appelle /search avec la réponse',
+        searchCalls[1] && searchCalls[1].refinement
+          && searchCalls[1].refinement.answers[0].criterion === 'advice'
+          && searchCalls[1].refinement.answers[0].answer === 'Non',
+        `reçu ${JSON.stringify(searchCalls[1])}`);
+
+  // ── 2. skippable: true → « Ignorer » présent ──
+  await until(() => liveLabels().includes('NOCO'), 3000);
+  check('une question d\'affinage skippable garde « Ignorer »',
+        JSON.stringify(liveLabels()) === JSON.stringify(['BS', 'NOCO', 'Ignorer']),
+        `reçu ${JSON.stringify(liveLabels())}`);
+
+  // ── 3. Sans le champ → « Ignorer » présent, comme avant ──
+  send('plaquettes pour ma mt07 2018');
+  await until(() => liveLabels().includes('Arrière'), 3000);
+  check('une question d\'affinage sans le champ garde « Ignorer »',
+        JSON.stringify(liveLabels()) === JSON.stringify(['Avant', 'Arrière', 'Ignorer']),
+        `reçu ${JSON.stringify(liveLabels())}`);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_SKIPPABLE_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>
