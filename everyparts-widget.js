@@ -2486,6 +2486,11 @@
   let lastSearchMeta = null;
   // Minuteur de clôture d'une conversation qui se poursuit (cf. scheduleContinuingClose).
   let continuingIdleTimer = null;
+  // Relance « une autre recherche ? » 10 s après des résultats qui concluent :
+  // un nouveau message du visiteur l'annule (callSearch), sans quoi elle
+  // tomberait sous la réponse suivante, même quand celle-ci poursuit la
+  // conversation.
+  let resultsIdleTimer = null;
 
   function telemetryStartSession() {
     telemetrySessionAt = performance.now();
@@ -3724,8 +3729,10 @@
     // ── Appel API ──────────────────────────────────────────────────────────
     async function callSearch(query, extraBody, retryCard) {
       if (isLoading) return;
-      // Le visiteur reprend la parole : la clôture pour inactivité n'a plus lieu.
+      // Le visiteur reprend la parole : ni la clôture pour inactivité, ni la
+      // relance à 10 s n'ont plus lieu.
       clearTimeout(continuingIdleTimer);
+      clearTimeout(resultsIdleTimer);
       // Memorisee pour le bouton de reessai de la carte d'echec : on rejoue la MEME
       // requete et les memes extras (affinage, pagination), sans reafficher le
       // message utilisateur — il est deja dans le fil.
@@ -3916,7 +3923,8 @@
         appendAssistantMessageWithDelay(t('after_result'), 1000);
       } else {
         // si au bout de 10s l'utilisateur n'a pas réécrit et que le message de relance n'a pas déjà été affiché, on l'affiche
-        setTimeout(() => {
+        clearTimeout(resultsIdleTimer);
+        resultsIdleTimer = setTimeout(() => {
           if (transcript[transcript.length - 1].t !== 'user' && transcript[transcript.length - 1].text !== t('after_result')) {
             appendAssistantMessage(t('after_result'));
           }

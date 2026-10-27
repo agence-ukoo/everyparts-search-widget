@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — relance à 10 s annulée par un nouveau message</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Relance à 10 s annulée par un nouveau message</h1>
+<p class="sub">
+  Après des résultats qui concluent, « une autre recherche ? » vient au bout
+  de 10 s d'inactivité. Un message envoyé avant l'échéance l'annule : si la
+  réponse suivante poursuit la conversation (<code>meta.conversation_continues</code>),
+  aucune relance ne tombe sous elle.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+const product = { product_ref: '300621', name: 'BS MF BATTERY - BTX9-BS', brand: 'BS Battery', price: 59.9, compatibility: { label: 'Compatible', n_sources: 1 } };
+const concluding = {
+  type: 'results',
+  message: 'Voici la batterie de votre véhicule.',
+  results: [product],
+  interpreted: { manufacturer: 'YAMAHA', model: 'MT-03 300', year: 2018, part_type: null },
+  meta: { result_count: 1 },
+};
+const continuing = {
+  type: 'results',
+  message: 'La BTX9 est la SLA équivalente.',
+  results: [{ ...product, product_ref: '300674', name: 'BS SLA BATTERY - BTX9 (FA)', compatibility: { label: 'Upgrade conseillé', n_sources: 1 } }],
+  interpreted: { manufacturer: 'YAMAHA', model: 'MT-03 300', year: 2018, part_type: null },
+  refinement: { message: 'Vous préférez la SLA ?', questions: [{ criterion: 'advice', question: '', options: ['Oui', 'Non'] }] },
+  meta: { advisor: { skill: 'battery-powersport', action: 'propose' }, conversation_continues: true, result_count: 1 },
+};
+const replies = [concluding, continuing];
+const searchCalls = [];
+
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u) || /\/review$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ ok: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    return { status: 200, ok: true, headers: new Headers(), json: async () => replies[searchCalls.length - 1] };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+  const afterResult = 'Souhaitez-vous faire une autre recherche ?';
+  const relaunches = () => $$('.ep-msg-assistant .ep-bubble').filter(b => b.textContent.trim() === afterResult).length;
+  const send = text => {
+    const input = $('#ep-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    $('#ep-send-btn').click();
+  };
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  send('batterie yamaha mt-03 2018');
+  await until(() => $$('.ep-products').length === 1, 3000);
+
+  // Le visiteur répond avant l'échéance des 10 s.
+  await sleep(4000);
+  send('et en SLA ?');
+  await until(() => $$('.ep-products').length === 2, 3000);
+
+  await sleep(9000);
+  check('aucune relance sous une réponse qui poursuit la conversation', relaunches() === 0, `${relaunches()} relance(s)`);
+  check('la réponse qui poursuit est le dernier message du fil',
+        $$('.ep-msg-assistant .ep-bubble').pop()?.textContent.includes('Vous préférez la SLA'),
+        $$('.ep-msg-assistant .ep-bubble').pop()?.textContent);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_RESULTS_IDLE_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>
