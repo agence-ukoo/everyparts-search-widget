@@ -2202,7 +2202,7 @@
   // (meta.conversation_continues, un conseiller métier) est close : la relance
   // after_result s'affiche et la session tourne. Bien plus long que la relance
   // ordinaire (30 s) — le conseiller vient souvent de poser une question.
-  const CONTINUING_IDLE_MS = 300000;
+  const CONTINUING_IDLE_MS = 3600000;
   // ... mais « reessayez plus tard » doit rester vrai : passe ce delai sans nouvelle
   // tentative, le compteur du meme message repart de zero.
   const SEARCH_TRIES_RESET_MS = 5 * 60 * 1000;
