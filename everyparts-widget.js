@@ -2201,8 +2201,8 @@
   // Inactivité au bout de laquelle une conversation qui se poursuit
   // (meta.conversation_continues, un conseiller métier) est close : la relance
   // after_result s'affiche et la session tourne. Bien plus long que la relance
-  // ordinaire (10 s) — le conseiller vient souvent de poser une question.
-  const CONTINUING_IDLE_MS = 180000;
+  // ordinaire (30 s) — le conseiller vient souvent de poser une question.
+  const CONTINUING_IDLE_MS = 300000;
   // ... mais « reessayez plus tard » doit rester vrai : passe ce delai sans nouvelle
   // tentative, le compteur du meme message repart de zero.
   const SEARCH_TRIES_RESET_MS = 5 * 60 * 1000;
@@ -2486,7 +2486,7 @@
   let lastSearchMeta = null;
   // Minuteur de clôture d'une conversation qui se poursuit (cf. scheduleContinuingClose).
   let continuingIdleTimer = null;
-  // Relance « une autre recherche ? » 10 s après des résultats qui concluent :
+  // Relance « une autre recherche ? » 30 s après des résultats qui concluent :
   // un nouveau message du visiteur l'annule (callSearch), sans quoi elle
   // tomberait sous la réponse suivante, même quand celle-ci poursuit la
   // conversation.
@@ -3730,7 +3730,7 @@
     async function callSearch(query, extraBody, retryCard) {
       if (isLoading) return;
       // Le visiteur reprend la parole : ni la clôture pour inactivité, ni la
-      // relance à 10 s n'ont plus lieu.
+      // relance à 30 s n'ont plus lieu.
       clearTimeout(continuingIdleTimer);
       clearTimeout(resultsIdleTimer);
       // Memorisee pour le bouton de reessai de la carte d'echec : on rejoue la MEME
@@ -3928,7 +3928,7 @@
           if (transcript[transcript.length - 1].t !== 'user' && transcript[transcript.length - 1].text !== t('after_result')) {
             appendAssistantMessage(t('after_result'));
           }
-        }, 10000);
+        }, 30000);
       }
 
       // Nouvelle session logique dès l'after_result : la recherche suivante démarre
