@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — clôture pour inactivité : les choix restés ouverts sont figés</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>Clôture pour inactivité : les choix restés ouverts sont figés</h1>
+<p class="sub">
+  Quand une conversation du conseiller est close faute de réponse (relance
+  « une autre recherche ? », nouvelle session), la question qu'il avait posée
+  ne peut plus recevoir de réponse : ses boutons sont désactivés, qu'elle soit
+  une question de suivi sous les fiches ou une question sans produit. L'avis,
+  lui, reste actif — il a capturé sa session. Le délai de clôture est raccourci
+  ici (tout délai d'au moins 10 min passe à 400 ms).
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const realSetTimeout = window.setTimeout.bind(window);
+const sleep = ms => new Promise(r => realSetTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+// La clôture pour inactivité se compte en dizaines de minutes : la raccourcir
+// sans toucher aux délais courts (relances à 1 s, à 30 s) que le scénario ne
+// doit pas voir partir.
+window.setTimeout = (fn, ms, ...args) => realSetTimeout(fn, ms >= 600000 ? 400 : ms, ...args);
+
+try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
+
+const advisor = { skill: 'battery-powersport', action: 'propose' };
+const replies = [
+  // 1. Une proposition, et sa question de suivi sous les fiches.
+  {
+    type: 'results',
+    message: 'Pour votre MT-07, la BTX9-BS est la batterie d’origine.',
+    results: [
+      { product_ref: '300621', name: 'BS BTX9-BS', brand: 'BS Battery', price: 49.9, compatibility: { label: 'Origine', n_sources: 1 } },
+    ],
+    interpreted: { manufacturer: 'YAMAHA', model: 'MT-07 700', year: 2018, part_type: 'batterie' },
+    refinement: { message: 'Avez-vous déjà un chargeur ?', questions: [{ criterion: 'advice', question: '', options: ['Oui', 'Non'], skippable: false }] },
+    meta: { advisor, conversation_continues: true, result_count: 1 },
+  },
+  // 2. Une question du conseiller, sans produit.
+  {
+    type: 'clarification',
+    message: 'Quelle tension indique votre batterie actuelle ?',
+    interpreted: { manufacturer: null, model: null, year: null, part_type: null },
+    clarification: { field: 'advice', question: 'Quelle tension indique votre batterie actuelle ?', options: ['6 V', '12 V'] },
+    meta: { advisor: { ...advisor, action: 'ask' }, conversation_continues: true },
+  },
+];
+
+const searchCalls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u) || /\/review$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ ok: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    const reply = replies[searchCalls.length - 1];
+    return { status: 200, ok: true, headers: new Headers(), json: async () => reply };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+  const afterResult = 'Souhaitez-vous faire une autre recherche ?';
+  const relaunches = () => $$('.ep-msg-assistant .ep-bubble').filter(b => b.textContent.trim() === afterResult).length;
+  const groupButtons = label => {
+    const group = $$('.ep-clari').find(g => [...g.querySelectorAll('.ep-clari-btn')].some(b => b.textContent.trim() === label));
+    return group ? [...group.querySelectorAll('.ep-clari-btn')] : [];
+  };
+  const send = text => {
+    const input = $('#ep-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    $('#ep-send-btn').click();
+  };
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  // ── 1. La question de suivi sous les fiches ──
+  send('batterie pour ma mt07 2018');
+  await until(() => groupButtons('Oui').length > 0, 3000);
+  check('la question de suivi est d\'abord cliquable', groupButtons('Oui').every(b => !b.disabled));
+
+  await until(() => relaunches() === 1, 3000);
+  check('la conversation est close : la relance s\'affiche', relaunches() === 1, `${relaunches()} relance(s)`);
+  check('les boutons de la question de suivi sont désactivés',
+        groupButtons('Oui').length === 2 && groupButtons('Oui').every(b => b.disabled),
+        `états ${JSON.stringify(groupButtons('Oui').map(b => b.disabled))}`);
+  check('aucune réponse n\'est marquée choisie', !groupButtons('Oui').some(b => b.classList.contains('ep-selected')));
+  check('l\'avis reste actif', $$('.ep-review-btns button').length > 0 && $$('.ep-review-btns button').every(b => !b.disabled));
+
+  // Le journal le dit aussi : au rechargement, la question est rejouée figée.
+  const saved = JSON.parse(localStorage.getItem('everyparts-chat:ep_live_IDLE_FREEZE_TOKEN') || '{}');
+  const lastEntry = saved.transcript && saved.transcript[saved.transcript.length - 1];
+  check('la relance est la dernière entrée du journal (la question ne sera pas rejouée active)',
+        lastEntry && lastEntry.text === afterResult, JSON.stringify(lastEntry));
+
+  // ── 2. Une question du conseiller sans produit ──
+  send('je ne connais pas ma moto');
+  await until(() => groupButtons('12 V').length > 0, 3000);
+  check('la question sans produit est d\'abord cliquable', groupButtons('12 V').every(b => !b.disabled));
+  await until(() => relaunches() === 2, 3000);
+  check('elle est close à son tour', relaunches() === 2, `${relaunches()} relance(s)`);
+  check('ses boutons sont désactivés',
+        groupButtons('12 V').length === 2 && groupButtons('12 V').every(b => b.disabled),
+        `états ${JSON.stringify(groupButtons('12 V').map(b => b.disabled))}`);
+
+  groupButtons('12 V')[1].click();
+  await sleep(300);
+  check('un clic sur un bouton figé n\'envoie rien', searchCalls.length === 2, `${searchCalls.length} appels`);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+realSetTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_IDLE_FREEZE_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  defer></script>
+</body>
+</html>

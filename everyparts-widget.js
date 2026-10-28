@@ -2491,6 +2491,10 @@
   // tomberait sous la réponse suivante, même quand celle-ci poursuit la
   // conversation.
   let resultsIdleTimer = null;
+  // Les groupes d'options encore sans réponse, par leur fonction de gel : la
+  // clôture d'une conversation les fige (freezeOpenChoices), puisque leur
+  // réponse n'aurait plus de session où aller.
+  const openOptionGroups = new Set();
 
   function telemetryStartSession() {
     telemetrySessionAt = performance.now();
@@ -3320,6 +3324,7 @@
       conversationContext = { previous_clarifications: [] };
       lastClarificationField = null;
       pendingRefinement = null;
+      openOptionGroups.clear();
       activeList = null;
       identifiedVehicle = null;
       identifiedPart = null;
@@ -3897,9 +3902,18 @@
       continuingIdleTimer = setTimeout(() => {
         const last = transcript[transcript.length - 1];
         if (sessionId !== sid || !last || last.t === 'user') return;
+        freezeOpenChoices();
         if (last.text !== t('after_result')) appendAssistantMessage(t('after_result'));
         startNewSession();
       }, CONTINUING_IDLE_MS);
+    }
+
+    // Fige, sans sélection, chaque groupe d'options resté sans réponse — la
+    // question du conseiller, une question d'affinage — exactement comme le
+    // rejeu fige une question à laquelle le visiteur n'a pas répondu. L'avis
+    // et « Voir plus » restent actifs : ils ont capturé leur session.
+    function freezeOpenChoices() {
+      [...openOptionGroups].forEach(freeze => freeze());
     }
 
     // Un tour du conseiller SANS produit referme lui aussi la conversation
@@ -4834,6 +4848,7 @@
       function freeze(selectedBtn) {
         if (frozen) return;
         frozen = true;
+        openOptionGroups.delete(freezeUnanswered);
         buttons.forEach(b => {
           b.disabled = true;
           if (b !== selectedBtn) b.style.display = isList ? 'none' : '';
@@ -4887,11 +4902,15 @@
       messagesEl.appendChild(wrapper);
       scrollBottom();
 
+      const freezeUnanswered = () => freeze(null);
+
       if (typeof restoreSelectedIndex === 'number') {
         freeze(restoreSelectedIndex >= 0 ? buttons[restoreSelectedIndex] : null);
+      } else {
+        openOptionGroups.add(freezeUnanswered);
       }
 
-      return { freeze: () => freeze(null) };
+      return { freeze: freezeUnanswered };
     }
 
     // Construit la bulle « aucun résultat » (message + suggestions éventuelles).
