@@ -418,6 +418,9 @@
     // data-enable-parts-request="false" : une boutique qui n'a personne pour traiter
     // ces demandes peut l'éteindre sans toucher au reste de l'intégration.
     partsRequest: boolAttr('data-enable-parts-request', true),
+    // Demande d'avis (pouces) sous une liste de produits. Activée sauf
+    // data-enable-review="false" : même interrupteur que la demande de pièce.
+    review: boolAttr('data-enable-review', true),
     // Journalise meta.ignored des events : c'est ainsi qu'on attrape un nom de
     // champ mal orthographie. A laisser eteint en production.
     debug: boolAttr('data-debug', false),
@@ -3649,6 +3652,9 @@
           break;
         }
         case 'review': {
+          // Éteinte entre-temps : comme pour pr_offer, une conversation
+          // journalisée avant ne la fait pas réapparaître.
+          if (!CONFIG.review) break;
           // Les avis NON donnés restent live quelle que soit leur position (pas
           // seulement le dernier message) : l'utilisateur peut remonter le fil et
           // noter une recherche précédente à tout moment. Chaque entrée a capturé
@@ -3850,7 +3856,7 @@
 
       // Avis de satisfaction AVANT le message after_result :
       // le vote (pouce haut/bas) envoie POST /review.
-      if (products.length > 0) {
+      if (products.length > 0 && CONFIG.review) {
         renderReviewPrompt();
       }
 

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — data-enable-review="false"</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>data-enable-review="false" — extinction</h1>
+<p class="sub">
+  Page distincte : l'attribut est lu une seule fois, au chargement du script.
+  Vérifie qu'aucune demande d'avis n'est affichée, ni sous une liste de produits
+  vivante, ni au rejeu d'une conversation journalisée quand elle était active —
+  et que la liste, elle, s'affiche toujours.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_REVIEW_OFF_TOKEN';
+const product = { product_ref: 'FA213', name: 'Plaquettes avant', brand: 'EBC', price: 29.9 };
+
+// Conversation persistée AVANT extinction : un avis resté sans réponse, qu'un
+// rejeu rendrait cliquable. Semée avant que le widget (defer) ne monte.
+localStorage.setItem('everyparts-chat:' + TOKEN, JSON.stringify({
+  v: 5, token: TOKEN, sessionId: 'sess-avant-extinction', lastActive: Date.now(),
+  conversationContext: { previous_clarifications: [] },
+  identifiedVehicle: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1996 },
+  identifiedPart: 'plaquettes',
+  transcript: [
+    { t: 'user', text: 'plaquettes cbr 600' },
+    { t: 'assistant', text: 'Voici les plaquettes compatibles.' },
+    { t: 'products', products: [product], pagination: null },
+    { t: 'review', rating: null, sessionId: 'sess-avant-extinction' },
+  ],
+}));
+
+const searchCalls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u) || /\/review$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ ok: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    return {
+      status: 200, ok: true, headers: new Headers(),
+      json: async () => ({
+        type: 'results',
+        message: 'Voici les disques compatibles.',
+        results: [{ product_ref: 'MD2010', name: 'Disque avant', brand: 'EBC', price: 89.9 }],
+        interpreted: { manufacturer: 'HONDA', model: 'CBR 600 F', year: 1996, part_type: 'disque' },
+        meta: {},
+      }),
+    };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+
+  $('#ep-fab').click();
+  await until(() => !$('#ep-window').classList.contains('ep-hidden'), 2000);
+
+  // ── 1. Au rejeu ──
+  check('la conversation journalisée est rejouée', $$('.ep-products').length === 1, `${$$('.ep-products').length} liste(s)`);
+  check('son avis resté sans réponse n\'est pas rejoué', $$('.ep-products-review').length === 0);
+
+  // ── 2. Sur une recherche vivante ──
+  const input = $('#ep-input');
+  input.value = 'disque avant';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  $('#ep-send-btn').click();
+  await until(() => $$('.ep-products').length === 2, 3000);
+  check('la liste de produits s\'affiche', $$('.ep-products').length === 2);
+  await sleep(300);
+  check('aucune demande d\'avis sous la liste', $$('.ep-products-review').length === 0, `${$$('.ep-products-review').length} demande(s)`);
+
+  // L'avis semé reste dans le journal (il n'est simplement pas rejoué) ; la
+  // nouvelle liste n'en ajoute aucun.
+  const saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  const reviews = (saved.transcript || []).filter(e => e.t === 'review');
+  check('aucun avis n\'est journalisé pour la nouvelle liste', reviews.length === 1, `${reviews.length} entrée(s) d'avis`);
+
+  done();
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 300);
+</script>
+
+<script
+  src="../everyparts-widget.js"
+  data-token="ep_live_REVIEW_OFF_TOKEN"
+  data-locale="fr-FR"
+  data-position="bottom-right"
+  data-api="https://api.test.local/api/v1"
+  data-enable-review="false"
+  defer></script>
+</body>
+</html>
