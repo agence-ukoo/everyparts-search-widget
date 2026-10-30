@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tests — data-design="ai"</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background: #101615; color: #DDE6E3; margin: 0; padding: 24px; }
+  h1 { font-size: 16px; color: #9FF0D2; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: #7C8A88; font-size: 12.5px; }
+  #summary { font-weight: 700; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+  .ok   { background: #0E3B2E; color: #6EE7B7; }
+  .fail { background: #45201C; color: #FCA5A5; }
+  li { margin: 3px 0; list-style: none; }
+  li.p::before { content: "PASS  "; color: #6EE7B7; font-weight: 700; }
+  li.f::before { content: "FAIL  "; color: #FCA5A5; font-weight: 700; }
+  li.f { color: #FCA5A5; }
+  .why { color: #93A19E; padding-left: 46px; font-size: 12px; }
+  ul { padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+<h1>data-design="ai" — habillage plein écran</h1>
+<p class="sub">
+  ?scenario=ai (défaut) : accueil centré, pastille d'état, carte de question avec
+  ce que l'assistant a compris, titre des résultats, badge nuancé d'un produit
+  approché, mention IA. ?scenario=classic : sans l'attribut, rien de tout cela
+  n'apparaît et la feuille de style n'en contient aucune règle.
+</p>
+<div id="summary">Exécution…</div>
+<ul id="out"></ul>
+
+<script>
+const SCENARIO = new URLSearchParams(location.search).get('scenario') || 'ai';
+const results = [];
+function check(name, cond, why) { results.push({ name, ok: !!cond, why: cond ? '' : (why || '') }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function until(fn, ms = 3000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) { if (fn()) return true; await sleep(16); }
+  return false;
+}
+
+const TOKEN = 'ep_live_AI_DESIGN_' + SCENARIO.toUpperCase();
+localStorage.removeItem('everyparts-chat:' + TOKEN);
+
+const CLARIFICATION = {
+  type: 'clarification',
+  message: 'Le montage a changé selon les millésimes — de quelle année est la vôtre ?',
+  clarification: { field: 'year', options: ['2014 – 2017', '2018 – 2020', '2021 et plus'] },
+  interpreted: { manufacturer: 'YAMAHA', model: 'MT-07', year: null, part_type: 'plaquettes de frein avant' },
+  meta: { language: 'fr' },
+};
+const RESULTS = {
+  type: 'results',
+  message: 'Voici les plaquettes compatibles avec votre MT-07.',
+  results: [
+    { product_ref: 'SA07', name: 'Plaquettes frittées SA — avant', brand: 'BREMBO', price: 42.9, compatibility: { label: 'Compatible', exact_match: true } },
+    { product_ref: 'FA380', name: 'Plaquettes HH Sintered', brand: 'EBC', price: 38.5, compatibility: { label: 'Compatible', exact_match: true } },
+    { product_ref: '900DS', name: 'Plaquettes Dual Sinter', brand: 'SBS', price: 44, compatibility: { label: 'Compatible', exact_match: true } },
+    { product_ref: 'FD447', name: 'Plaquettes FD Sinter', brand: 'GALFER', price: 26.9, compatibility: { label: 'Compatible', exact_match: false } },
+  ],
+  pagination: { page: 1, total: 4, has_more: false },
+  interpreted: { manufacturer: 'YAMAHA', model: 'MT-07', year: 2019, part_type: 'plaquettes de frein avant' },
+  meta: { language: 'fr' },
+};
+
+const searchCalls = [];
+window.fetch = async (url, opts = {}) => {
+  const u = String(url);
+  if (/\/events$/.test(u) || /\/review$/.test(u)) {
+    return { status: 201, ok: true, headers: new Headers(), json: async () => ({ ok: true, meta: {} }) };
+  }
+  if (/\/search$/.test(u)) {
+    searchCalls.push(JSON.parse(opts.body));
+    const data = searchCalls.length === 1 ? CLARIFICATION : RESULTS;
+    return { status: 200, ok: true, headers: new Headers(), json: async () => JSON.parse(JSON.stringify(data)) };
+  }
+  return { status: 404, ok: false, headers: new Headers(), json: async () => ({}) };
+};
+
+async function run() {
+  const host = [...document.querySelectorAll('*')].find(e => e.shadowRoot);
+  if (!host) { check('widget monté', false, 'aucun shadow root'); return done(); }
+  const shadow = host.shadowRoot;
+  const $  = s => shadow.querySelector(s);
+  const $$ = s => [...shadow.querySelectorAll(s)];
+  const win = $('#ep-window');
+  const css = $('style').textContent;
+
+  $('#ep-fab').click();
+  await until(() => !win.classList.contains('ep-hidden'), 2000);
+
+  if (SCENARIO === 'classic') {
+    check('la fenêtre ne porte pas .ep-ai', !win.classList.contains('ep-ai'));
+    check('le lanceur ne porte pas .ep-ai', !$('#ep-fab').classList.contains('ep-ai'));
+    check('la feuille de style ne contient aucune règle « ai »', css.indexOf('ep-ai') === -1);
+    check('aucune pastille d\'état ni mention IA', !$('#ep-ai-state') && !$('#ep-ai-notice'));
+    check('l\'accueil classique est rendu', !!$('.ep-welcome') && !$('.ep-ai-hero'));
+
+    sendText('plaquettes mt07');
+    await until(() => $$('.ep-clari-btn').length === 3, 3000);
+    check('la question classique n\'a ni étiquette ni lecture', !$('.ep-ai-interp') && !$('.ep-ai-ask-head') && !$('.ep-ai-ask-foot'));
+    check('le message du visiteur n\'a pas d\'étiquette « Vous »', !$('.ep-ai-utag'));
+    $$('.ep-clari-btn')[1].click();
+    await until(() => $$('.ep-card').length === 4, 3000);
+    check('les résultats classiques n\'ont pas de titre', !$('.ep-ai-res-head'));
+    return done();
+  }
+
+  // ── 1. Accueil ──
+  check('la fenêtre porte .ep-ai', win.classList.contains('ep-ai'));
+  check('le lanceur porte .ep-ai', $('#ep-fab').classList.contains('ep-ai'));
+  check('la fenêtre plein écran est modale', win.getAttribute('aria-modal') === 'true');
+  check('accueil centré (ep-ai-home)', win.classList.contains('ep-ai-home'));
+  const hero = $('.ep-ai-hero');
+  check('l\'accueil est un orbe + un titre', !!hero && !!hero.querySelector('.ep-ai-orb') && !!hero.querySelector('.ep-ai-h1 strong'));
+  const sub = hero && hero.querySelector('.ep-ai-sub');
+  check('la présentation perd son emoji d\'ouverture', !!sub && /^Bonjour/.test(sub.textContent), sub && sub.textContent);
+  check('les suggestions restent proposées', $$('.ep-chip').length > 0);
+  check('l\'état dit « Prêt »', $('#ep-ai-state-text').textContent === 'Prêt', $('#ep-ai-state-text').textContent);
+  check('l\'en-tête ne montre pas la marque', getComputedStyle($('#ep-header-logo')).display === 'none');
+  await sleep(450);   // l'ouverture anime une mise à l'échelle
+  const fullW = win.offsetWidth === window.innerWidth;
+  check('la fenêtre couvre toute la largeur', fullW, `${win.offsetWidth} / ${window.innerWidth}`);
+
+  // ── 2. Mention IA ──
+  const noticeBtn = $('#ep-ai-notice-btn');
+  check('la mention IA est sous le champ', !!noticeBtn && !!$('#ep-footer #ep-ai-notice'));
+  noticeBtn.click();
+  check('la mention se déplie', noticeBtn.getAttribute('aria-expanded') === 'true' && $('#ep-ai-notice').classList.contains('ep-open'));
+  const privacy = $('#ep-ai-notice a');
+  check('le lien de confidentialité vient de data-privacy-url', !!privacy && privacy.getAttribute('href') === 'https://shop.test/confidentialite');
+
+  // ── 3. Question ──
+  sendText('plaquettes mt07');
+  check('le premier message quitte l\'accueil', !win.classList.contains('ep-ai-home'));
+  check('l\'état dit « Je réponds… » pendant la recherche', $('#ep-ai-state-text').textContent === 'Je réponds…');
+  await until(() => $$('.ep-clari-btn').length === 3, 3000);
+  check('l\'étiquette « Vous » précède le message du visiteur', $('.ep-msg-user .ep-ai-utag')?.textContent === 'Vous');
+  const firstBot = $('.ep-msg-user + .ep-msg-assistant .ep-msg-avatar');
+  check('la réponse s\'ouvre sur la ligne « qui parle »', !!firstBot && getComputedStyle(firstBot).display === 'flex'
+    && firstBot.querySelector('.ep-ai-name')?.textContent === 'Bike Eco');
+  const tags = $$('.ep-ai-interp .ep-ai-tag');
+  check('ce que l\'assistant a compris : marque, modèle, pièce, année manquante', tags.length === 4, tags.map(t => t.textContent).join(' | '));
+  check('la marque est en casse titre', tags[0] && tags[0].textContent === 'Marque · Yamaha', tags[0] && tags[0].textContent);
+  check('l\'année demandée est en pointillés', !!$('.ep-ai-tag.ep-ai-miss') && $('.ep-ai-tag.ep-ai-miss').textContent === 'Année · ?');
+  check('la carte nomme le champ demandé', $('.ep-ai-ask-tag')?.textContent === 'Année');
+  check('la carte invite à répondre librement', !!$('.ep-ai-ask-foot'));
+  check('l\'état dit qu\'une réponse est attendue', $('#ep-ai-state-text').textContent === 'Votre réponse est attendue');
+  const saved = JSON.parse(localStorage.getItem('everyparts-chat:' + TOKEN) || '{}');
+  const opt = (saved.transcript || []).find(e => e.t === 'options');
+  check('la lecture est journalisée avec la question', !!opt && opt.field === 'year' && opt.interp && opt.interp.model === 'MT-07');
+
+  // ── 4. Résultats ──
+  $$('.ep-clari-btn')[1].click();
+  await until(() => $$('.ep-card').length === 4, 3000);
+  const visibleOpts = $$('.ep-clari-btn').filter(b => b.style.display !== 'none');
+  check('la carte répondue se resserre sur le choix', visibleOpts.length === 1 && visibleOpts[0].classList.contains('ep-selected'));
+  check('…et perd son invitation', getComputedStyle($('.ep-ai-ask-foot')).display === 'none');
+  check('titre des résultats avec le nom de la boutique', $('.ep-ai-res-head h3')?.textContent === '4 pièces trouvées sur'
+    && $('.ep-ai-res-head .ep-ai-shop')?.textContent === 'Bike Eco', $('.ep-ai-res-head')?.textContent);
+  check('le produit approché est signalé', $$('.ep-card.ep-card-approx').length === 1);
+  check('l\'état dit le nombre de pièces', $('#ep-ai-state-text').textContent === '4 pièces trouvées');
+  check('l\'avis est proposé sous les fiches', $$('.ep-review-btn').length === 2);
+
+  // ── 5. Nouvelle conversation ──
+  $('#ep-reset-btn').click();
+  await sleep(50);
+  check('« Nouvelle conversation » revient à l\'accueil centré', win.classList.contains('ep-ai-home') && !!$('.ep-ai-hero'));
+  check('…et l\'état redit « Prêt »', $('#ep-ai-state-text').textContent === 'Prêt');
+
+  done();
+
+  function sendText(text) {
+    const input = $('#ep-input');
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    $('#ep-send-btn').click();
+  }
+}
+
+function done() {
+  const bad = results.filter(r => !r.ok);
+  const s = document.getElementById('summary');
+  s.className = bad.length ? 'fail' : 'ok';
+  s.textContent = bad.length ? `${bad.length} ÉCHEC(S) sur ${results.length}` : `${results.length} tests OK`;
+  document.getElementById('out').innerHTML = results.map(r =>
+    `<li class="${r.ok ? 'p' : 'f'}">${r.name}</li>` + (r.ok ? '' : `<div class="why">↳ ${r.why}</div>`)
+  ).join('');
+  window.__EP_TEST__ = { total: results.length, failed: bad.length, failures: bad };
+}
+
+// Le scénario choisit l'attribut : la balise est donc posée par script, avant
+// que le widget ne lise sa configuration.
+(function () {
+  const s = document.createElement('script');
+  s.src = '../everyparts-widget.js';
+  s.setAttribute('data-token', TOKEN);
+  s.setAttribute('data-locale', 'fr-FR');
+  s.setAttribute('data-api', 'https://api.test.local/api/v1');
+  s.setAttribute('data-title', 'Bike Eco');
+  s.setAttribute('data-privacy-url', 'https://shop.test/confidentialite');
+  if (SCENARIO === 'ai') s.setAttribute('data-design', 'ai');
+  document.body.appendChild(s);
+})();
+
+window.addEventListener('error', e => { check('erreur JS non capturée', false, e.message); done(); });
+setTimeout(() => run().catch(e => { check('exception dans le scénario', false, e && e.message); done(); }), 400);
+</script>
+</body>
+</html>

@@ -148,6 +148,28 @@
       pr_err_message_too_long: 'Votre message dépasse la longueur autorisée.',
       pr_err_unexpected:       'L\'envoi a échoué. Merci de réessayer dans quelques instants.',
       brand_url:       'https://www.every-parts.com/fr/',
+      // ── Design « ai » (data-design="ai") ──
+      ai_welcome_title: 'Quelle **pièce** cherchez-vous ?',
+      ai_you:          'Vous',
+      ai_state_ready:  'Prêt',
+      ai_state_thinking: 'Je réponds…',
+      ai_state_question: 'Votre réponse est attendue',
+      ai_state_results_one: '1 pièce trouvée',
+      ai_state_results: '{n} pièces trouvées',
+      ai_state_no_results: 'Aucune pièce trouvée',
+      ai_results_head_one: '1 pièce trouvée',
+      ai_results_head: '{n} pièces trouvées',
+      ai_results_on:   'sur',
+      ai_ask_free:     'Aucune de ces réponses ? Répondez librement.',
+      ai_notice:       'Vous échangez avec une IA',
+      ai_notice_more:  'en savoir plus',
+      ai_notice_1:     'Assistant IA de recherche de pièces. Il peut se tromper : vérifiez la référence et la compatibilité avant tout achat.',
+      ai_notice_2:     'Les compatibilités proviennent du catalogue de la boutique et peuvent contenir des erreurs.',
+      ai_privacy:      'Politique de confidentialité',
+      field_manufacturer: 'Marque',
+      field_model:     'Modèle',
+      field_year:      'Année',
+      field_part_type: 'Pièce',
     },
     'en-US': {
       placeholder:     'Search for a compatible part…',
@@ -248,6 +270,28 @@
       pr_err_message_too_long: 'Your message exceeds the allowed length.',
       pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
       brand_url:       'https://www.every-parts.com/en/',
+      // ── "ai" design (data-design="ai") ──
+      ai_welcome_title: 'Which **part** are you looking for?',
+      ai_you:          'You',
+      ai_state_ready:  'Ready',
+      ai_state_thinking: 'Answering…',
+      ai_state_question: 'Waiting for your answer',
+      ai_state_results_one: '1 part found',
+      ai_state_results: '{n} parts found',
+      ai_state_no_results: 'No part found',
+      ai_results_head_one: '1 part found',
+      ai_results_head: '{n} parts found',
+      ai_results_on:   'at',
+      ai_ask_free:     'None of these? Just type your answer.',
+      ai_notice:       'You are chatting with an AI',
+      ai_notice_more:  'learn more',
+      ai_notice_1:     'AI parts-search assistant. It can make mistakes: check the reference and the fitment before you buy.',
+      ai_notice_2:     'Fitment data comes from the shop\'s catalogue and may contain errors.',
+      ai_privacy:      'Privacy policy',
+      field_manufacturer: 'Make',
+      field_model:     'Model',
+      field_year:      'Year',
+      field_part_type: 'Part',
     },
     'en-GB': {
       placeholder:     'Search for a compatible part…',
@@ -348,6 +392,28 @@
       pr_err_message_too_long: 'Your message exceeds the allowed length.',
       pr_err_unexpected:       'Sending failed. Please try again in a few moments.',
       brand_url:       'https://www.every-parts.com/en/',
+      // ── "ai" design (data-design="ai") ──
+      ai_welcome_title: 'Which **part** are you looking for?',
+      ai_you:          'You',
+      ai_state_ready:  'Ready',
+      ai_state_thinking: 'Answering…',
+      ai_state_question: 'Waiting for your answer',
+      ai_state_results_one: '1 part found',
+      ai_state_results: '{n} parts found',
+      ai_state_no_results: 'No part found',
+      ai_results_head_one: '1 part found',
+      ai_results_head: '{n} parts found',
+      ai_results_on:   'at',
+      ai_ask_free:     'None of these? Just type your answer.',
+      ai_notice:       'You are chatting with an AI',
+      ai_notice_more:  'learn more',
+      ai_notice_1:     'AI parts-search assistant. It can make mistakes: check the reference and the fitment before you buy.',
+      ai_notice_2:     'Fitment data comes from the shop\'s catalogue and may contain errors.',
+      ai_privacy:      'Privacy policy',
+      field_manufacturer: 'Make',
+      field_model:     'Model',
+      field_year:      'Year',
+      field_part_type: 'Part',
     },
   };
 
@@ -421,6 +487,12 @@
     // Demande d'avis (pouces) sous une liste de produits. Activée sauf
     // data-enable-review="false" : même interrupteur que la demande de pièce.
     review: boolAttr('data-enable-review', true),
+    // Habillage : « ai » (plein écran sombre, cf. AI_STYLES) ou le design
+    // classique. Toute autre valeur, ou l'attribut absent, garde le classique.
+    design: (SCRIPT_EL?.getAttribute('data-design') || '').trim().toLowerCase() === 'ai' ? 'ai' : 'classic',
+    // Politique de confidentialité de la boutique, liée depuis la mention IA du
+    // design « ai ». Vide = pas de lien.
+    privacy_url: SCRIPT_EL?.getAttribute('data-privacy-url') || '',
     // Journalise meta.ignored des events : c'est ainsi qu'on attrape un nom de
     // champ mal orthographie. A laisser eteint en production.
     debug: boolAttr('data-debug', false),
@@ -568,9 +640,29 @@
   // Le BOUTON FLOTTANT n'en dépend pas et garde la marque : il annonce le
   // produit, pas le marchand. L'en-tête non plus — c'est `data-logo` qui le
   // gouverne, et il le faisait déjà.
+  function isAiDesign() {
+    return CONFIG.design === 'ai';
+  }
+
+  // Nom de l'assistant affiché au-dessus de ses réponses (design « ai ») : le
+  // titre de la boutique quand elle en donne un, la marque sinon.
+  function assistantName() {
+    return CONFIG.title || t('header_title');
+  }
+
   function paintAvatar(el) {
     el.className = 'ep-msg-avatar';
     el.setAttribute('aria-hidden', 'true');
+
+    // Design « ai » : l'avatar devient la ligne « qui parle » au-dessus de la
+    // réponse — la marque (ou le logo servi) dans une pastille, puis le nom.
+    if (isAiDesign()) {
+      const mark = CONFIG.avatar
+        ? `<span class="ep-ai-av ep-avatar-custom"><img src="${escHtml(CONFIG.avatar)}" alt=""></span>`
+        : `<span class="ep-ai-av">${markSvg(12, 13, '#fff')}</span>`;
+      el.innerHTML = `${mark}<span class="ep-ai-name">${escHtml(assistantName())}</span>`;
+      return;
+    }
 
     if (CONFIG.avatar) {
       el.classList.add('ep-avatar-custom');
@@ -2179,6 +2271,512 @@
     }
   `;
 
+  // ── Design « ai » (data-design="ai") ──────────────────────────────────────
+  // Ajouté APRÈS STYLES, et seulement quand le design est actif : le design
+  // classique ne reçoit pas une règle de plus. Tout est rattaché à .ep-ai, posé
+  // sur le lanceur et la fenêtre. La fenêtre y est plein écran à toute largeur,
+  // sur un fond sombre dérivé des deux couleurs de marque : --ep-primary pour
+  // la profondeur du fond, --ep-secondary pour les accents et les halos.
+  const AI_STYLES = `
+    .ep-ai {
+      --ep-ai-bg:      color-mix(in srgb, var(--ep-primary) 86%, black);
+      --ep-ai-bg-hi:   color-mix(in srgb, var(--ep-primary) 80%, var(--ep-secondary));
+      --ep-ai-bg-lo:   color-mix(in srgb, var(--ep-primary) 45%, black);
+      --ep-ai-accent:  var(--ep-secondary);
+      --ep-ai-accent-2: color-mix(in srgb, var(--ep-secondary) 70%, #7CF0A0);
+      --ep-ai-accent-ink: color-mix(in srgb, var(--ep-secondary) 35%, white);
+      --ep-ai-on-accent: color-mix(in srgb, var(--ep-primary) 55%, black);
+      --ep-ai-glass:    rgba(255,255,255,.07);
+      --ep-ai-glass-hi: rgba(255,255,255,.12);
+      --ep-ai-line:     rgba(255,255,255,.13);
+      --ep-ai-line-hi:  rgba(255,255,255,.26);
+      --ep-ai-ink:      #F4FBF8;
+      --ep-ai-ink-soft: rgba(244,251,248,.68);
+      --ep-ai-ink-mute: rgba(244,251,248,.44);
+      --ep-ai-warn:     #FADF8C;
+      --ep-ai-col:      790px;
+    }
+
+    /* ── Lanceur : pilule sombre, pastille de marque en dégradé ── */
+    #ep-fab.ep-ai,
+    #ep-fab.ep-ai .ep-fab-closed { background: var(--ep-ai-bg); }
+    #ep-fab.ep-ai { box-shadow: 0 10px 34px color-mix(in srgb, var(--ep-primary) 40%, transparent); }
+    #ep-fab.ep-ai .ep-fab-face { background: var(--ep-ai-bg); border-color: transparent; }
+    #ep-fab.ep-ai .ep-fab-search { stroke: var(--ep-ai-ink-mute); }
+    #ep-fab.ep-ai .ep-fab-examples { color: var(--ep-ai-ink); }
+    #ep-fab.ep-ai .ep-fab-disc { background: linear-gradient(135deg, var(--ep-ai-accent), var(--ep-ai-accent-2)); }
+    #ep-fab.ep-ai .ep-fab-closed::after {
+      content: '';
+      position: absolute;
+      top: 8px; right: 8px;
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--ep-ai-accent);
+      box-shadow: 0 0 0 2px var(--ep-ai-bg);
+      animation: ep-ai-dot 2.6s ease-in-out infinite;
+    }
+    #ep-fab.ep-ai.ep-window-open { display: none; }
+
+    /* ── Fenêtre plein écran ── */
+    #ep-window.ep-ai,
+    #ep-window.ep-ai.ep-pos-bottom-right, #ep-window.ep-ai.ep-pos-bottom-left,
+    #ep-window.ep-ai.ep-pos-top-right, #ep-window.ep-ai.ep-pos-top-left {
+      top: 0; right: 0; bottom: 0; left: 0;
+      width: auto; height: auto; max-width: none; max-height: none;
+      border-radius: 0;
+      box-shadow: none;
+      color: var(--ep-ai-ink);
+      font-size: 15px;
+      background:
+        radial-gradient(1100px 720px at 78% -12%, color-mix(in srgb, var(--ep-ai-accent-2) 28%, transparent), transparent 62%),
+        radial-gradient(900px 640px at 6% 108%, color-mix(in srgb, var(--ep-ai-accent) 24%, transparent), transparent 60%),
+        linear-gradient(158deg, var(--ep-ai-bg-hi) 0%, var(--ep-ai-bg) 42%, var(--ep-ai-bg-lo) 100%);
+      transition: opacity .35s cubic-bezier(.22,1,.36,1), transform .35s cubic-bezier(.22,1,.36,1);
+    }
+    #ep-window.ep-ai.ep-hidden { transform: scale(1.02); }
+    #ep-window.ep-ai > * { position: relative; z-index: 1; }
+    #ep-window.ep-ai > .ep-sheet-backdrop { position: absolute; z-index: 5; }
+    #ep-window.ep-ai > #ep-ai-aura { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    #ep-ai-aura i { position: absolute; border-radius: 50%; filter: blur(95px); opacity: .46; }
+    #ep-ai-aura i:nth-child(1) { width: min(520px, 90vw); height: min(520px, 90vw); top: -16%; right: -14%; background: color-mix(in srgb, var(--ep-ai-accent) 55%, transparent); animation: ep-ai-float1 22s ease-in-out infinite; }
+    #ep-ai-aura i:nth-child(2) { width: min(440px, 80vw); height: min(440px, 80vw); bottom: -14%; left: 6%; background: color-mix(in srgb, var(--ep-ai-accent-2) 40%, transparent); animation: ep-ai-float2 28s ease-in-out infinite; }
+    #ep-ai-aura i:nth-child(3) { width: min(380px, 70vw); height: min(380px, 70vw); top: 36%; left: 50%; background: rgba(1,84,249,.14); animation: ep-ai-float1 34s ease-in-out infinite reverse; }
+    @keyframes ep-ai-float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-50px,42px); } }
+    @keyframes ep-ai-float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(56px,-38px); } }
+    @keyframes ep-ai-dot { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.6); opacity: .5; } }
+
+    /* ── Barre du haut : état de l'assistant à gauche, actions à droite ── */
+    .ep-ai #ep-header {
+      background: transparent;
+      padding: calc(14px + env(safe-area-inset-top, 0px)) 22px 10px;
+      min-height: 60px;
+    }
+    .ep-ai #ep-header-logo { display: none; }
+    #ep-ai-state {
+      display: inline-flex; align-items: center; gap: 7px; min-width: 0;
+      font-size: 11.5px; font-weight: 600; color: var(--ep-ai-ink-soft);
+      background: var(--ep-ai-glass); border: 1px solid var(--ep-ai-line);
+      padding: 5px 12px; border-radius: 999px;
+    }
+    #ep-ai-state i { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--ep-ai-accent-2); animation: ep-ai-dot 2s ease-in-out infinite; }
+    #ep-ai-state span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ep-ai #ep-header-actions { gap: 8px; }
+    .ep-ai .ep-header-btn {
+      width: 40px; height: 40px; border-radius: 12px;
+      border: 1px solid var(--ep-ai-line); background: var(--ep-ai-glass); color: var(--ep-ai-ink);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      transition: background .22s, border-color .22s, transform .22s;
+    }
+    .ep-ai .ep-header-btn:hover { background: var(--ep-ai-glass-hi); border-color: var(--ep-ai-line-hi); transform: translateY(-1px); }
+
+    /* ── Fil : une colonne centrée ── */
+    .ep-ai #ep-messages {
+      padding: 4px max(22px, calc((100% - var(--ep-ai-col)) / 2)) 30px;
+      gap: 22px;
+    }
+    .ep-ai #ep-messages::-webkit-scrollbar { width: 8px; }
+    .ep-ai #ep-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 99px; }
+    .ep-ai .ep-msg { max-width: 100%; animation: ep-ai-turn .45s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes ep-ai-turn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+    /* Accueil seul à l'écran : l'en-tête reste en haut, le reste se centre. */
+    @media (min-width: 641px) {
+      #ep-window.ep-ai.ep-ai-home #ep-header { margin-bottom: auto; }
+      #ep-window.ep-ai.ep-ai-home #ep-conv { flex: 0 1 auto; }
+      #ep-window.ep-ai.ep-ai-home #ep-input-area { margin-bottom: auto; }
+    }
+    #ep-window.ep-ai:not(.ep-ai-home) .ep-ai-hero { display: none; }
+
+    /* ── Accueil ── */
+    .ep-ai .ep-ai-hero { align-self: stretch; flex-direction: column; align-items: center; text-align: center; padding-top: 2vh; }
+    .ep-ai-orb {
+      --sz: clamp(92px, 17vw, 132px);
+      width: var(--sz); height: var(--sz); margin: 0 auto 30px; flex: none;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      background: linear-gradient(140deg, var(--ep-ai-accent) 0%, var(--ep-ai-accent-2) 58%, color-mix(in srgb, var(--ep-ai-accent-2) 60%, #12E7AA) 100%);
+      box-shadow: 0 20px 60px color-mix(in srgb, var(--ep-ai-accent) 42%, transparent), inset 0 -8px 22px rgba(2,40,42,.24);
+      animation: ep-ai-orb 5.5s ease-in-out infinite;
+    }
+    .ep-ai-orb svg { width: 42%; height: auto; filter: drop-shadow(0 2px 5px rgba(2,40,42,.32)); }
+    @keyframes ep-ai-orb { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+    .ep-ai-h1 {
+      font-family: var(--ep-font-title); font-weight: 800;
+      font-size: clamp(28px, 6.2vw, 46px); line-height: 1.12; letter-spacing: -.04em;
+      color: var(--ep-ai-ink); text-wrap: balance;
+    }
+    .ep-ai-h1.ep-rich { white-space: normal; }
+    .ep-ai-h1 strong {
+      font-weight: 800;
+      background: linear-gradient(100deg, var(--ep-ai-accent-2), var(--ep-ai-accent-ink));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .ep-ai-sub { margin: 15px auto 0; max-width: 540px; font-size: clamp(14px, 2.4vw, 16px); line-height: 1.6; color: var(--ep-ai-ink-soft); text-wrap: pretty; }
+    .ep-ai-hint { margin: 8px auto 0; max-width: 540px; font-size: 13px; line-height: 1.5; color: var(--ep-ai-ink-mute); white-space: pre-line; }
+    .ep-ai-hero .ep-contact-link, .ep-ai .ep-contact-link { color: var(--ep-ai-accent-ink); }
+    .ep-ai .ep-contact-link:hover { color: var(--ep-ai-ink); }
+
+    .ep-ai .ep-chips-wrap { align-items: center; align-self: stretch; }
+    .ep-ai .ep-chips-label { display: none; }
+    .ep-ai .ep-chips { justify-content: center; padding-left: 0; }
+    .ep-ai .ep-chip {
+      border: 1px solid var(--ep-ai-line); background: var(--ep-ai-glass); color: var(--ep-ai-ink-soft);
+      border-radius: 999px; padding: 9px 15px; font-size: 13px; font-weight: 500;
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      transition: border-color .2s, color .2s, background .2s, transform .2s;
+    }
+    .ep-ai .ep-chip::before { display: none; }
+    .ep-ai .ep-chip:hover { border-color: color-mix(in srgb, var(--ep-ai-accent-2) 55%, transparent); color: var(--ep-ai-ink); background: var(--ep-ai-glass-hi); transform: translateY(-2px); }
+
+    /* ── Message du visiteur : bulle de verre, étiquette « Vous » ── */
+    .ep-ai .ep-msg-user { flex-direction: column; align-items: flex-end; gap: 8px; max-width: 100%; align-self: stretch; }
+    .ep-ai-utag { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ep-ai-ink-mute); }
+    .ep-ai .ep-msg-user .ep-bubble {
+      max-width: min(84%, 560px);
+      padding: 14px 19px;
+      border-radius: 22px 22px 6px 22px;
+      background: rgba(255,255,255,.11); color: var(--ep-ai-ink);
+      border: 1px solid var(--ep-ai-line-hi);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      font-size: clamp(15px, 2.4vw, 16.5px);
+      box-shadow: 0 6px 20px rgba(2,40,42,.2);
+    }
+
+    /* ── Réponse de l'assistant : texte nu sous la ligne « qui parle » ── */
+    .ep-ai .ep-msg-assistant { flex-direction: column; gap: 8px; align-self: stretch; }
+    .ep-ai .ep-msg-avatar {
+      display: none;
+      width: auto; height: auto; background: none; border-radius: 0;
+      align-items: center; gap: 9px;
+      font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ep-ai-ink-mute);
+    }
+    /* La ligne ne paraît qu'en tête d'un tour : le premier bloc après le visiteur. */
+    .ep-ai .ep-msg-user + .ep-msg-assistant > .ep-msg-avatar,
+    .ep-ai .ep-ai-hero + .ep-msg-assistant > .ep-msg-avatar { display: flex; }
+    .ep-ai-av {
+      width: 22px; height: 22px; flex: none; border-radius: 7px;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--ep-ai-accent), var(--ep-ai-accent-2));
+    }
+    .ep-ai-av svg { width: 13px; height: auto; }
+    .ep-ai-av.ep-avatar-custom { background: #fff; overflow: hidden; }
+    .ep-ai-av img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .ep-ai .ep-msg-assistant .ep-bubble {
+      background: none; border: none; box-shadow: none; border-radius: 0;
+      padding: 0 0 0 31px;
+      color: var(--ep-ai-ink);
+      font-size: clamp(16px, 2.6vw, 18px); line-height: 1.6;
+      max-width: 731px;
+    }
+    .ep-ai .ep-bubble.ep-rich strong { font-weight: 700; color: var(--ep-ai-accent-ink); }
+    .ep-ai .ep-msg-wide { padding-left: 31px; }
+    .ep-ai .ep-msg-error .ep-bubble { color: #FF9AAE; }
+    .ep-ai .ep-suggestions p, .ep-ai .ep-suggestions li { color: var(--ep-ai-ink-soft); }
+
+    /* Indicateur de saisie */
+    .ep-ai #ep-typing { padding-left: max(22px, calc((100% - var(--ep-ai-col)) / 2)); }
+    .ep-ai .ep-typing-bubble { background: none; border: none; box-shadow: none; padding: 0 0 0 31px; }
+    .ep-ai .ep-typing-text { color: var(--ep-ai-ink-mute); }
+    .ep-ai .ep-dot { background: var(--ep-ai-accent-2); }
+
+    /* ── Ce que l'assistant a compris ── */
+    .ep-ai-interp { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+    .ep-ai-tag { font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: 8px; background: var(--ep-ai-glass); border: 1px solid var(--ep-ai-line); color: var(--ep-ai-ink-soft); }
+    .ep-ai-tag b { color: var(--ep-ai-ink); font-weight: 700; }
+    .ep-ai-tag.ep-ai-miss { border-style: dashed; border-color: rgba(250,205,34,.5); color: var(--ep-ai-warn); }
+    .ep-ai-tag.ep-ai-miss b { color: var(--ep-ai-warn); }
+
+    /* ── Carte de question (options servies par l'API) ── */
+    .ep-ai .ep-clari {
+      padding-left: 0;
+      max-width: 560px;
+      border: 1px solid var(--ep-ai-line-hi);
+      background: rgba(255,255,255,.055);
+      border-radius: 18px;
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+    .ep-ai-interp + .ep-clari { margin-top: 0; }
+    .ep-ai-ask-head { padding: 15px 17px 4px; }
+    .ep-ai-ask-tag {
+      display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--ep-ai-accent-ink);
+      background: color-mix(in srgb, var(--ep-ai-accent) 15%, transparent);
+      border: 1px solid color-mix(in srgb, var(--ep-ai-accent-2) 30%, transparent);
+      padding: 3px 9px; border-radius: 999px;
+    }
+    .ep-ai .ep-clari-opts, .ep-ai .ep-clari-list {
+      display: flex; flex-direction: column; flex-wrap: nowrap; gap: 3px;
+      padding: 9px 9px 6px;
+      border: none; background: none; border-radius: 0;
+    }
+    .ep-ai .ep-clari-list { max-height: 320px; overflow-y: auto; }
+    .ep-ai .ep-clari-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); }
+    .ep-ai .ep-clari-btn,
+    .ep-ai .ep-clari-list .ep-clari-btn {
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      min-height: 46px; padding: 11px 12px;
+      border: 1px solid transparent; background: transparent; border-radius: 13px;
+      color: var(--ep-ai-ink); font-size: 14.5px; font-weight: 600; text-align: left; line-height: 1.35;
+      transition: background .18s, border-color .18s, transform .18s;
+    }
+    .ep-ai .ep-clari-btn::before,
+    .ep-ai .ep-clari-opts .ep-clari-btn::before {
+      content: ''; flex: none; width: 17px; height: 17px; border-radius: 50%;
+      border: 1.5px solid var(--ep-ai-line-hi); background: transparent;
+      box-shadow: inset 0 0 0 3.5px transparent;
+      transition: border-color .18s, background .18s;
+    }
+    .ep-ai .ep-clari-btn:hover:not(:disabled),
+    .ep-ai .ep-clari-list .ep-clari-btn:hover:not(:disabled) {
+      background: var(--ep-ai-glass-hi); border-color: color-mix(in srgb, var(--ep-ai-accent-2) 40%, transparent); color: var(--ep-ai-ink); transform: translateX(2px);
+    }
+    .ep-ai .ep-clari-btn:hover:not(:disabled)::before { border-color: var(--ep-ai-accent-2); }
+    .ep-ai .ep-clari-btn.ep-selected,
+    .ep-ai .ep-clari-list .ep-clari-btn.ep-selected { background: var(--ep-ai-glass-hi); border-color: color-mix(in srgb, var(--ep-ai-accent-2) 40%, transparent); color: var(--ep-ai-ink); opacity: 1; }
+    .ep-ai .ep-clari-btn.ep-selected::before,
+    .ep-ai .ep-clari-opts .ep-clari-btn.ep-selected::before { border-color: var(--ep-ai-accent-2); background: var(--ep-ai-accent-2); box-shadow: inset 0 0 0 3.5px var(--ep-ai-bg); }
+    .ep-ai .ep-clari-btn:disabled { opacity: .45; }
+    .ep-ai .ep-clari-btn.ep-selected:disabled { opacity: 1; cursor: default; }
+    .ep-ai .ep-clari-filter {
+      margin: 12px 14px 0; width: calc(100% - 28px);
+      background: var(--ep-ai-glass); border: 1px solid var(--ep-ai-line); color: var(--ep-ai-ink); border-radius: 12px;
+    }
+    .ep-ai .ep-clari-filter::placeholder { color: var(--ep-ai-ink-mute); }
+    .ep-ai .ep-clari-count, .ep-ai .ep-clari-empty { padding: 0 17px; color: var(--ep-ai-ink-mute); }
+    .ep-ai-ask-foot {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 17px; border-top: 1px solid var(--ep-ai-line);
+      font-size: 11.5px; line-height: 1.4; color: var(--ep-ai-ink-mute);
+    }
+    .ep-ai-ask-foot svg { flex: none; opacity: .7; }
+    /* Question répondue : la carte se resserre sur le choix, sans invite. */
+    .ep-clari.ep-ai-answered .ep-ai-ask-foot { display: none; }
+
+    /* ── Résultats ── */
+    .ep-ai-res-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; margin: 6px 0 14px; }
+    .ep-ai-res-head h3 { font-family: var(--ep-font-title); font-weight: 800; font-size: 16.5px; letter-spacing: -.02em; color: var(--ep-ai-ink); }
+    .ep-ai-shop {
+      display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+      color: var(--ep-ai-accent-ink);
+      background: color-mix(in srgb, var(--ep-ai-accent) 13%, transparent);
+      border: 1px solid color-mix(in srgb, var(--ep-ai-accent-2) 30%, transparent);
+      padding: 3px 10px; border-radius: 999px;
+    }
+    .ep-ai .ep-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 12px; }
+    .ep-ai .ep-card {
+      gap: 13px; padding: 14px; align-items: flex-start;
+      border: 1px solid var(--ep-ai-line); background: var(--ep-ai-glass); border-radius: 18px;
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      box-shadow: none; color: var(--ep-ai-ink);
+      transition: border-color .24s, background .24s, transform .24s, box-shadow .24s;
+    }
+    .ep-ai .ep-card:hover, .ep-ai .ep-card:focus-visible {
+      border-color: color-mix(in srgb, var(--ep-ai-accent-2) 55%, transparent);
+      background: rgba(255,255,255,.12); transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(2,40,42,.34);
+    }
+    .ep-ai .ep-card-img { width: 58px; height: 58px; border-radius: 13px; background: rgba(255,255,255,.09); border: 1px solid var(--ep-ai-line); }
+    .ep-ai .ep-card-img img { background: #fff; }
+    .ep-ai .ep-card-img svg { color: rgba(255,255,255,.35); }
+    .ep-ai .ep-card-brand { color: var(--ep-ai-ink-mute); letter-spacing: .07em; }
+    .ep-ai .ep-card-ref { color: var(--ep-ai-ink-mute); }
+    .ep-ai .ep-card-name { color: var(--ep-ai-ink); font-size: 13.5px; }
+    .ep-ai .ep-card-price { font-family: var(--ep-font-title); font-weight: 800; font-size: 15.5px; color: var(--ep-ai-ink); }
+    .ep-ai .ep-card-arrow { display: none; }
+    .ep-ai .ep-badge {
+      background: color-mix(in srgb, var(--ep-ai-accent-2) 18%, transparent);
+      color: var(--ep-ai-accent-ink);
+      border: 1px solid color-mix(in srgb, var(--ep-ai-accent-2) 30%, transparent);
+    }
+    .ep-ai .ep-card.ep-card-approx .ep-badge { background: rgba(250,205,34,.14); color: var(--ep-ai-warn); border-color: rgba(250,205,34,.32); }
+    .ep-ai .ep-products-toolbar { background: transparent; border: none; box-shadow: none; padding-left: 0; padding-right: 0; }
+    .ep-ai .ep-products-toolbar.ep-stuck { background: color-mix(in srgb, var(--ep-ai-bg) 92%, transparent); }
+    .ep-ai .ep-products-filter, .ep-ai .ep-products-sort {
+      background: var(--ep-ai-glass); border: 1px solid var(--ep-ai-line); color: var(--ep-ai-ink); border-radius: 12px;
+    }
+    .ep-ai .ep-products-sort option { color: #12312D; }
+    .ep-ai .ep-products-filter::placeholder { color: var(--ep-ai-ink-mute); }
+    .ep-ai .ep-products-count, .ep-ai .ep-products-empty { color: var(--ep-ai-ink-mute); }
+    .ep-ai .ep-load-more {
+      margin-top: 12px; border: 1px solid var(--ep-ai-line); background: var(--ep-ai-glass); color: var(--ep-ai-ink);
+      border-radius: 999px;
+    }
+    .ep-ai .ep-load-more:hover:not(:disabled) { background: var(--ep-ai-glass-hi); border-color: var(--ep-ai-line-hi); color: var(--ep-ai-ink); }
+    .ep-ai .ep-products-expired { background: rgba(250,205,34,.1); border-color: rgba(250,205,34,.3); color: var(--ep-ai-warn); }
+
+    /* ── Avis : la barre d'actions sous la réponse ── */
+    .ep-ai .ep-products-review {
+      background: none; border: none; box-shadow: none;
+      padding: 0; margin-top: 14px; justify-content: flex-start; gap: 4px;
+    }
+    .ep-ai .ep-products-review-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .ep-ai .ep-review-btns { gap: 2px; }
+    .ep-ai .ep-review-btn {
+      width: 36px; height: 36px; border-radius: 10px; border: none; background: transparent; color: var(--ep-ai-ink-mute);
+    }
+    .ep-ai .ep-review-up:hover:not(:disabled), .ep-ai .ep-review-down:hover:not(:disabled) { background: var(--ep-ai-glass); color: var(--ep-ai-ink); border: none; }
+    .ep-ai .ep-review-up.ep-selected, .ep-ai .ep-review-down.ep-selected { background: color-mix(in srgb, var(--ep-ai-accent) 14%, transparent); color: var(--ep-ai-accent-2); border: none; }
+    .ep-ai .ep-review-down.ep-selected { background: rgba(255,72,105,.14); color: #FF9AAE; }
+    .ep-ai .ep-review-btn:disabled { opacity: .5; }
+    .ep-ai .ep-review-btn.ep-selected { opacity: 1; }
+    .ep-ai .ep-review-thx { color: var(--ep-ai-accent-ink); font-size: 12.5px; }
+
+    /* ── Carte de réessai, demande de pièce ── */
+    .ep-ai .ep-retry-card { background: rgba(255,72,105,.08); border-color: rgba(255,72,105,.3); }
+    .ep-ai .ep-retry-title { color: var(--ep-ai-ink); }
+    .ep-ai .ep-retry-sub, .ep-ai .ep-retry-hint { color: var(--ep-ai-ink-soft); }
+    .ep-ai .ep-retry-sep { background: rgba(255,72,105,.25); }
+    .ep-ai .ep-pr-btn-yes, .ep-ai .ep-pr-btn-no {
+      border: 1px solid var(--ep-ai-line); background: var(--ep-ai-glass); color: var(--ep-ai-ink); border-radius: 999px;
+    }
+    .ep-ai .ep-pr-btn-yes { border-color: color-mix(in srgb, var(--ep-ai-accent-2) 50%, transparent); color: var(--ep-ai-accent-ink); }
+    .ep-ai .ep-pr-btn-yes.ep-pr-chosen { background: linear-gradient(135deg, var(--ep-ai-accent), var(--ep-ai-accent-2)); color: var(--ep-ai-on-accent); }
+    .ep-ai .ep-pr-btn-no.ep-pr-chosen:disabled { box-shadow: inset 0 0 0 2px var(--ep-ai-accent-2); }
+
+    /* ── Feuilles (motifs d'avis, retour libre, demande de pièce) ── */
+    .ep-ai .ep-sheet-backdrop { background: rgba(2,30,30,.55); }
+    .ep-ai .ep-sheet {
+      left: 0; right: 0; margin: 0 auto; max-width: 560px;
+      background: color-mix(in srgb, var(--ep-ai-bg) 94%, white);
+      border: 1px solid var(--ep-ai-line-hi); border-bottom: none;
+      color: var(--ep-ai-ink);
+      box-shadow: 0 -20px 50px rgba(0,0,0,.4);
+    }
+    .ep-ai .ep-sheet-handle { background: var(--ep-ai-line-hi); }
+    .ep-ai .ep-sheet-title { color: var(--ep-ai-ink); }
+    .ep-ai .ep-sheet-sub, .ep-ai .ep-pr-recall-label, .ep-ai .ep-pr-consent-text, .ep-ai .ep-rv-count { color: var(--ep-ai-ink-soft); }
+    .ep-ai .ep-sheet-sub strong { color: var(--ep-ai-ink); }
+    .ep-ai .ep-review-reason {
+      border: 1px solid var(--ep-ai-line); background: var(--ep-ai-glass); color: var(--ep-ai-ink);
+    }
+    .ep-ai .ep-review-reason:hover:not(:disabled) { background: var(--ep-ai-glass-hi); border-color: color-mix(in srgb, var(--ep-ai-accent-2) 50%, transparent); }
+    .ep-ai #ep-rv-text, .ep-ai #ep-pr-email, .ep-ai #ep-pr-phone {
+      background: var(--ep-ai-glass); border: 1px solid var(--ep-ai-line); color: var(--ep-ai-ink);
+    }
+    .ep-ai #ep-rv-text::placeholder, .ep-ai #ep-pr-email::placeholder, .ep-ai #ep-pr-phone::placeholder { color: var(--ep-ai-ink-mute); }
+    .ep-ai .ep-pr-recall { background: color-mix(in srgb, var(--ep-ai-accent) 12%, transparent); border-color: color-mix(in srgb, var(--ep-ai-accent-2) 34%, transparent); }
+    .ep-ai .ep-pr-recall svg { stroke: var(--ep-ai-accent-ink); }
+    .ep-ai #ep-pr-message { color: var(--ep-ai-ink); background: transparent; }
+    .ep-ai .ep-pr-box { border-color: var(--ep-ai-line-hi); background: transparent; }
+    .ep-ai #ep-pr-consent-input:checked ~ .ep-pr-box { border-color: var(--ep-ai-accent-2); background: color-mix(in srgb, var(--ep-ai-accent) 18%, transparent); }
+    .ep-ai .ep-pr-box svg, .ep-ai #ep-pr-consent-input:checked ~ .ep-pr-box svg { stroke: var(--ep-ai-accent-ink); }
+    .ep-ai .ep-pr-error { color: #FF9AAE; }
+    .ep-ai .ep-sheet-submit, .ep-ai #ep-pr-submit {
+      background: linear-gradient(135deg, var(--ep-ai-accent), var(--ep-ai-accent-2)); color: var(--ep-ai-on-accent);
+    }
+    .ep-ai .ep-sheet-cancel { color: var(--ep-ai-ink-mute); }
+    .ep-ai .ep-sheet-cancel:hover { color: var(--ep-ai-ink); }
+
+    /* ── Pastille « nouveaux messages » ── */
+    .ep-ai #ep-jump { background: color-mix(in srgb, var(--ep-ai-bg) 90%, white); border-color: var(--ep-ai-line-hi); color: var(--ep-ai-ink); }
+    .ep-ai #ep-jump-icon { color: var(--ep-ai-accent-2); }
+
+    /* ── Équipement identifié : une pastille au-dessus du champ ── */
+    .ep-ai #ep-subject-bar {
+      align-self: center;
+      width: auto; max-width: min(calc(100% - 32px), var(--ep-ai-col));
+      margin: 0 auto 10px;
+      gap: 8px; padding: 6px 6px 6px 14px;
+      border: 1px solid color-mix(in srgb, var(--ep-ai-accent-2) 34%, transparent);
+      background: color-mix(in srgb, var(--ep-ai-accent) 12%, transparent);
+      border-radius: 999px; box-shadow: none;
+      color: var(--ep-ai-accent-ink);
+    }
+    .ep-ai #ep-subject-icon { width: auto; height: auto; background: none; border: none; color: var(--ep-ai-accent-ink); }
+    .ep-ai #ep-subject-icon svg, .ep-ai #ep-subject-icon img { width: 15px; height: 15px; }
+    .ep-ai #ep-subject-text { flex-direction: row; align-items: baseline; gap: 6px; }
+    .ep-ai #ep-subject-label { order: 2; font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ep-ai-ink-mute); }
+    .ep-ai #ep-subject-label .ep-subject-year { color: var(--ep-ai-accent-ink); font-weight: 600; }
+    .ep-ai #ep-subject-value { order: 1; font-size: 13px; font-weight: 600; color: var(--ep-ai-accent-ink); }
+    .ep-ai #ep-subject-edit {
+      border: none; background: var(--ep-ai-glass); color: var(--ep-ai-ink-soft);
+      border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 500;
+    }
+    .ep-ai #ep-subject-edit:hover { background: var(--ep-ai-glass-hi); color: var(--ep-ai-ink); border: none; }
+
+    /* ── Champ de saisie : une pilule de verre ── */
+    .ep-ai #ep-input-area {
+      background: transparent; border: none; box-shadow: none;
+      padding: 10px max(22px, calc((100% - var(--ep-ai-col)) / 2)) calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+    .ep-ai .ep-input-row {
+      gap: 6px; padding: 8px 8px 8px 18px;
+      border: 1px solid var(--ep-ai-line); background: var(--ep-ai-glass);
+      border-radius: 999px;
+      -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+      transition: border-color .25s, background .25s, box-shadow .25s;
+    }
+    .ep-ai .ep-input-row:focus-within {
+      border-color: color-mix(in srgb, var(--ep-ai-accent-2) 60%, transparent);
+      background: rgba(255,255,255,.11);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--ep-ai-accent) 14%, transparent);
+    }
+    .ep-ai #ep-input,
+    .ep-ai #ep-input:focus {
+      border: none; outline: none; box-shadow: none; background: transparent;
+      color: var(--ep-ai-ink); font-size: 16px; padding: 12px 6px;
+    }
+    .ep-ai #ep-input::placeholder { color: var(--ep-ai-ink-mute); }
+    .ep-ai #ep-send-btn {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--ep-ai-accent), var(--ep-ai-accent-2));
+      color: var(--ep-ai-on-accent);
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--ep-ai-accent) 40%, transparent);
+    }
+    .ep-ai #ep-send-btn:disabled { background: rgba(255,255,255,.10); color: var(--ep-ai-ink-mute); box-shadow: none; }
+    .ep-ai #ep-input:placeholder-shown ~ #ep-send-btn:not(:disabled) { animation: none; background: rgba(255,255,255,.10); color: var(--ep-ai-ink); box-shadow: none; }
+
+    /* Mention IA + attribution, sous le champ */
+    .ep-ai #ep-footer { flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-top: 8px; }
+    .ep-ai #ep-footer-text { color: var(--ep-ai-ink-mute); }
+    #ep-ai-notice { flex: 1 1 100%; text-align: center; }
+    #ep-ai-notice-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: none; background: transparent; cursor: pointer;
+      font-family: var(--ep-font-body); font-size: 11.5px; color: var(--ep-ai-ink-mute);
+      padding: 4px 8px; border-radius: 999px;
+    }
+    #ep-ai-notice-btn:hover { color: var(--ep-ai-ink-soft); }
+    #ep-ai-notice-btn:focus-visible { outline: 2px solid var(--ep-ai-accent-2); outline-offset: 1px; }
+    #ep-ai-notice-btn u { text-decoration: underline; text-underline-offset: 2px; }
+    #ep-ai-notice-btn svg { transition: transform .3s; }
+    #ep-ai-notice.ep-open #ep-ai-notice-btn svg { transform: rotate(180deg); }
+    #ep-ai-notice-body { max-height: 0; overflow: hidden; transition: max-height .38s cubic-bezier(.22,1,.36,1); }
+    #ep-ai-notice.ep-open #ep-ai-notice-body { max-height: 260px; }
+    #ep-ai-notice ul { list-style: none; padding: 6px 0 2px; display: flex; flex-direction: column; gap: 7px; max-width: 560px; margin: 0 auto; }
+    #ep-ai-notice li { display: flex; align-items: flex-start; gap: 9px; font-size: 12px; line-height: 1.5; color: var(--ep-ai-ink-mute); text-align: left; }
+    #ep-ai-notice li svg { flex: none; margin-top: 2px; color: var(--ep-ai-accent-2); opacity: .8; }
+    #ep-ai-notice a { display: inline-block; margin-top: 4px; font-size: 11.5px; font-weight: 600; color: var(--ep-ai-accent-ink); text-decoration: none; }
+    #ep-ai-notice a:hover { text-decoration: underline; }
+
+    /* ── Téléphone ── */
+    @media (max-width: 640px) {
+      .ep-ai #ep-header { padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 8px; min-height: 56px; }
+      .ep-ai #ep-messages { padding: 4px 16px 14px; gap: 20px; }
+      .ep-ai #ep-typing { padding-left: 16px; }
+      .ep-ai .ep-msg-assistant .ep-bubble, .ep-ai .ep-typing-bubble { padding-left: 0; }
+      .ep-ai .ep-msg-wide { padding-left: 0; }
+      .ep-ai .ep-clari { max-width: 100%; }
+      .ep-ai .ep-msg-user .ep-bubble { max-width: 90%; padding: 13px 17px; }
+      .ep-ai #ep-input-area { padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+      .ep-ai .ep-input-row { padding: 7px 7px 7px 16px; border-radius: 30px; background: color-mix(in srgb, var(--ep-ai-bg) 86%, transparent); border-color: var(--ep-ai-line-hi); }
+      .ep-ai #ep-send-btn { width: 48px; height: 48px; }
+      .ep-ai .ep-ai-hero { padding-top: 5vh; }
+      .ep-ai-orb { margin-bottom: 24px; }
+    }
+    @media (max-height: 560px) and (max-width: 960px) {
+      .ep-ai-orb { --sz: 72px; margin-bottom: 16px; }
+      .ep-ai-h1 { font-size: clamp(21px, 4.6vw, 27px); }
+      .ep-ai-sub, .ep-ai-hint { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ep-ai .ep-msg, .ep-ai-orb, #ep-ai-aura i, #ep-ai-state i, #ep-fab.ep-ai .ep-fab-closed::after { animation: none; }
+      #ep-window.ep-ai { transition: none; }
+      .ep-ai .ep-card, .ep-ai .ep-chip, .ep-ai .ep-clari-btn, #ep-ai-notice-body { transition: none; }
+    }
+  `;
+
   // ── Etat de la conversation ────────────────────────────────────────────────
   let sessionId = generateUUID();
   let conversationContext = { previous_clarifications: [] };
@@ -2679,7 +3277,7 @@
 
     // Styles
     const styleEl = document.createElement('style');
-    styleEl.textContent = STYLES;
+    styleEl.textContent = isAiDesign() ? STYLES + AI_STYLES : STYLES;
     shadow.appendChild(styleEl);
 
     // Bouton flottant (frames 5a / 4a) : trois couches superposées — bulle ronde
@@ -2734,6 +3332,13 @@
     win.setAttribute('aria-label', t('aria_dialog'));
     win.innerHTML = buildWindowHTML();
     shadow.appendChild(win);
+    // Design « ai » : la fenêtre couvre toute la page, d'où aria-modal.
+    if (isAiDesign()) {
+      fab.classList.add('ep-ai');
+      win.classList.add('ep-ai');
+      win.setAttribute('aria-modal', 'true');
+      decorateAiWindow(win);
+    }
 
     // Références DOM
     const messagesEl = win.querySelector('#ep-messages');
@@ -2777,6 +3382,86 @@
     const prFormErr  = win.querySelector('#ep-pr-form-err');
     const prSubmit   = win.querySelector('#ep-pr-submit');
     const prCancel   = win.querySelector('#ep-pr-cancel');
+    const aiStateText = win.querySelector('#ep-ai-state-text');
+
+    // Design « ai » : la pastille d'état de l'en-tête dit ce que fait
+    // l'assistant (prêt, en train de répondre, n pièces trouvées…). Sans effet
+    // dans le design classique, qui n'a pas de pastille.
+    function setAiState(key, vars) {
+      if (aiStateText) aiStateText.textContent = t(key, vars);
+    }
+
+    function setAiResultsState(total) {
+      if (total === 1) setAiState('ai_state_results_one');
+      else setAiState('ai_state_results', { n: total });
+    }
+
+    // Total d'une recherche : celui de la pagination serveur quand elle en
+    // donne un, la page reçue sinon.
+    // Ce que le serveur a compris (`interpreted`) au moment d'une question,
+    // réduit aux champs que la carte sait nommer. null s'il n'y a rien.
+    function aiInterpSnapshot(data) {
+      const it = data && data.interpreted;
+      if (!it) return null;
+      const snap = {};
+      Object.keys(AI_FIELD_KEYS).forEach(k => { if (it[k]) snap[k] = String(it[k]); });
+      return Object.keys(snap).length ? snap : null;
+    }
+
+    // Ligne d'étiquettes « Marque · Yamaha », « Année · ? »… : les champs
+    // établis, puis celui que la question demande, en pointillés.
+    function buildAiInterp(interp, field) {
+      const known = interp || {};
+      const tags = [];
+      Object.keys(AI_FIELD_KEYS).forEach(k => {
+        if (!known[k]) return;
+        const value = k === 'manufacturer' ? titleCase(known[k])
+          : k === 'part_type' ? capitalize(known[k])
+          : known[k];
+        tags.push({ key: k, value, miss: false });
+      });
+      if (AI_FIELD_KEYS[field] && !known[field]) tags.push({ key: field, value: '?', miss: true });
+      if (!tags.length) return null;
+
+      const row = document.createElement('div');
+      row.className = 'ep-ai-interp';
+      tags.forEach(tag => {
+        const el = document.createElement('span');
+        el.className = tag.miss ? 'ep-ai-tag ep-ai-miss' : 'ep-ai-tag';
+        el.appendChild(document.createTextNode(t(AI_FIELD_KEYS[tag.key]) + ' · '));
+        const b = document.createElement('b');
+        b.textContent = tag.value;
+        el.appendChild(b);
+        row.appendChild(el);
+      });
+      return row;
+    }
+
+    function resultsTotal(products, pagination) {
+      return pagination && typeof pagination.total === 'number' ? pagination.total : products.length;
+    }
+
+    function syncAiStateFromResponse(data) {
+      const products = (data && data.results) || [];
+      if (data && data.type === 'results' && products.length) {
+        setAiResultsState(resultsTotal(products, data.pagination));
+      } else if (data && data.type === 'clarification' && !data.contact_url
+          && !(data.meta && data.meta.conversation_continues === false)) {
+        setAiState('ai_state_question');
+      } else if (data && data.type === 'no_results') {
+        setAiState('ai_state_no_results');
+      } else {
+        setAiState('ai_state_ready');
+      }
+    }
+
+    // Design « ai » : tant que le visiteur n'a rien écrit, l'accueil occupe le
+    // centre de l'écran ; dès son premier message, la conversation prend le
+    // relais et l'accueil s'efface.
+    function syncAiHome() {
+      if (!isAiDesign()) return;
+      win.classList.toggle('ep-ai-home', !transcript.some(e => e.t === 'user'));
+    }
 
     // ── Défilement de la conversation & pastille « nouveaux messages » ───────
     // Un tour de réponse ajoute souvent PLUSIEURS blocs d'un coup (message,
@@ -3162,7 +3847,10 @@
     // coût de mise en page.
     function applyViewport() {
       if (!(isOpen && isMobile())) {
-        unlockPageScroll();
+        // Design « ai » : la fenêtre couvre aussi la page sur grand écran, qui
+        // n'a donc pas à défiler dessous.
+        if (isOpen && isAiDesign()) lockPageScroll();
+        else unlockPageScroll();
         resetWindowGeometry();
         return;
       }
@@ -3350,12 +4038,54 @@
       renderWelcome();
       if (!isRestoring) { transcript.push({ t: 'welcome' }); saveState(); }
       renderTryChips();
+      syncAiHome();
+      setAiState('ai_state_ready');
+    }
+
+    // Accueil du design « ai » : la marque dans un orbe, une grande question,
+    // puis la présentation (welcome_p1, sans son emoji d'ouverture) et l'aide à
+    // la saisie (welcome_p2) — les deux textes que le hub réécrit par univers.
+    function renderAiWelcome() {
+      const hero = document.createElement('div');
+      hero.className = 'ep-msg ep-ai-hero';
+
+      const orb = document.createElement('div');
+      orb.className = 'ep-ai-orb';
+      orb.setAttribute('aria-hidden', 'true');
+      orb.innerHTML = markSvg(48, 53, '#fff');
+      hero.appendChild(orb);
+
+      const title = document.createElement('h2');
+      title.className = 'ep-ai-h1';
+      setRichText(title, t('ai_welcome_title'));
+      hero.appendChild(title);
+
+      const sub = document.createElement('p');
+      sub.className = 'ep-ai-sub';
+      sub.textContent = String(t('welcome_p1')).replace(/^[\p{Extended_Pictographic}‍️\s]+/u, '');
+      hero.appendChild(sub);
+
+      const hint = document.createElement('p');
+      hint.className = 'ep-ai-hint';
+      hint.textContent = t('welcome_p2');
+      hero.appendChild(hint);
+
+      if (CONFIG.contact_page_url) {
+        const contact = document.createElement('p');
+        contact.className = 'ep-ai-hint';
+        setLinkedText(contact, t('welcome_p3'));
+        hero.appendChild(contact);
+      }
+
+      messagesEl.appendChild(hero);
+      scrollBottom();
     }
 
     // Bulle d'accueil : avatar « e » + deux paragraphes (accroche avec la marque
     // en gras, puis invitation), calqués sur la refonte 1a. Aucune journalisation
     // ici — gérée par showWelcome / replayEntry.
     function renderWelcome() {
+      if (isAiDesign()) { renderAiWelcome(); return; }
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-assistant';
       const avatar = document.createElement('div');
@@ -3610,6 +4340,7 @@
       if (transcript.length === 1 && transcript[0].t === 'welcome') {
         renderTryChips();
       }
+      syncAiHome();
 
       scrollBottom(true);
     }
@@ -3647,6 +4378,7 @@
           } else {
             appendOptionsGroup(entry.options || [], () => {}, {
               restoreSelectedIndex: answered ? entry.selectedIndex : -1,
+              card: entry,
             });
           }
           break;
@@ -3762,6 +4494,7 @@
       isLoading = true;
       sendBtn.disabled = true;
       showTyping(true);
+      setAiState('ai_state_thinking');
 
       const body = {
         query,
@@ -3786,6 +4519,7 @@
         renderResponse(data);
       } catch (err) {
         showTyping(false);
+        setAiState('ai_state_ready');
         renderSearchFailure();
         console.error(err);
       } finally {
@@ -3809,6 +4543,7 @@
       // Met à jour la barre de contexte dès qu'une réponse identifie le véhicule.
       updateVehicleFromData(data);
       updatePartFromData(data);
+      syncAiStateFromResponse(data);
       switch (data.type) {
         case 'results':
           renderResults(data);
@@ -4299,6 +5034,25 @@
         saveState();
       }
 
+      // Design « ai » : un titre au-dessus des fiches — combien, et chez qui
+      // quand la boutique a donné son nom.
+      if (isAiDesign()) {
+        const total = resultsTotal(products, pagination);
+        const head = document.createElement('div');
+        head.className = 'ep-ai-res-head';
+        const h3 = document.createElement('h3');
+        h3.textContent = total === 1 ? t('ai_results_head_one') : t('ai_results_head', { n: total });
+        if (CONFIG.title) h3.textContent += ' ' + t('ai_results_on');
+        head.appendChild(h3);
+        if (CONFIG.title) {
+          const shop = document.createElement('span');
+          shop.className = 'ep-ai-shop';
+          shop.textContent = CONFIG.title;
+          head.appendChild(shop);
+        }
+        container.appendChild(head);
+      }
+
       // Barre tri + filtre unifié au-delà du seuil — décidé sur le TOTAL de
       // la recherche : la première page seule ne dépasse jamais le seuil.
       if ((pagination ? pagination.total : products.length) > PRODUCTS_TOOLBAR_MIN) {
@@ -4705,6 +5459,11 @@
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
       card.setAttribute('aria-label', `${product.name || ''} – ${t('view_product')}`);
+      // Produit qui convient à l'équipement sans répondre exactement à la pièce
+      // demandée (recherche par le sens) : le design « ai » nuance son badge.
+      if (product.compatibility && product.compatibility.exact_match === false) {
+        card.classList.add('ep-card-approx');
+      }
 
       const n = product.compatibility?.n_sources || 0;
       const tip = n > 1 ? t('compat_tip', { n }) : (product.compatibility?.label || t('compat_label'));
@@ -4782,7 +5541,7 @@
         }
 
         callSearch(value);
-      }, { logExtra: { kind: 'clarification', field: lastClarificationField } });
+      }, { logExtra: { kind: 'clarification', field: lastClarificationField, interp: aiInterpSnapshot(data) || undefined } });
     }
 
     /**
@@ -4827,6 +5586,23 @@
       const container = document.createElement('div');
       container.className = 'ep-clari';
 
+      // Design « ai » : la question devient une carte — l'étiquette du champ
+      // demandé en tête, l'invitation à répondre librement au pied — précédée de
+      // ce que l'assistant a compris jusque-là. Le champ et cette lecture
+      // viennent de l'entrée journalisée (ou de ce qui va l'être), pour que le
+      // rejeu redessine la même carte.
+      const cardMeta = config.reuseEntry || config.logExtra || config.card || {};
+      const aiInterp = isAiDesign() ? buildAiInterp(cardMeta.interp, cardMeta.field) : null;
+      if (isAiDesign() && AI_FIELD_KEYS[cardMeta.field]) {
+        const head = document.createElement('div');
+        head.className = 'ep-ai-ask-head';
+        const tag = document.createElement('span');
+        tag.className = 'ep-ai-ask-tag';
+        tag.textContent = t(AI_FIELD_KEYS[cardMeta.field]);
+        head.appendChild(tag);
+        container.appendChild(head);
+      }
+
       let filterInput = null;
       let emptyNote = null;
 
@@ -4855,11 +5631,14 @@
         if (frozen) return;
         frozen = true;
         openOptionGroups.delete(freezeUnanswered);
+        // La carte du design « ai » se resserre sur le choix fait.
+        const hideOthers = isList || (isAiDesign() && !!selectedBtn);
         buttons.forEach(b => {
           b.disabled = true;
-          if (b !== selectedBtn) b.style.display = isList ? 'none' : '';
+          if (b !== selectedBtn) b.style.display = hideOthers ? 'none' : '';
         });
         if (selectedBtn) selectedBtn.classList.add('ep-selected');
+        container.classList.add('ep-ai-answered');
         if (filterInput) filterInput.remove();
         if (emptyNote) emptyNote.remove();
         const countEl = container.querySelector('.ep-clari-count');
@@ -4902,8 +5681,16 @@
         });
       }
 
+      if (isAiDesign()) {
+        const foot = document.createElement('div');
+        foot.className = 'ep-ai-ask-foot';
+        foot.innerHTML = `${AI_ICON_PEN}<span>${escHtml(t('ai_ask_free'))}</span>`;
+        container.appendChild(foot);
+      }
+
       const wrapper = document.createElement('div');
       wrapper.className = 'ep-msg ep-msg-assistant ep-msg-wide';
+      if (aiInterp) wrapper.appendChild(aiInterp);
       wrapper.appendChild(container);
       messagesEl.appendChild(wrapper);
       scrollBottom();
@@ -5427,6 +6214,13 @@
     function appendUserMessage(text, beforeEl) {
       const div = document.createElement('div');
       div.className = 'ep-msg ep-msg-user';
+      if (isAiDesign()) {
+        const tag = document.createElement('div');
+        tag.className = 'ep-ai-utag';
+        tag.setAttribute('aria-hidden', 'true');
+        tag.textContent = t('ai_you');
+        div.appendChild(tag);
+      }
       const bubble = document.createElement('div');
       bubble.className = 'ep-bubble';
       bubble.textContent = text;
@@ -5451,6 +6245,7 @@
       // doit être visible immédiatement, où qu'il ait défilé jusque-là.
       scrollBottom(true);
       if (!isRestoring) { transcript.push({ t: 'user', text }); saveState(); }
+      syncAiHome();
     }
 
     // contactUrl : celui de la réponse qui a produit ce message. Il est persisté
@@ -5834,6 +6629,67 @@
   }
 
   // ── HTML interne de la fenêtre ─────────────────────────────────────────────
+  // Champs de clarification que le design « ai » sait nommer : étiquette de la
+  // carte de question, et ligne « ce que l'assistant a compris ».
+  const AI_FIELD_KEYS = {
+    manufacturer: 'field_manufacturer',
+    model:        'field_model',
+    year:         'field_year',
+    part_type:    'field_part_type',
+  };
+
+  // Icônes du design « ai » (grille 24, trait).
+  function aiIcon(paths, size, width) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${width || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  }
+  const AI_ICON_INFO  = aiIcon('<circle cx="12" cy="12" r="9"></circle><path d="M12 16v-4M12 8h.01"></path>', 13);
+  const AI_ICON_DB    = aiIcon('<ellipse cx="12" cy="5.5" rx="8" ry="3"></ellipse><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"></path><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path>', 13);
+  const AI_ICON_CHEV  = aiIcon('<path d="m6 9 6 6 6-6"></path>', 12, 2.2);
+  const AI_ICON_PEN   = aiIcon('<path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>', 13);
+
+  // Habillage « ai » de la fenêtre construite par buildWindowHTML() : le halo
+  // de fond, la pastille d'état dans l'en-tête, la mention IA sous le champ, le
+  // logo blanc de l'attribution. Le reste du DOM est celui du design classique.
+  function decorateAiWindow(win) {
+    const aura = document.createElement('div');
+    aura.id = 'ep-ai-aura';
+    aura.setAttribute('aria-hidden', 'true');
+    aura.innerHTML = '<i></i><i></i><i></i>';
+    win.insertBefore(aura, win.firstChild);
+
+    const state = document.createElement('span');
+    state.id = 'ep-ai-state';
+    state.setAttribute('role', 'status');
+    state.innerHTML = `<i aria-hidden="true"></i><span id="ep-ai-state-text">${escHtml(t('ai_state_ready'))}</span>`;
+    win.querySelector('#ep-header-brand').appendChild(state);
+
+    const brand = win.querySelector('#ep-footer-brand');
+    if (brand) brand.innerHTML = LOGO_WHITE_SVG;
+
+    const privacy = CONFIG.privacy_url
+      ? `<a href="${escHtml(CONFIG.privacy_url)}" target="_blank" rel="noopener noreferrer">${escHtml(t('ai_privacy'))}</a>`
+      : '';
+    const notice = document.createElement('div');
+    notice.id = 'ep-ai-notice';
+    notice.innerHTML =
+      `<button id="ep-ai-notice-btn" type="button" aria-expanded="false" aria-controls="ep-ai-notice-body">` +
+        `<span>${escHtml(t('ai_notice'))} — <u>${escHtml(t('ai_notice_more'))}</u></span>${AI_ICON_CHEV}` +
+      `</button>` +
+      `<div id="ep-ai-notice-body">` +
+        `<ul>` +
+          `<li>${AI_ICON_INFO}<span>${escHtml(t('ai_notice_1'))}</span></li>` +
+          `<li>${AI_ICON_DB}<span>${escHtml(t('ai_notice_2'))}</span></li>` +
+        `</ul>${privacy}` +
+      `</div>`;
+    const footer = win.querySelector('#ep-footer');
+    footer.insertBefore(notice, footer.firstChild);
+    const btn = notice.querySelector('#ep-ai-notice-btn');
+    btn.addEventListener('click', () => {
+      const open = notice.classList.toggle('ep-open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+
   function buildWindowHTML() {
     return `
       <div id="ep-header">
