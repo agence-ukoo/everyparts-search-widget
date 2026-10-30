@@ -2297,24 +2297,69 @@
       --ep-ai-col:      790px;
     }
 
-    /* ── Lanceur : pilule sombre, pastille de marque en dégradé ── */
+    /* ── Lanceur : pilule sombre — marque, libellé dépliable, crayon ──
+       Le libellé se déplie au survol, et tant que le lanceur est déployé
+       (.ep-fab-expanded : nouveau visiteur, jusqu'au premier clic). Seuls la
+       marge intérieure et le libellé s'animent ; le bord ancré au coin ne
+       bouge pas, la pilule s'étire vers l'intérieur de la page. */
     #ep-fab.ep-ai,
-    #ep-fab.ep-ai .ep-fab-closed { background: var(--ep-ai-bg); }
-    #ep-fab.ep-ai { box-shadow: 0 10px 34px color-mix(in srgb, var(--ep-primary) 40%, transparent); }
-    #ep-fab.ep-ai .ep-fab-face { background: var(--ep-ai-bg); border-color: transparent; }
-    #ep-fab.ep-ai .ep-fab-search { stroke: var(--ep-ai-ink-mute); }
-    #ep-fab.ep-ai .ep-fab-examples { color: var(--ep-ai-ink); }
-    #ep-fab.ep-ai .ep-fab-disc { background: linear-gradient(135deg, var(--ep-ai-accent), var(--ep-ai-accent-2)); }
-    #ep-fab.ep-ai .ep-fab-closed::after {
-      content: '';
-      position: absolute;
-      top: 8px; right: 8px;
-      width: 9px; height: 9px;
-      border-radius: 50%;
+    #ep-fab.ep-ai.ep-fab-expanded {
+      display: flex; align-items: center;
+      width: auto; max-width: calc(100vw - 40px);
+      height: 56px; padding: 0 8px;
+      border-radius: 999px;
+      background: var(--ep-ai-bg); color: #fff;
+      box-shadow: 0 10px 34px color-mix(in srgb, var(--ep-primary) 34%, transparent);
+      transition: padding .4s cubic-bezier(.22,1,.36,1), box-shadow .3s, background .3s;
+    }
+    #ep-fab.ep-ai:hover,
+    #ep-fab.ep-ai.ep-fab-expanded {
+      transform: none;
+      padding-right: 20px;
+      background: color-mix(in srgb, var(--ep-ai-bg) 88%, black);
+      box-shadow: 0 16px 46px color-mix(in srgb, var(--ep-primary) 44%, transparent);
+    }
+    .ep-ai-pill-mark {
+      width: 40px; height: 40px; flex: none; border-radius: 50%;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--ep-ai-accent), var(--ep-ai-accent-2));
+    }
+    .ep-ai-pill-label {
+      font-family: var(--ep-font-body); font-size: 14px; font-weight: 500; white-space: nowrap;
+      max-width: 0; opacity: 0; overflow: hidden;
+      transition: max-width .4s cubic-bezier(.22,1,.36,1), opacity .25s, margin .4s;
+    }
+    #ep-fab.ep-ai:hover .ep-ai-pill-label,
+    #ep-fab.ep-ai.ep-fab-expanded .ep-ai-pill-label { max-width: 270px; opacity: 1; margin: 0 14px 0 12px; }
+    .ep-ai-pill-pen {
+      width: 36px; height: 36px; flex: none; margin-left: 8px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: rgba(255,255,255,.10); color: #fff;
+      transition: background .3s;
+    }
+    #ep-fab.ep-ai:hover .ep-ai-pill-pen,
+    #ep-fab.ep-ai.ep-fab-expanded .ep-ai-pill-pen { background: color-mix(in srgb, var(--ep-ai-accent) 24%, transparent); }
+    .ep-ai-pill-dot {
+      position: absolute; top: 9px; right: 9px;
+      width: 9px; height: 9px; border-radius: 50%;
       background: var(--ep-ai-accent);
       box-shadow: 0 0 0 2px var(--ep-ai-bg);
       animation: ep-ai-dot 2.6s ease-in-out infinite;
+      transition: opacity .2s;
     }
+    #ep-fab.ep-ai:hover .ep-ai-pill-dot,
+    #ep-fab.ep-ai.ep-fab-expanded .ep-ai-pill-dot,
+    .ep-ai-pill-badge.ep-visible + .ep-ai-pill-dot { opacity: 0; }
+    .ep-ai-pill-badge { top: -4px; right: -2px; border: 2px solid var(--ep-ai-bg); }
+    /* Bulle d'amorce / aperçu, au ton de la pilule. */
+    #ep-teaser.ep-ai {
+      background: var(--ep-ai-bg);
+      border-color: var(--ep-ai-line-hi);
+      box-shadow: 0 14px 34px color-mix(in srgb, var(--ep-primary) 34%, transparent);
+    }
+    #ep-teaser.ep-ai #ep-teaser-text { color: var(--ep-ai-ink); }
+    #ep-teaser.ep-ai #ep-teaser-close { background: var(--ep-ai-bg); border-color: var(--ep-ai-line-hi); color: var(--ep-ai-ink-soft); }
+    #ep-teaser.ep-ai #ep-teaser-close:hover { color: var(--ep-ai-ink); }
     #ep-fab.ep-ai.ep-window-open { display: none; }
 
     /* ── Fenêtre plein écran ── */
@@ -2771,7 +2816,8 @@
       .ep-ai-sub, .ep-ai-hint { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .ep-ai .ep-msg, .ep-ai-orb, #ep-ai-aura i, #ep-ai-state i, #ep-fab.ep-ai .ep-fab-closed::after { animation: none; }
+      .ep-ai .ep-msg, .ep-ai-orb, #ep-ai-aura i, #ep-ai-state i, .ep-ai-pill-dot { animation: none; }
+      #ep-fab.ep-ai, #ep-fab.ep-ai.ep-fab-expanded, .ep-ai-pill-label, .ep-ai-pill-pen { transition: none; }
       #ep-window.ep-ai { transition: none; }
       .ep-ai .ep-card, .ep-ai .ep-chip, .ep-ai .ep-clari-btn, #ep-ai-notice-body { transition: none; }
     }
@@ -3308,6 +3354,18 @@
         `<span class="ep-fab-badge ep-fab-badge-disc"></span>` +
       `</span>` +
       `<span class="ep-fab-layer ep-fab-chevron" aria-hidden="true">${FAB_CLOSE_ICON}</span>`;
+    // Design « ai » : une pilule sombre — la marque dans une pastille en
+    // dégradé, un libellé qui se déplie au survol (et tant que le lanceur est
+    // déployé), un crayon qui dit qu'on y écrit. Le compteur garde sa classe
+    // .ep-fab-badge : showBadge()/hideBadge() le pilotent comme dans le classique.
+    if (isAiDesign()) {
+      fab.innerHTML =
+        `<span class="ep-fab-badge ep-ai-pill-badge" aria-hidden="true"></span>` +
+        `<span class="ep-ai-pill-dot" aria-hidden="true"></span>` +
+        `<span class="ep-ai-pill-mark" aria-hidden="true">${markSvg(20, 22, '#fff')}</span>` +
+        `<span class="ep-ai-pill-label" aria-hidden="true">${escHtml(t('placeholder'))}</span>` +
+        `<span class="ep-ai-pill-pen" aria-hidden="true">${AI_ICON_PEN_FAB}</span>`;
+    }
     shadow.appendChild(fab);
     const fabBadges = fab.querySelectorAll('.ep-fab-badge');
 
@@ -3335,6 +3393,7 @@
     // Design « ai » : la fenêtre couvre toute la page, d'où aria-modal.
     if (isAiDesign()) {
       fab.classList.add('ep-ai');
+      teaser.classList.add('ep-ai');
       win.classList.add('ep-ai');
       win.setAttribute('aria-modal', 'true');
       decorateAiWindow(win);
@@ -6646,6 +6705,9 @@
   const AI_ICON_DB    = aiIcon('<ellipse cx="12" cy="5.5" rx="8" ry="3"></ellipse><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"></path><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path>', 13);
   const AI_ICON_CHEV  = aiIcon('<path d="m6 9 6 6 6-6"></path>', 12, 2.2);
   const AI_ICON_PEN   = aiIcon('<path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>', 13);
+  const AI_ICON_PEN_FAB = aiIcon('<path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>', 17, 2);
+  // « Réduire » : remplace la croix de fermeture dans le design « ai ».
+  const AI_ICON_REDUCE = aiIcon('<path d="M4 14h6v6M20 10h-6V4"></path><path d="m14 10 7-7M3 21l7-7"></path>', 18, 2);
 
   // Habillage « ai » de la fenêtre construite par buildWindowHTML() : le halo
   // de fond, la pastille d'état dans l'en-tête, la mention IA sous le champ, le
@@ -6665,6 +6727,8 @@
 
     const brand = win.querySelector('#ep-footer-brand');
     if (brand) brand.innerHTML = LOGO_WHITE_SVG;
+
+    win.querySelector('#ep-close-btn').innerHTML = AI_ICON_REDUCE;
 
     const privacy = CONFIG.privacy_url
       ? `<a href="${escHtml(CONFIG.privacy_url)}" target="_blank" rel="noopener noreferrer">${escHtml(t('ai_privacy'))}</a>`

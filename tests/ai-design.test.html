@@ -88,6 +88,18 @@ async function run() {
   const win = $('#ep-window');
   const css = $('style').textContent;
 
+  if (SCENARIO === 'ai') {
+    const fab = $('#ep-fab');
+    check('le lanceur est la pilule : marque, libellé, crayon', !!fab.querySelector('.ep-ai-pill-mark')
+      && fab.querySelector('.ep-ai-pill-label')?.textContent === 'Rechercher une pièce compatible…'
+      && !!fab.querySelector('.ep-ai-pill-pen svg'));
+    check('la pilule garde un compteur piloté par showBadge()', fab.querySelectorAll('.ep-fab-badge').length === 1);
+    check('la pilule n\'a plus les couches du lanceur classique', !fab.querySelector('.ep-fab-layer'));
+    check('la croix de fermeture devient « réduire »', !!$('#ep-close-btn path[d="M4 14h6v6M20 10h-6V4"]'));
+  } else {
+    check('le lanceur classique garde ses couches', $$('#ep-fab .ep-fab-layer').length === 4 && !$('.ep-ai-pill-pen'));
+  }
+
   $('#ep-fab').click();
   await until(() => !win.classList.contains('ep-hidden'), 2000);
 
